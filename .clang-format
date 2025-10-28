@@ -1,0 +1,8 @@
+BasedOnStyle: Chromium
+IndentWidth: 4
+TabWidth: 4
+ColumnLimit: 160
+PointerAlignment: Right
+AllowShortIfStatementsOnASingleLine: true
+AllowShortBlocksOnASingleLine: true
+AllowShortLoopsOnASingleLine: true

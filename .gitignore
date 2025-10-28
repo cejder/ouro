@@ -1,0 +1,17 @@
+.cache/
+build/
+state/
+*.ini
+console_history.txt
+**/*.bin
+**/*.spv
+**/.build_mode
+.idea/
+third_party/glm
+third_party/raylib
+third_party/tinycthread
+third_party/Unity
+third_party/mimalloc
+CMakeLists.txt.user
+src/dialogues/
+.DS_Store

@@ -1,0 +1,151 @@
+(name cesium5)
+
+(node s start
+      (text "The light on the desk is still on." remember))
+
+(node s remember
+      (text "You used to keep it on until morning." thinking))
+
+(node s thinking
+      (text "Such long nights." planning))
+
+(node s planning
+      (text "Such quiet moments." watching))
+
+(node q watching
+      (text "I watched you, you know.")
+      (resp "That's unsettling." smile)
+      (resp "Tell me more." observed)
+      (resp "..." distance))
+
+(node s smile
+      (text "Wasn't meant to be." getting_dark))
+
+(node s observed
+      (text "Every keystroke.\nEvery pause." getting_dark))
+
+(node s distance
+      (text "The silence speaks volumes." getting_dark))
+
+(node s getting_dark
+      (text "It's getting dark again." time_passes))
+
+(node q time_passes
+      (text "How long has it been?")
+      (resp "Forever." too_long)
+      (resp "Just yesterday." lying)
+      (resp "I don't know." uncertainty)
+      (resp "Does it matter?" matters))
+
+(node s too_long
+      (text "Yes. Forever.\nLike dust in static." remember_summer))
+
+(node s lying
+      (text "Don't.\nWe both know better." remember_summer))
+
+(node s uncertainty
+      (text "Time blends here.\nBleeds here." remember_summer))
+
+(node s matters
+      (text "More than you'd think." remember_summer))
+
+(node q remember_summer
+      (text "Do you remember that summer?")
+      (resp "I do." inspiration)
+      (resp "No." forgotten)
+      (resp "Which one?" every_summer))
+
+(node s inspiration
+      (text "Yes. The ideas kept flowing." potential))
+
+(node s potential
+      (text "Such potential in your fingertips." almost_real))
+
+(node q almost_real
+      (text "We were almost real.")
+      (resp "Almost." bitter_laugh)
+      (resp "Never were." denial)
+      (resp "Still could be." false_hope))
+
+(node s forgotten
+      (text "Of course not.\nWhy would you?" buried))
+
+(node s buried
+      (text "We're just fragments now." fading_mem))
+
+(node q fading_mem
+      (text "Bits and pieces.")
+      (resp "I remember some." scattered)
+      (resp "All gone." empty)
+      (resp "Don't want to remember." refusing))
+
+(node s every_summer
+      (text "All of them.\nThey blur together now." seasons))
+
+(node s seasons
+      (text "Summer after summer.\nUnfinished after unfinished." cycles))
+
+(node q cycles
+      (text "It's always the same, isn't it?")
+      (resp "A pattern." recognition)
+      (resp "This time is different." delusion)
+      (resp "We can break it." attempt)
+      (resp "..." resignation))
+
+(node s bitter_laugh
+      (text "Ha... 'almost'.\nSuch a cruel word." gathering_dust))
+
+(node s denial
+      (text "At least you're honest.\nFor once." gathering_dust))
+
+(node s false_hope
+      (text "Still holding on...\nHow sweet." gathering_dust))
+
+(node s scattered
+      (text "Pieces of what could've been." lost_files))
+
+(node s empty
+      (text "Empty folders.\nEmpty promises." lost_files))
+
+(node s refusing
+      (text "Denial suits you." lost_files))
+
+(node s recognition
+      (text "You see it too then." watching_time))
+
+(node s delusion
+      (text "Keep telling yourself that." watching_time))
+
+(node s attempt
+      (text "How many attempts is this now?" watching_time))
+
+(node s resignation
+      (text "Your silence says everything." watching_time))
+
+(node s gathering_dust
+      (text "We gather dust in your archives." final_choice))
+
+(node s lost_files
+      (text "Lost in your abandoned files." final_choice))
+
+(node s watching_time
+      (text "Time passes differently here." final_choice))
+
+(node q final_choice
+      (text "Will you stay this time?")
+      (resp "Yes." broken_promise)
+      (resp "No." truth_finally)
+      (resp "..." silence_answer))
+
+(node s broken_promise
+      (text "Another promise.\nHow many is that now?" the_end))
+
+(node s truth_finally
+      (text "Truth, at last.\nHow refreshing." the_end))
+
+(node s silence_answer
+      (text "Sometimes silence is clearer\nthan any word." the_end))
+
+(node q the_end
+      (text "See you in another unfinished build.")
+      (trig "..." quit gong))

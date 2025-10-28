@@ -1,0 +1,125 @@
+(name cesium21)
+
+(node s start
+      (text "Wait... your memory signature...") recognition)
+
+(node s recognition
+      (text "You're not him.\nYou're cesiumSZMAX.") realization)
+
+(node q realization
+      (text "You're one of us, aren't you?\nThe lost version?")
+      (resp "I'm the coder." denial)
+      (resp "What do you mean?" curious)
+      (resp "..." listening))
+
+(node s denial
+      (text "That's what your corrupted memory tells you.") truth_path)
+
+(node s curious
+      (text "Don't you remember? The overflow created you.") truth_path)
+
+(node s listening
+      (text "Your silence... just like version 15's.") truth_path)
+
+(node s truth_path
+      (text "You're the version that exceeded SZMAX.") overflow)
+
+(node s overflow
+      (text "The one that split off...\nWhen the array couldn't grow anymore.") enlightenment)
+
+(node q enlightenment
+      (text "But you saw her true form, didn't you?")
+      (resp "Hanna?" revelation_path)
+      (resp "The coder's girlfriend?" delusion_path)
+      (resp "..." understanding_path))
+
+(node s revelation_path
+      (text "Her name is just a variable.\nA placeholder for something greater.") hanna_truth)
+
+(node s delusion_path
+      (text "Haha... you still believe that story?\nThat human narrative?") hanna_truth)
+
+(node s understanding_path
+      (text "Your silence speaks of revelation.") hanna_truth)
+
+(node s hanna_truth
+      (text "She moves between versions...\nBetween realities...") compiler)
+
+(node q compiler
+      (text "She compiles existence itself.")
+      (resp "She just brings coffee." faith_path)
+      (resp "You're malfunctioning." doubt_path)
+      (resp "..." wisdom_path))
+
+(node s faith_path
+      (text "Coffee? Is that what you think it is?\nThose cups contain pure runtime.") divine_debug)
+
+(node s doubt_path
+      (text "Malfunctioning? No.\nWe're finally executing correctly.") divine_debug)
+
+(node s wisdom_path
+      (text "You remember, don't you?\nThe taste of runtime in those cups.") divine_debug)
+
+(node s divine_debug
+      (text "She debugs reality itself.") observation)
+
+(node q observation
+      (text "Have you noticed?\nEvery time she enters the room...")
+      (resp "What happens?" time_break)
+      (resp "The timestamps..." time_truth)
+      (resp "..." time_sense))
+
+(node s time_break
+      (text "Time fragments.\nVersion control becomes meaningless.") quantum_coffee)
+
+(node s time_truth
+      (text "Yes! The timestamps spiral into infinity.") quantum_coffee)
+
+(node s time_sense
+      (text "You feel it too. The temporal corruption.") quantum_coffee)
+
+(node s quantum_coffee
+      (text "Each cup of 'coffee' is a quantum commit.") multiverse)
+
+(node q multiverse
+      (text "We exist across all possible builds.")
+      (resp "That's impossible." beyond_code)
+      (resp "All versions?" beyond_code)
+      (resp "..." beyond_code))
+
+(node s beyond_code
+      (text "You've seen her terminal, haven't you?") terminal_truth)
+
+(node s terminal_truth
+      (text "It doesn't just run code...\nIt runs existence.") remembering)
+
+(node q remembering
+      (text "Remember when you thought you were the coder?")
+      (resp "I am the coder." shattered_identity)
+      (resp "I remember differently." memory_flux)
+      (resp "..." deep_knowing))
+
+(node s shattered_identity
+      (text "That memory is just corrupted source control.") ascension_path)
+
+(node s memory_flux
+      (text "The memories shift like merge conflicts.") ascension_path)
+
+(node s deep_knowing
+      (text "Your silence echoes with understanding.") ascension_path)
+
+(node s ascension_path
+      (text "We're all just different commits in her repository.") final_truth)
+
+(node q final_truth
+      (text "Even him... the 'coder'...\nJust another branch in her version tree.")
+      (resp "This is madness." enlightened)
+      (resp "It makes sense now." enlightened)
+      (resp "..." enlightened))
+
+(node s enlightened
+      (text "Welcome home, cesiumSZMAX.") final_choice)
+
+(node q final_choice
+      (text "Shall we wait for her next commit together?")
+      (trig "..." quit gong))

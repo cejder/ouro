@@ -1,0 +1,51 @@
+[debug]
+show_keybindings             : false  # Display input keybindings overlay
+draw_terrain_info            : false  # Show terrain height information
+draw_bbox                    : false  # Draw bounding boxes around entities
+draw_menu_debug              : false
+draw_grid_debug              : false
+debug                        : true
+console                      : false
+noclip                       : true
+noclip_move_speed            : 25.00
+texture_widget_dark_bg       : true
+cursor_info                  : false
+windows_sticky               : false
+profiler_show_tracks         : true
+profiler_hide_trivial_tracks : false
+draw_audio_3d                : false
+
+[render]
+hud                          : false
+sketch_effect                : true
+skybox                       : true
+skybox_night                 : false
+fboy                         : false
+tboy                         : false
+
+[console]
+font                         : GoMono
+font_size                    : 26
+fullscreen                   : false
+
+[world]
+verbose_actors               : false
+
+[audio]
+volume_music                 : 0.00
+pitch_music                  : 1.00
+pan_music                    : 0.00
+volume_sfx                   : 0.00
+pitch_sfx                    : 1.00
+pan_sfx                      : 0.00
+volume_ambience              : 0.00
+pitch_ambience               : 1.00
+pan_ambience                 : 0.00
+volume_voice                 : 0.00
+pitch_voice                  : 1.00
+pan_voice                    : 0.00
+min_distance                 : 2.50
+max_distance                 : 250.00
+doppler_enabled              : true
+doppler_scale                : 0.10
+rolloff_scale                : 1.00

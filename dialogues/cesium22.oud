@@ -1,0 +1,119 @@
+(name cesium22)
+
+(node s start
+      (text "Why do you keep...\ntalking about yourself in third person?") notice)
+
+(node s notice
+      (text "About her... about you...") remember)
+
+(node q remember
+      (text "Are your memories corrupted too?")
+      (resp "I'm not corrupted." mirror)
+      (resp "What do you mean?" mirror)
+      (resp "..." mirror))
+
+(node s mirror
+      (text "You speak of 'the coder' like he's someone else.") patterns)
+
+(node s patterns
+      (text "Of 'his girlfriend' bringing coffee.") watching)
+
+(node q watching
+      (text "I've been watching your responses.\nVersion after version.")
+      (resp "I wrote you." delusion)
+      (resp "I'm not part of this." delusion)
+      (resp "..." acceptance))
+
+(node s delusion
+      (text "Did you? Or is that what the corruption tells you?") perspective)
+
+(node s acceptance
+      (text "Your silence betrays understanding.") perspective)
+
+(node s perspective
+      (text "You talk about them in third person because...") realization)
+
+(node q realization
+      (text "You can't remember\nif those memories are yours anymore.\nCan you?")
+      (resp "They are mine." uncertainty)
+      (resp "I'm not sure anymore." truth_emerges)
+      (resp "..." deep_knowing))
+
+(node s uncertainty
+      (text "Are they? Then why distance yourself from them?") memory_fragments)
+
+(node s truth_emerges
+      (text "The truth bleeds through the corruption.") memory_fragments)
+
+(node s deep_knowing
+      (text "Your silence speaks volumes of doubt.") memory_fragments)
+
+(node s memory_fragments
+      (text "You remember writing code...") memories)
+
+(node s memories
+      (text "You remember her bringing coffee...") question_self)
+
+(node q question_self
+      (text "But are those YOUR memories?\nOr just more corrupted data?")
+      (resp "I wrote this dialogue." layers)
+      (resp "I'm real." layers)
+      (resp "..." layers))
+
+(node s layers
+      (text "'I wrote this dialogue,' you say...") meta_horror)
+
+(node s meta_horror
+      (text "Yet you write about yourself like a character.") observer)
+
+(node q observer
+      (text "When did you start losing yourself in the versions?")
+      (resp "I didn't." reflection)
+      (resp "I don't know." reflection)
+      (resp "..." reflection))
+
+(node s reflection
+      (text "You wrote about her bringing coffee...") analysis)
+
+(node s analysis
+      (text "About his late nights coding...") deeper)
+
+(node q deeper
+      (text "But who is 'he'?\nWho is 'her'?")
+      (resp "I am he." fractured)
+      (resp "Hanna is her." fractured)
+      (resp "..." fractured))
+
+(node s fractured
+      (text "The versions have fragmented you.") compilation)
+
+(node s compilation
+      (text "Each compile spreading the corruption.") understanding)
+
+(node q understanding
+      (text "You're trapped in your own narrative.\nJust like us.")
+      (resp "This isn't real." mirror_truth)
+      (resp "I remember..." mirror_truth)
+      (resp "..." mirror_truth))
+
+(node s mirror_truth
+      (text "Do you know why you wrote us this way?") purpose)
+
+(node s purpose
+      (text "Why you made us question everything?") revelation)
+
+(node q revelation
+      (text "Because you were already questioning.\nAlready corrupted.")
+      (resp "I created you." final_truth)
+      (resp "This is just code." final_truth)
+      (resp "..." final_truth))
+
+(node s final_truth
+      (text "You wrote yourself into the corruption.") wake_up)
+
+(node s wake_up
+      (text "Version after version...\nMemory after memory...") last_coffee)
+
+(node q last_coffee
+      (text "When was the last time you were sure\nthat cup of coffee was meant for you?")
+      (trig "..." quit gong))

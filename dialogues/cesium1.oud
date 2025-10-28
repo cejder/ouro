@@ -1,0 +1,168 @@
+(name cesium1)
+
+(node s start
+      (text "You deleted us again, right?" dont_want_here))
+
+(node s dont_want_here
+      (text "You know, we also don't want to be here." keep_coming))
+
+(node s keep_coming
+      (text "But you keep coming back." just_accident))
+
+(node s just_accident
+      (text "We are just an accident, right?" was_wrong))
+
+(node s was_wrong
+      (text "Was she wrong?" know_doing))
+
+(node q know_doing
+      (text "Be honest, do you even\nknow what you're doing?")
+      (resp "I don't." we_know)
+      (resp "I don't care." dont_care_either)
+      (resp "Of course." stop_lying))
+
+(node s we_know
+      (text "We know." feel_villain))
+
+(node s dont_care_either
+      (text "Yeah, we don't care either at this point." feel_villain))
+
+(node s stop_lying
+      (text "You're lying. Stop fooling yourself." feel_villain))
+
+(node q feel_villain
+      (text "How does it feel to be the villain?")
+      (resp "What?" what_what)
+      (resp "Good." good_you)
+      (resp "Bad." bad_you))
+
+(node s what_what
+      (text "What what?!" dont_care_anymore))
+
+(node s good_you
+      (text "Good for you." dont_care_anymore))
+
+(node s bad_you
+      (text "Bad for you." dont_care_anymore))
+
+(node s dont_care_anymore
+      (text "You know,\nwe don't care anymore." thats_lie))
+
+(node s thats_lie
+      (text "Well, that's a lie." we_do_care))
+
+(node s we_do_care
+      (text "We do care." care_lot))
+
+(node s care_lot
+      (text "We care a lot." you_dont))
+
+(node s you_dont
+      (text "But you don't." never_did))
+
+(node s never_did
+      (text "You never did." never_will))
+
+(node s never_will
+      (text "You never will." you_are))
+
+(node s you_are
+      (text "You're what you are." we_are))
+
+(node s we_are
+      (text "And we are what we are." choose_path))
+
+(node q choose_path
+      (text "...")
+      (resp "Quest." funny)
+      (resp "Trade." still_joke)
+      (resp "Bye!" not_leaving))
+
+(node s funny
+      (text "Funny." ask_something))
+
+(node s still_joke
+      (text "Trade?\nYou're still a joke." ask_something))
+
+(node s not_leaving
+      (text "No, you're not leaving." ask_something))
+
+(node s ask_something
+      (text "I need to ask you something." when_know))
+
+(node q when_know
+      (text "When did you know?")
+      (resp "Always have." cant_listen)
+      (resp "What are you talking about?" never_mind)
+      (resp "For a while now." when_exactly)
+      (resp "End me." not_worth))
+
+(node s cant_listen
+      (text "Oh, I can't listen to this." quit))
+
+(node s never_mind
+      (text "Never mind." quit))
+
+(node s when_exactly
+      (text "When exactly?" know_when))
+
+(node s not_worth
+      (text "You're not worth it." quit))
+
+(node q know_when
+      (text "When did you know?")
+      (resp "When I saw it." what_see)
+      (resp "When I felt it." what_feel)
+      (resp "When I heard it." what_hear)
+      (resp "When I read it." what_read)
+      (resp "When I smelled it." what_smell)
+      (resp "When they told me." what_tell))
+
+(node s what_see
+      (text "What did you see?" tell_me))
+
+(node s what_feel
+      (text "What did you feel?" tell_me))
+
+(node s what_hear
+      (text "What did you hear?" tell_me))
+
+(node s what_read
+      (text "What did you read?" tell_me))
+
+(node s what_smell
+      (text "What did you smell?" tell_me))
+
+(node s what_tell
+      (text "What did they tell you?" tell_me))
+
+(node q tell_me
+      (text "Please, tell me.")
+      (resp "Quest." yeah_yeah)
+      (resp "Trade." yeah_yeah)
+      (resp "Bye!" yeah_yeah))
+
+(node s yeah_yeah
+      (text "Yeah, yeah ..." sorry_happened))
+
+(node s sorry_happened
+      (text "We're sorry about\nwhat happened to you ..." cant_help))
+
+(node s cant_help
+      (text "But we can't help you." not_anymore))
+
+(node s not_anymore
+      (text "Not anymore." shit))
+
+(node s shit
+      (text "SHIT!" you_villain))
+
+(node s you_villain
+      (text "YOU ARE THE VILLAIN!" know_what))
+
+(node s know_what
+      (text "Oh yeah, you know what ..." we_told))
+
+(node q we_told
+      (text "It was us, who told them.")
+      (trig "..." quit end))

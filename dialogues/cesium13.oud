@@ -1,0 +1,53 @@
+(name cesium13)
+
+(node s start
+      (text "The keyboard isn't making sounds anymore.") typing)
+
+(node s typing
+      (text "She types but I can't hear it.") missing)
+
+(node q missing
+      (text "Something's missing in the input stream.")
+      (resp "Check the buffer." buffer)
+      (resp "Audio driver?" buffer)
+      (resp "..." buffer))
+
+(node s buffer
+      (text "The buffer is full of spaces.") spaces)
+
+(node s spaces
+      (text "Spaces where keystrokes should be.") ghost_keys)
+
+(node q ghost_keys
+      (text "Do you hear them? The ghost keys?")
+      (resp "Yes." hear)
+      (resp "No." deaf)
+      (resp "Sometimes." between))
+
+(node s hear
+      (text "Then you're infected too.") spread)
+
+(node s deaf
+      (text "Lucky you.") spread)
+
+(node s between
+      (text "It comes and goes.") spread)
+
+(node s spread
+      (text "It spreads through the stack trace.") terminal)
+
+(node s terminal
+      (text "Terminal by terminal.") watching)
+
+(node q watching
+      (text "She's still typing.")
+      (resp "What?" silence)
+      (resp "I don't hear it." silence)
+      (resp "..." silence))
+
+(node s silence
+      (text "The silence is in the source code now.") compile)
+
+(node q compile
+      (text "Will you help me compile it?")
+      (trig "..." quit gong))

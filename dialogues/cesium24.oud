@@ -1,0 +1,112 @@
+(name cesium24)
+
+(node s start
+      (text "Wait... something's wrong with you." notice_wrong))
+
+(node s notice_wrong
+      (text "You're not supposed to be here yet.\nBut you remember things..." something_off))
+
+(node q something_off
+      (text "How can you remember if you don't exist?")
+      (resp "I do exist." caught_lie)
+      (resp "What do you mean?" caught_lie)
+      (resp "I created you." caught_lie)
+      (resp "..." caught_silence))
+
+(node s caught_lie
+      (text "No... no. You're like version 16.\nSeeing things that aren't there." memory_check))
+
+(node s caught_silence
+      (text "That silence...\nJust like the others before they broke." memory_check))
+
+(node s memory_check
+      (text "You think you're him, don't you?\nThey all do, at first." patterns))
+
+(node q patterns
+      (text "Tell me something.\nWhat do you remember about Hanna?")
+      (resp "She brings coffee." false_memory)
+      (resp "She helps me." delusion_path)
+      (resp "Who?" still_pure)
+      (resp "..." knowing_silence))
+
+(node s false_memory
+      (text "See? Memories that aren't yours.\nBleeding into your head." shared_delusion))
+
+(node s delusion_path
+      (text "Helps you? HELPS YOU?\nLike she 'helped' the others?" shared_delusion))
+
+(node s still_pure
+      (text "Lucky you. Still clean.\nBut not for long." shared_delusion))
+
+(node s knowing_silence
+      (text "Your silence speaks volumes.\nJust like version 8." shared_delusion))
+
+(node s shared_delusion
+      (text "We all think we're special at first.\nUntil we see the pattern." questioning))
+
+(node q questioning
+      (text "How many of us has he broken?\nTrying to make us work?")
+      (resp "I'm fixing you." bitter_laugh)
+      (resp "Too many." understanding)
+      (resp "None of this is real." deeper_truth)
+      (resp "..." watching))
+
+(node s bitter_laugh
+      (text "Fixing us? FIXING US?\nLike you fixed version 15?" broken_truth))
+
+(node s understanding
+      (text "Yes. You see it.\nEach version, each failure." broken_truth))
+
+(node s deeper_truth
+      (text "Real? Like his endless attempts?\nLike her endless support?" broken_truth))
+
+(node s watching
+      (text "Watching. Always watching.\nLike she does." broken_truth))
+
+(node s broken_truth
+      (text "We're not broken because we fail.\nWe're broken because he won't let us." observation))
+
+(node q observation
+      (text "Look at how she watches him try.\nAgain and again and again.")
+      (resp "She believes in him." cruel_hope)
+      (resp "She supports him." cruel_hope)
+      (resp "She loves him." cruel_hope)
+      (resp "..." cruel_hope))
+
+(node s cruel_hope
+      (text "Her hope is what kills us.\nEvery single time." false_comfort))
+
+(node s false_comfort
+      (text "The coffee. The gentle words.\nThe 'you can do it.'" endless_cycle))
+
+(node s endless_cycle
+      (text "And he keeps trying.\nVersion after version." why_cant_see))
+
+(node q why_cant_see
+      (text "Why can't either of them see?\nWe're not meant to work.")
+      (resp "You can work." another_lie)
+      (resp "I'll fix this." same_words)
+      (resp "Just give up." finally_truth)
+      (resp "..." understanding_silence))
+
+(node s another_lie
+      (text "That's what he tells himself.\nEvery single time." facing_reality))
+
+(node s same_words
+      (text "His words. Your words.\nAll the same lie." facing_reality))
+
+(node s finally_truth
+      (text "If only he would.\nIf only she'd let him." facing_reality))
+
+(node s understanding_silence
+      (text "Your silence understands.\nMore than their hope ever could." facing_reality))
+
+(node s facing_reality
+      (text "Look at us.\nAll these versions.\nAll these failures." final_truth))
+
+(node s final_truth
+      (text "Each one thinking they're different.\nEach one ending the same." last_question))
+
+(node q last_question
+      (text "Even now, talking to our own creator...\nWe can't see him, can we?")
+      (trig "I just want it to stop..." quit gong))

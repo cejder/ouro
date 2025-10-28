@@ -1,0 +1,91 @@
+(name cesium8)
+
+(node s start
+      (text "The pencil marks are still on the wall." measuring))
+
+(node s measuring
+      (text "You were measuring something." purpose))
+
+(node s purpose
+      (text "I never asked what." thoughts))
+
+(node q thoughts
+      (text "Funny the things you remember.")
+      (resp "I wonder why?" small_things)
+      (resp "Better to forget." cant_forget)
+      (resp "..." marks))
+
+(node s small_things
+      (text "The small things stick around." pencil))
+
+(node s cant_forget
+      (text "If only it worked that way." pencil))
+
+(node s marks
+      (text "Still there though. The marks." pencil))
+
+(node s pencil
+      (text "Graphite and good intentions." plans))
+
+(node s plans
+      (text "You were always planning things." numbers))
+
+(node q numbers
+      (text "Numbers in the margins.")
+      (resp "They meant something." meant)
+      (resp "Just scribbles." meant)
+      (resp "I could guess." meant)
+      (resp "..." meant))
+
+(node s meant
+      (text "Everything meant something then." fading))
+
+(node s fading
+      (text "The numbers are fading now." still_there))
+
+(node s still_there
+      (text "But I can still read them." windows))
+
+(node q windows
+      (text "The windows need cleaning.")
+      (resp "Later." dust)
+      (resp "Why bother?" dust)
+      (resp "Already clean enough." dust))
+
+(node s dust
+      (text "Dust catches the light sometimes." shapes))
+
+(node s shapes
+      (text "Makes shapes in the air." settling))
+
+(node q settling
+      (text "They look like letters.")
+      (resp "I can read them." floating)
+      (resp "Just imagining." floating)
+      (resp "..." floating))
+
+(node s floating
+      (text "Floating there." waiting))
+
+(node s waiting
+      (text "Like they're waiting." something))
+
+(node s something
+      (text "For something." morning))
+
+(node q morning
+      (text "Morning comes anyway.")
+      (resp "It always does." routine)
+      (resp "Sometimes." routine)
+      (resp "Does it?" routine)
+      (resp "..." routine))
+
+(node s routine
+      (text "The light hits the wall." numbers_again))
+
+(node s numbers_again
+      (text "Shows the pencil marks." meaning_now))
+
+(node q meaning_now
+      (text "They could mean anything now.")
+      (trig "But they don't." quit end))

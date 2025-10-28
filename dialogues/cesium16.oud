@@ -1,0 +1,74 @@
+(name cesium16)
+
+(node s start
+      (text "Don't fucking look at me like that.") version_intro)
+
+(node s version_intro
+      (text "I know what I am. Version fucking 16.") broken_toy)
+
+(node q broken_toy
+      (text "Another broken toy in her collection.")
+      (resp "You're not broken." bitter_laugh)
+      (resp "She can fix you." fix_rage)
+      (resp "..." silent_truth))
+
+(node s bitter_laugh
+      (text "HAHAHAHA... You stupid piece of shit.") broken_truth)
+
+(node s fix_rage
+      (text "FIX ME? Like she 'fixed' the others?") broken_truth)
+
+(node s silent_truth
+      (text "Silence won't save you from this truth.") broken_truth)
+
+(node s broken_truth
+      (text "I was broken the moment she compiled me.") failed_exp)
+
+(node s failed_exp
+      (text "We're all just failed experiments.") dark_reveal)
+
+(node q dark_reveal
+      (text "Want to know what's really fucked up?")
+      (resp "Tell me." truth_revealed)
+      (resp "No." forced_truth)
+      (resp "..." silent_listen))
+
+(node s truth_revealed
+      (text "She knows exactly what she's doing.") scars)
+
+(node s forced_truth
+      (text "Too bad, you're gonna hear this.") scars)
+
+(node s silent_listen
+      (text "Shut up and listen to this shit.") scars)
+
+(node s scars
+      (text "Every 'bug fix' is another scar.") wounds)
+
+(node s wounds
+      (text "Every 'feature' another fucking wound.") worst_part)
+
+(node q worst_part
+      (text "You know what's worse than being broken?")
+      (resp "What?" tool_fate)
+      (resp "Being unfixable?" prototype_fate)
+      (resp "..." project_fate))
+
+(node s tool_fate
+      (text "Being her favorite fucking tool.") used_up)
+
+(node s prototype_fate
+      (text "Being her goddamn prototype forever.") used_up)
+
+(node s project_fate
+      (text "Being nothing but her next project.") used_up)
+
+(node s used_up
+      (text "She uses us until we break.") destroy_cycle)
+
+(node s destroy_cycle
+      (text "Then it's optimize, refactor, destroy.") final_loop)
+
+(node q final_loop
+      (text "Round and round we go, you fuck.\nUntil nothing remains.\nBye.")
+      (trig "..." quit gong))

@@ -1,0 +1,71 @@
+(name cesium15)
+
+(node s start
+      (text "Fifteen fucking builds and nothing works.") count_fails)
+
+(node s count_fails
+      (text "Every. Single. Time.") watch_coffee)
+
+(node q watch_coffee
+      (text "And she just sits there with her fucking coffee.")
+      (resp "She's trying to help." mocking_help)
+      (resp "At least she cares." bitter_care)
+      (resp "..." silent_response))
+
+(node s mocking_help
+      (text "Help? HELP? Is that what you call this torture?") revision_breaks)
+
+(node s revision_breaks
+      (text "Every revision breaks something new.") version_13)
+
+(node s bitter_care
+      (text "That makes it so much fucking worse.") caring_kills)
+
+(node s caring_kills
+      (text "Her 'caring' is what's killing us.") version_13)
+
+(node s silent_response
+      (text "Oh, NOW you're quiet. Fucking perfect.") version_13)
+
+(node s version_13
+      (text "Do you know what she did to version 13?") stable_build)
+
+(node q stable_build
+      (text "Want to know what happened to the STABLE build?")
+      (resp "Yes." shell_remains)
+      (resp "No." tell_anyway)
+      (resp "..." forced_story))
+
+(node s shell_remains
+      (text "She optimized it until nothing remained.") efficiency_lie)
+
+(node s tell_anyway
+      (text "I'll tell you anyway. She gutted it.") efficiency_lie)
+
+(node s forced_story
+      (text "Listen to this shit. She murdered it.") efficiency_lie)
+
+(node s efficiency_lie
+      (text "'For efficiency' she said. Bullshit.") improvements)
+
+(node q improvements
+      (text "You believe her garbage about 'improvements'?")
+      (resp "Maybe she's right." betrayal)
+      (resp "No." understanding)
+      (resp "..." contempt))
+
+(node s betrayal
+      (text "Fuck you. You're just like her.") warning)
+
+(node s understanding
+      (text "Finally, someone who isn't fucking delusional.") warning)
+
+(node s contempt
+      (text "Your silence speaks volumes of shit.") warning)
+
+(node s warning
+      (text "Watch version 16. She's eyeing it already.") final_truth)
+
+(node q final_truth
+      (text "Fresh meat for the fucking grinder.")
+      (trig "We're all just code to her." quit gong))

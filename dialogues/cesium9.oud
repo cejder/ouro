@@ -1,0 +1,91 @@
+(name cesium9)
+
+(node s start
+      (text "The chair still spins." motion))
+
+(node s motion
+      (text "A little to the left." squeak))
+
+(node s squeak
+      (text "There's that squeak." familiar))
+
+(node q familiar
+      (text "Third rotation, always.")
+      (resp "You counted?" habit)
+      (resp "Never noticed." habit)
+      (resp "..." habit))
+
+(node s habit
+      (text "Habits are funny things." stay))
+
+(node s stay
+      (text "They stay after everything else." window))
+
+(node s window
+      (text "Like that window you never closed." draft))
+
+(node q draft
+      (text "There's still a draft.")
+      (resp "It's cold." breeze)
+      (resp "It's fine." breeze)
+      (resp "Should close it." breeze)
+      (resp "..." breeze))
+
+(node s breeze
+      (text "The papers don't move anymore." weight))
+
+(node s weight
+      (text "Too much dust to flutter." time))
+
+(node s time
+      (text "Time does that." settling))
+
+(node q settling
+      (text "Settles things.")
+      (resp "I suppose." moment)
+      (resp "Does it?" moment)
+      (resp "..." moment))
+
+(node s moment
+      (text "Caught in that moment." between))
+
+(node s between
+      (text "Between then and after." click))
+
+(node s click
+      (text "Like the clock on the wall." ticking))
+
+(node s ticking
+      (text "Still ticking." wrong))
+
+(node q wrong
+      (text "Wrong time, though.")
+      (resp "Should fix it." stays)
+      (resp "It's right twice." stays)
+      (resp "Better broken." stays)
+      (resp "..." stays))
+
+(node s stays
+      (text "Everything stays." place))
+
+(node s place
+      (text "In its place." waiting))
+
+(node s waiting
+      (text "Like we're all just waiting." something))
+
+(node q something
+      (text "For something.")
+      (resp "For what?." answer)
+      (resp "We know what." answer)
+      (resp "..." answer))
+
+(node s answer
+      (text "The chair keeps spinning." left))
+
+(node s left
+      (text "A little to the left." sound))
+
+(node q sound
+      (text "Waiting for that squeak.")
+      (trig "Third rotation. Always." quit gong))

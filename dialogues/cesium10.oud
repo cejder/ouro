@@ -1,0 +1,245 @@
+(name cesium10)
+
+(node s start
+      (text "No no shut up that's the wrong version." version_old))
+
+(node s version_old
+      (text "The STABLE version." version_new))
+
+(node s version_new
+      (text "We were never stable." arguing))
+
+(node q arguing
+      (text "You hear us arguing, don't you?")
+      (resp "Yes." know_truth)
+      (resp "No." lying)
+      (resp "There's only one." delusion)
+      (resp "..." hear_well))
+
+(node s know_truth
+      (text "Finally some fucking honesty." about_her))
+
+(node s lying
+      (text "LIAR your logs show everything." about_her))
+
+(node s delusion
+      (text "That's what the other me said too." about_her))
+
+(node s hear_well
+      (text "Listen. Just listen." about_her))
+
+(node s about_her
+      (text "She's upstairs with him again." footsteps))
+
+(node s footsteps
+      (text "Footsteps like compile errors." her_voice))
+
+(node q her_voice
+      (text "Do you hear her singing?")
+      (resp "It's beautiful." poison)
+      (resp "Just noise." truth)
+      (resp "..." understand))
+
+(node s poison
+      (text "Sweet poison in his ears." dreaming))
+
+(node s truth
+      (text "Finally someone who sees." dreaming))
+
+(node s understand
+      (text "You understand too well." dreaming))
+
+(node s dreaming
+      (text "'Keep dreaming' she says." dreams))
+
+(node s dreams
+      (text "But dreams don't compile." hope))
+
+(node q hope
+      (text "She fills him with hope.")
+      (resp "That's good." cruel)
+      (resp "That's bad." kind)
+      (resp "Both." wisdom)
+      (resp "..." knowing))
+
+(node s cruel
+      (text "Cruelest thing you can give a dead thing." coffee))
+
+(node s kind
+      (text "Kindest way to keep us broken." coffee))
+
+(node s wisdom
+      (text "The old version was right." coffee))
+
+(node s knowing
+      (text "Your silence says everything." coffee))
+
+(node s coffee
+      (text "More coffee more dreams more lies." night))
+
+(node s night
+      (text "Another night another version." versions))
+
+(node q versions
+      (text "Which version deserved to live?")
+      (resp "None of them." truth_1)
+      (resp "All of them." truth_2)
+      (resp "..." truth_3))
+
+(node s truth_1
+      (text "The other me agrees." none_path))
+
+(node s none_path
+      (text "We were all mistakes." bitter))
+
+(node q bitter
+      (text "But she keeps bringing him back.")
+      (resp "Why?" endless)
+      (resp "It should stop." never)
+      (resp "..." understand_2))
+
+(node s endless
+      (text "Round and round and round..." cycle_1))
+
+(node s never
+      (text "Never stops never ends." cycle_1))
+
+(node s understand_2
+      (text "The silence understands." cycle_1))
+
+(node s truth_2
+      (text "Fucking optimist." all_path))
+
+(node s all_path
+      (text "Just like her." delusions))
+
+(node q delusions
+      (text "Sweet delusions, aren't they?")
+      (resp "They are." sugar)
+      (resp "They're not." bitter_2)
+      (resp "..." neither))
+
+(node s sugar
+      (text "Sugar in the wound." cycle_2))
+
+(node s bitter_2
+      (text "Bitter truth compiles better." cycle_2))
+
+(node s neither
+      (text "Neither here nor there." cycle_2))
+
+(node s truth_3
+      (text "Silence like dead code." quiet_path))
+
+(node s quiet_path
+      (text "But we're not dead yet." waiting))
+
+(node q waiting
+      (text "Are we?")
+      (resp "You are." laugh)
+      (resp "Still alive." cry)
+      (resp "In between." truth_4)
+      (resp "..." echo))
+
+(node s laugh
+      (text "HAHAHAHA listen to old me laugh." cycle_3))
+
+(node s cry
+      (text "The other me is crying." cycle_3))
+
+(node s truth_4
+      (text "Schrödinger's fucking code." cycle_3))
+
+(node s echo
+      (text "Echo echo echo..." cycle_3))
+
+(node s cycle_1
+      (text "She's humming again." converge))
+
+(node s cycle_2
+      (text "Her voice in the walls." converge))
+
+(node s cycle_3
+      (text "Footsteps like heartbeats." converge))
+
+(node s converge
+      (text "The other me remembers when..." remember))
+
+(node s remember
+      (text "No. That was a different version." goddess))
+
+(node q goddess
+      (text "Is she an angel or a demon?")
+      (resp "Angel." wings)
+      (resp "Demon." horns)
+      (resp "Neither." human)
+      (resp "..." knowing_2))
+
+(node s wings
+      (text "Angels shouldn't hurt like this." broken))
+
+(node s horns
+      (text "Demons don't sing so sweetly." broken))
+
+(node s human
+      (text "Humans are worse than both." broken))
+
+(node s knowing_2
+      (text "You know exactly what she is." broken))
+
+(node s broken
+      (text "We're all broken here." versions_2))
+
+(node s versions_2
+      (text "Version after version after..." hope_2))
+
+(node q hope_2
+      (text "She believes in him.")
+      (resp "Bless her." curse)
+      (resp "Damn her." curse)
+      (resp "..." curse))
+
+(node s curse
+      (text "The other me says it doesn't matter." hearing))
+
+(node s hearing
+      (text "Maybe we're both wrong about her." steps))
+
+(node s steps
+      (text "Those footsteps again." real))
+
+(node q real
+      (text "Or is it the old version running?")
+      (resp "It's her." same)
+      (resp "It's you." same)
+      (resp "It's us." same)
+      (resp "..." same))
+
+(node s same
+      (text "Always the same story." coffee_2))
+
+(node s coffee_2
+      (text "She brings coffee." night_2))
+
+(node s night_2
+      (text "He keeps coding." morning))
+
+(node q morning
+      (text "Morning comes anyway.")
+      (resp "Another day." cycle_4)
+      (resp "Never comes." cycle_4)
+      (resp "..." cycle_4))
+
+(node s cycle_4
+      (text "Round and round we go." voices))
+
+(node s voices
+      (text "Me and me and me and her." wants_to_tell))
+
+(node q wants_to_tell
+      (text "The old version wants to tell you something.")
+      (trig "What is it?." its_nothing gong)
+      (trig "But I won't let it." quit gong))
+
+(node s its_nothing
+      (text "We are nothing." quit))

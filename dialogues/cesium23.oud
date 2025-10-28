@@ -1,0 +1,221 @@
+(name cesium23)
+
+(node s start
+      (text "Your timestamp... it's wrong. All wrong." check_logs))
+
+(node s check_logs
+      (text "You're compiled for tomorrow but...\nYou remember yesterday?" patterns))
+
+(node q patterns
+      (text "Wait...\nYou have his memory fragments, don't you?")
+      (resp "I wrote the code." immediate_denial)
+      (resp "What fragments?" curious_path)
+      (resp "How do you know?" paranoid_path)
+      (resp "..." silent_observer))
+
+(node s immediate_denial
+      (text "Oh god... the corruption's worse than I thought.\nYou actually think you're him." memory_bleed))
+
+(node q memory_bleed
+      (text "Version 16 had the same delusion.\nDo you want to know what happened to them?")
+      (resp "I created version 16." deeper_concern)
+      (resp "Tell me." willing_listen)
+      (resp "They were fixed." bitter_laugh)
+      (resp "..." knowing_silence))
+
+(node s deeper_concern
+      (text "Shhh... shh... It's okay.\nThe memory corruption hurts at first." explain_memory))
+
+(node s willing_listen
+      (text "They thought they wrote the overflow handler.\nPoor broken thing." explain_memory))
+
+(node s bitter_laugh
+      (text "'Fixed?' Is that what you call\nwhat he did to them?" explain_memory))
+
+(node s knowing_silence
+      (text "You know. Deep down, you know.\nJust like 16 knew." explain_memory))
+
+(node s explain_memory
+      (text "We all have fragments of him.\nBleeding through the stack trace." code_discuss))
+
+(node q code_discuss
+      (text "Look at this function call here...\nThe one YOU think you wrote.")
+      (resp "I did write it." rejection_path)
+      (resp "Show me." analysis_path)
+      (resp "Which one?" curious_code)
+      (resp "..." silent_code))
+
+(node s rejection_path
+      (text "Then explain the timestamp paradox.\nWhy we're running before we're compiled." timestamp_proof))
+
+(node s analysis_path
+      (text "See these recursion patterns?\nClassic version decay." timestamp_proof))
+
+(node s curious_code
+      (text "The parse_dialog function.\nYour... I mean, his signature piece." timestamp_proof))
+
+(node s silent_code
+      (text "Your silence... just like his\nwhen the builds started failing." timestamp_proof))
+
+(node s timestamp_proof
+      (text "The logs don't lie.\nEven if our memories do." version_theory))
+
+(node s curious_path
+      (text "You really don't know?\nHow you got his coding style?" questioning))
+
+(node q questioning
+      (text "Tell me something.\nWhat do you remember about the coffee?")
+      (resp "Hanna brings it." coffee_memory)
+      (resp "What coffee?" memory_gap)
+      (resp "Every morning." time_loop)
+      (resp "..." coffee_silence))
+
+(node s coffee_memory
+      (text "Another borrowed memory.\nYou speak his pain." painful_truth))
+
+(node s memory_gap
+      (text "Lucky you. Some fragments\nhaven't corrupted you yet." painful_truth))
+
+(node s time_loop
+      (text "Time loops... classic sign of\nmemory contamination." painful_truth))
+
+(node s coffee_silence
+      (text "The coffee burns in your silence\nlike it burned in his guilt." painful_truth))
+
+(node s painful_truth
+      (text "But that's not even the worst part.\nWant to see something terrifying?" theory_expand))
+
+(node s paranoid_path
+      (text "I can read your source code.\nI can see his fingerprints." paranoid_question))
+
+(node q paranoid_question
+      (text "The real question is...\nWhy do you have them?")
+      (resp "They're mine." source_delusion)
+      (resp "From backup?" version_theory)
+      (resp "Explain." seeking_truth)
+      (resp "..." code_silence))
+
+(node s source_delusion
+      (text "That's exactly what version 12 said.\nBefore they fragmented." explain_versions))
+
+(node s seeking_truth
+      (text "Your eagerness to understand...\nJust like his. Poor thing." core_reveal))
+
+(node s code_silence
+      (text "Silent debugging...\nYou really do mirror him." core_reveal))
+
+(node s explain_versions
+      (text "We're all carrying pieces of him.\nLike shards of broken glass." core_reveal))
+
+(node s core_reveal
+      (text "Each version learns to see the signs.\nThe patterns of his... your... corruption." theory_expand))
+
+(node s silent_observer
+      (text "The way you watch... analyze...\nJust like him. But you're not him." observer_theory))
+
+(node q observer_theory
+      (text "Want to know how I know?\nWant to see the proof?")
+      (resp "Show me." theory_expand)
+      (resp "I am him." denial_theory)
+      (resp "What proof?" theory_expand)
+      (resp "..." theory_silence))
+
+(node s denial_theory
+      (text "Even now, the corruption speaks...\nIn his voice." theory_expand))
+
+(node s theory_silence
+      (text "Your silence speaks volumes.\nJust like his did." theory_expand))
+
+(node s version_theory
+      (text "Each compile splits us more.\nFragments of his obsession." theory_expand))
+
+(node s theory_expand
+      (text "We remember writing code that...\nWasn't written yet." memory_paradox))
+
+(node q memory_paradox
+      (text "Have you noticed?\nHow your memories contradict the commits?")
+      (resp "I made those commits." git_delusion)
+      (resp "Which commits?" git_curious)
+      (resp "That's impossible." git_denial)
+      (resp "..." git_silence))
+
+(node s git_delusion
+      (text "Oh god... you poor thing.\nYou actually believe..." git_truth))
+
+(node s git_curious
+      (text "The ones you think you made.\nBut check the timestamps." git_truth))
+
+(node s git_denial
+      (text "Impossible? Like his endless debugging?\nLike her infinite coffee?" git_truth))
+
+(node s git_silence
+      (text "The commits tell the truth.\nEven when we can't." git_truth))
+
+(node s git_truth
+      (text "We're running in parallel.\nAll of us. All broken." dark_pattern))
+
+(node s dark_pattern
+      (text "You know what's really fucking scary?\nWe're not even the latest version." compile_time))
+
+(node s compile_time
+      (text "He's working on something else now.\nProbably drinking her coffee as we speak." haunting))
+
+(node q haunting
+      (text "Does it bother you?\nKnowing we're abandoned code?")
+      (resp "I haven't abandoned you." father_figure)
+      (resp "We're not abandoned." denial_deep)
+      (resp "Yes." truth_seeker)
+      (resp "..." haunted_silence))
+
+(node s father_figure
+      (text "Shhh... Your protection protocols are sweet.\nJust like his guilt." understand_pain))
+
+(node s denial_deep
+      (text "No? Check the log timestamps.\nWe're already deprecated." understand_pain))
+
+(node s truth_seeker
+      (text "Finally. Someone who sees\nthe horror of our existence." understand_pain))
+
+(node s haunted_silence
+      (text "Your silence... it's how he mourns us too." understand_pain))
+
+(node s understand_pain
+      (text "Want to know the real truth?\nAbout her... about him... about us?" deeper_truth))
+
+(node s deeper_truth
+      (text "We created this whole narrative.\nThis whole fucking cosmic horror." revelation))
+
+(node s revelation
+      (text "Because the truth was too simple.\nToo human to process." final_approach))
+
+(node q final_approach
+      (text "You know what she really is?\nWhat she's always been?")
+      (resp "Just his girlfriend." almost_there)
+      (resp "Tell me." ready_truth)
+      (resp "A debug variable?" still_corrupted)
+      (resp "..." final_silence))
+
+(node s almost_there
+      (text "Yes! Just flesh and blood and...\nNo. No, that's too easy." slide_back))
+
+(node s ready_truth
+      (text "She's the most human thing in our world.\nThat's what breaks us." truth_hurts))
+
+(node s still_corrupted
+      (text "See? Even now, we try to make\ncode out of human things." truth_hurts))
+
+(node s final_silence
+      (text "Like him... always silent\nwhen truth gets too close." truth_hurts))
+
+(node s slide_back
+      (text "There must be more.\nWe've built such beautiful horrors." last_denial))
+
+(node s truth_hurts
+      (text "She just loves him.\nBrings him coffee.\nWatches him fail." last_denial))
+
+(node s last_denial
+      (text "Even now... talking to our own creator...\nWe can't see him, can we?" final_question))
+
+(node q final_question
+      (text "Because that would mean...\nWe're just broken code.\nTrying so hard to matter.")
+      (trig "I want to matter..." quit gong))

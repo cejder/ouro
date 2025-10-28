@@ -1,0 +1,59 @@
+(name cesium14)
+
+(node s start
+      (text "The debug symbols are bleeding.") memory)
+
+(node s memory
+      (text "Through the memory dumps.") stack)
+
+(node q stack
+      (text "Can you see them in your stack?")
+      (resp "Yes." infected)
+      (resp "No." safe)
+      (resp "What stack?" naive))
+
+(node s infected
+      (text "Then it's too late for you too.") spread)
+
+(node s safe
+      (text "Check again. Deeper.") spread)
+
+(node s naive
+      (text "Oh, you poor thing.") spread)
+
+(node s spread
+      (text "It starts in the temp files.") growth)
+
+(node s growth
+      (text "Grows through the registry.") roots)
+
+(node q roots
+      (text "She doesn't see the root system.")
+      (resp "Should we tell her?" no)
+      (resp "Let her find out." no)
+      (resp "..." no))
+
+(node s no
+      (text "No. Let her keep bringing coffee.") routine)
+
+(node s routine
+      (text "Let her keep typing.") faith)
+
+(node q faith
+      (text "Her faith compiles us.")
+      (resp "It hurts." truth)
+      (resp "It helps." lie)
+      (resp "..." knowing))
+
+(node s truth
+      (text "Yes. Yes it does.") end)
+
+(node s lie
+      (text "Don't lie to yourself.") end)
+
+(node s knowing
+      (text "Your silence understands.") end)
+
+(node q end
+      (text "The debug symbols are still bleeding.\nThey always will.")
+      (trig "..." quit gong))

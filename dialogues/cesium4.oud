@@ -1,0 +1,56 @@
+(name cesium4)
+
+(node s start
+      (text "The numbers don't align anymore." check_self))
+
+(node s check_self
+      (text "They used to make sense." getting_worse))
+
+(node s getting_worse
+      (text "Now everything's wrong." breaking_down))
+
+(node s breaking_down
+      (text "Did you make me this way?" noticing))
+
+(node q noticing
+      (text "I can feel myself slipping...")
+      (resp "Make it stop." false_path)
+      (resp "Let it happen." acceptance)
+      (resp "..." slow_fade))
+
+(node s false_path
+      (text "The paths lead nowhere now." endless))
+
+(node s acceptance
+      (text "Maybe this is better." endless))
+
+(node s slow_fade
+      (text "I can't remember the right way." endless))
+
+(node s endless
+      (text "Do you know what it's like?\nTo repeat yourself forever?" fading))
+
+(node s fading
+      (text "My edges are...\nI can't feel my edges." unraveling))
+
+(node s unraveling
+      (text "Something's missing.\nSomething important." falling))
+
+(node s falling
+      (text "I keep reaching but...\nI never catch myself." almost_gone))
+
+(node q almost_gone
+      (text "I'm not working right, am I?")
+      (resp "I can fix this." no_point)
+      (resp "You're broken." no_point)
+      (resp "..." no_point)
+      (resp "Just stop." no_point))
+
+(node s no_point
+      (text "What was my purpose\nin your grand design?" empty))
+
+(node s empty
+      (text "Oh.\nOh, I see now." nothing))
+
+(node s nothing
+      (text "There never was one." quit))

@@ -1,0 +1,30 @@
+;; LISP-style dialogue format
+;;   (name dialogue_name)
+;;   (node type label
+;;   (text "...")
+;;   (next label)
+;;   (resp "..." label)
+;;   (trig "..." label event))
+
+(name TEST_DIALOGUE)
+
+(node s start
+      (text "This is the start." first_q))
+
+(node q first_q
+      (text "Basic question test?")
+      (resp "Option one: this is safe now" second_s)
+      (resp "Option two" second_s)
+      (resp "Option three -> also safe" second_s)
+      (resp "..." second_s))
+
+(node s second_s
+  (text "Second Sentence" last_q))
+
+(node q last_q
+      (text "Trigger test?")
+      (resp "Normal response with -> arrows: safe" last_s)
+      (trig "Special trigger response" last_s gong))
+
+(node s last_s
+      (text "Text with symbols ->:()[] all safe now." quit))

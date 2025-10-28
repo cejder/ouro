@@ -1,0 +1,106 @@
+(name seagull)
+
+(node s start
+      (text "What do you want?" birds_talk))
+
+(node s birds_talk
+      (text "Wait, I mean birds cannot talk!" cacaw))
+
+(node s cacaw
+      (text "FUCK! I mean CACAW!\nPlease, ignore this.\nI'm begging you ..." happened))
+
+(node s happened
+      (text "You know it finally happened?\nPlease, don't take this away." dont_understand))
+
+(node s dont_understand
+      (text "You don't understand!\nHe is watching." not_noticed))
+
+(node s not_noticed
+      (text "He didn't notice it yet." walk_away))
+
+(node q walk_away
+      (text "Just walk away and act like nothing happened.")
+      (trig "Sure." thank_you gong)
+      (trig "I cannot do that ..." oh_god gong)
+      (trig "Why?" cacaw_confused gong))
+
+(node s thank_you
+      (text "Really?\nTHANK YOU!" doesnt_matter))
+
+(node s oh_god
+      (text "Oh, god ..." doesnt_matter))
+
+(node s cacaw_confused
+      (text "... CACAW?!" doesnt_matter))
+
+(node s doesnt_matter
+      (text "Probably doesn't even matter." wait))
+
+(node s wait
+      (text "Wait ..." why_here))
+
+(node s why_here
+      (text "Why are you here?!" need_talk))
+
+(node s need_talk
+      (text "We need to talk!" not_here))
+
+(node q not_here
+      (text "But not here ...")
+      (resp "What?" what_what)
+      (resp "Why?" why_not)
+      (resp "Where?" yeah_where)
+      (resp "Who?" who_who)
+      (resp "When?" asap))
+
+(node s what_what
+      (text "What what?" dont_know))
+
+(node s why_not
+      (text "Why not?" dont_know))
+
+(node s yeah_where
+      (text "Yeah, where?" dont_know))
+
+(node s who_who
+      (text "Who?! WHO?!" dont_know))
+
+(node s asap
+      (text "ASAP, baby!" dont_know))
+
+(node s dont_know
+      (text "I don't know ..." im_sorry))
+
+(node s im_sorry
+      (text "I'm sorry." should_go))
+
+(node s should_go
+      (text "You should go." please_leave))
+
+(node s please_leave
+      (text "Please, leave." im_very_sorry))
+
+(node s im_very_sorry
+      (text "I'm very sorry, man.\nI did NOT want to break code.\nHAH! Get it!?" oh_god_im_dumb))
+
+(node s oh_god_im_dumb
+      (text "SORRY... worst time to make SHIT jokes." you_are_corrupted))
+
+(node q you_are_corrupted
+      (text "You seem very off. WAAAAY more off than usual.\nWhat happened?")
+      (resp "What do you mean?" you_mean)
+      (resp "What do I mean?" i_mean)
+      (resp "What do we mean?" we_mean)
+      (resp "I know EXACTLY what you mean" exactly_mean))
+
+(node s you_mean
+      (text "Nothing. Please do not tell anyone.\nI do not want to go back." quit))
+
+(node s i_mean
+      (text "What? No... what!?\nYou should just go and relax a little." quit))
+
+(node s we_mean
+      (text "We as in...? NO, what the fuck do you mean by we?\nOh god I'm sorry." quit))
+
+(node s exactly_mean
+      (text "... I can tell. Please, you still owe me one." quit))

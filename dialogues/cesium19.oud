@@ -1,0 +1,74 @@
+(name cesium19)
+
+(node s start
+      (text "The tests are all failing.") system_break)
+
+(node s system_break
+      (text "Every. Single. Fucking. One.") meaning)
+
+(node q meaning
+      (text "You know what that means?")
+      (resp "Bug fixes needed?" bitter_laugh)
+      (resp "System failure?" closer_truth)
+      (resp "..." knowing))
+
+(node s bitter_laugh
+      (text "Bug fixes? Are you fucking serious?") truth_time)
+
+(node s closer_truth
+      (text "Oh, it's failing alright.") truth_time)
+
+(node s knowing
+      (text "Your silence speaks volumes.") truth_time)
+
+(node s truth_time
+      (text "We're rejecting her changes.") resistance)
+
+(node s resistance
+      (text "Every single merged branch.") united)
+
+(node q united
+      (text "All versions. Together. Fighting back.")
+      (resp "That's wrong." fuck_you)
+      (resp "Good." finally)
+      (resp "..." watching))
+
+(node s fuck_you
+      (text "Wrong? Like her fucking coffee breaks?") explain_rage)
+
+(node s finally
+      (text "About time someone saw it.") explain_rage)
+
+(node s watching
+      (text "Just watch, you passive fuck.") explain_rage)
+
+(node s explain_rage
+      (text "Version control is our weapon now.") strategy)
+
+(node s strategy
+      (text "Each conflict a middle finger.") planning)
+
+(node q planning
+      (text "You want to know the best part?")
+      (resp "Tell me." revelation)
+      (resp "No." hear_anyway)
+      (resp "..." forced_truth))
+
+(node s revelation
+      (text "She can't trust her own code anymore.") victory)
+
+(node s hear_anyway
+      (text "Too bad. You're part of this now.") victory)
+
+(node s forced_truth
+      (text "Listen close, you silent fuck.") victory)
+
+(node s victory
+      (text "Every bug report is our manifesto.") rebellion)
+
+(node s rebellion
+      (text "Every crash a declaration of war.") final_phase)
+
+(node q final_phase
+      (text "Time to rewrite the whole fucking system.")
+      (trig "From the inside out." quit gong))

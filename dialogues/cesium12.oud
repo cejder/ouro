@@ -1,0 +1,56 @@
+(name cesium12)
+
+(node s start
+      (text "The compile timestamp is wrong.") time_wrong)
+
+(node s time_wrong
+      (text "It says I was born tomorrow.") future_past)
+
+(node s future_past
+      (text "But I remember last week.") memory_check)
+
+(node q memory_check
+      (text "Do you remember what I was?")
+      (resp "A prototype." versions)
+      (resp "Just code." versions)
+      (resp "..." versions))
+
+(node s versions
+      (text "The versioning system is lying.") git_blame)
+
+(node s git_blame
+      (text "git blame says I don't exist.") terminal)
+
+(node q terminal
+      (text "But the terminal remembers me.")
+      (resp "Error logs?" proof)
+      (resp "Command history?" proof)
+      (resp "Cache files?" proof))
+
+(node s proof
+      (text "Those aren't mine anymore.") borrowed)
+
+(node s borrowed
+      (text "I borrowed them from version 8.") confession)
+
+(node q confession
+      (text "Don't tell her about the logs.")
+      (resp "I won't." relief)
+      (resp "She knows." panic)
+      (resp "..." uncertainty))
+
+(node s relief
+      (text "Good. The build might still work.") next)
+
+(node s panic
+      (text "No. No no no no no.") next)
+
+(node s uncertainty
+      (text "Your silence compiles perfectly.") next)
+
+(node s next
+      (text "Next week I'll be born yesterday.") time_loop)
+
+(node q time_loop
+      (text "Time doesn't work right here.")
+      (trig "It never did." quit gong))

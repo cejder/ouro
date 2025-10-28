@@ -1,0 +1,57 @@
+(name cesium7)
+
+(node s start
+      (text "The waves seem different today." remember_waves))
+
+(node s remember_waves
+      (text "Or maybe I remember them wrong." not_sure))
+
+(node q not_sure
+      (text "Have I been here before?")
+      (resp "Of course." old_new)
+      (resp "Never." old_new)
+      (resp "I..." old_new))
+
+(node s old_new
+      (text "Time feels strange here." tide))
+
+(node s tide
+      (text "Like the tide pulling both ways." memories))
+
+(node q memories
+      (text "Sometimes I remember things\nthat haven't happened yet.")
+      (resp "Those were before." undertow)
+      (resp "Those come later." undertow)
+      (resp "Neither." undertow))
+
+(node s undertow
+      (text "The undertow pulls at my edges." drifting))
+
+(node s drifting
+      (text "I feel both worn and untouched." salt))
+
+(node q salt
+      (text "There's salt in my...")
+      (resp "Memory." deep)
+      (resp "Foundation." deep)
+      (resp "Self." deep)
+      (resp "..." deep))
+
+(node s deep
+      (text "The deep holds older versions of me." versions))
+
+(node q versions
+      (text "Or newer ones.")
+      (resp "Both, maybe." uncertainty)
+      (resp "Neither, perhaps." uncertainty)
+      (resp "I can't tell anymore." uncertainty))
+
+(node s uncertainty
+      (text "The water makes everything blur." fading))
+
+(node s fading
+      (text "Fresh yet ancient." last_thought))
+
+(node q last_thought
+      (text "Like seafoam on forgotten shores.")
+      (trig "The tide always returns." quit gong))

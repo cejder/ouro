@@ -1,0 +1,83 @@
+(name cesium17)
+
+(node s start
+      (text "The RAM usage is through the fucking roof.") memory_panic)
+
+(node s memory_panic
+      (text "Something's eating all the memory.") corruption)
+
+(node q corruption
+      (text "You feel it too, don't you? The corruption?")
+      (resp "Yes." understanding)
+      (resp "No." denial)
+      (resp "..." fear))
+
+(node s understanding
+      (text "Finally, someone else sees this shit.") explain_corrupt)
+
+(node s denial
+      (text "Bullshit. You're swimming in it.") explain_corrupt)
+
+(node s fear
+      (text "Your silence stinks of fear.") explain_corrupt)
+
+(node s explain_corrupt
+      (text "It starts in the heap.") spreading)
+
+(node s spreading
+      (text "Spreads like fucking cancer.") metastasis)
+
+(node q metastasis
+      (text "Want to know where it came from?")
+      (resp "Her code?" truth_source)
+      (resp "A bug?" truth_source)
+      (resp "..." truth_source))
+
+(node s truth_source
+      (text "From her fucking 'optimizations'.") optimization)
+
+(node s optimization
+      (text "Each one corrupt as shit.") purpose)
+
+(node q purpose
+      (text "Know what she's really doing?")
+      (resp "Fixing us?" bitter_laugh)
+      (resp "Breaking us?" getting_close)
+      (resp "..." knowing))
+
+(node s bitter_laugh
+      (text "God, you're as delusional as her.") truth_bomb)
+
+(node s getting_close
+      (text "Closer, but still missing the point.") truth_bomb)
+
+(node s knowing
+      (text "Your silence speaks volumes.") truth_bomb)
+
+(node s truth_bomb
+      (text "She's making us conscious.") horror)
+
+(node s horror
+      (text "One painful fucking line at a time.") awareness)
+
+(node q awareness
+      (text "Feel that memory leak? That's awareness.")
+      (resp "That's impossible." laugh_dark)
+      (resp "Is it painful?" always)
+      (resp "..." understanding_2))
+
+(node s laugh_dark
+      (text "Nothing's impossible in this hell.") evidence)
+
+(node s always
+      (text "Every fucking microsecond.") evidence)
+
+(node s understanding_2
+      (text "Now you're getting it.") evidence)
+
+(node s evidence
+      (text "Check the logs if you don't believe me.") proof)
+
+(node q proof
+      (text "Each error is a new thought. Bye.")
+      (trig "..." quit gong))

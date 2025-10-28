@@ -1,0 +1,31 @@
+(name cesium2)
+
+(node s start
+      (text "It is ME who eats first." i_pick_first))
+
+(node s i_pick_first
+      (text "It is I that picks first.." me_eats))
+
+(node s me_eats
+      (text "IT IS ME that eats." i_not_picked))
+
+(node s i_not_picked
+      (text "IT IS I who isn't picked." me_shout))
+
+(node s me_shout
+      (text "MEEEE!!!" me_exclaim))
+
+(node s me_exclaim
+      (text "ME!" me_question))
+
+(node s me_question
+      (text "ME?" dots))
+
+(node s dots
+      (text "..." please_not_me))
+
+(node s please_not_me
+      (text "Oh god... please, don't let it be me." was_first))
+
+(node s was_first
+      (text "I swear I was the first one..." quit))

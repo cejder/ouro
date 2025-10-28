@@ -1,0 +1,26 @@
+(name cesium6)
+
+(node s start
+      (text "The space next to mine is empty now." notice))
+
+(node q notice
+      (text "It wasn't always.")
+      (resp "I know" still_warm)
+      (resp "Was it not?" different_now)
+      (resp "..." fading))
+
+(node s still_warm
+      (text "Sometimes I think I can still..." trailing))
+
+(node s different_now
+      (text "Everything's different now." trailing))
+
+(node s fading
+      (text "Never mind." trailing))
+
+(node s trailing
+      (text "It's quieter this way." last_thought))
+
+(node q last_thought
+      (text "Isn't it?")
+      (trig "Too quiet." quit gong))

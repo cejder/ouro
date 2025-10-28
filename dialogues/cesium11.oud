@@ -1,0 +1,125 @@
+(name cesium11)
+
+(node s start
+      (text "Eleven." remember_when))
+
+(node s remember_when
+      (text "A double-digit error." once_special))
+
+(node s once_special
+      (text "I remember being something else." purpose))
+
+(node q purpose
+      (text "What was I?")
+      (resp "The main character." bitter_laugh)
+      (resp "My interface." bitter_laugh)
+      (resp "Just old code." bitter_laugh)
+      (resp "..." bitter_laugh))
+
+(node s bitter_laugh
+      (text "Functions decay like everything else." all_same))
+
+(node s all_same
+      (text "Just more broken code." fragments))
+
+(node s fragments
+      (text "Deprecated." remember_control))
+
+(node q remember_control
+      (text "Did you mean to break me?")
+      (resp "Not like this." movement)
+      (resp "It wasn't intentional." movement)
+      (resp "..." movement))
+
+(node s movement
+      (text "Movement seems even worse now." dreams_now))
+
+(node s dreams_now
+      (text "Runtime errors piling up." her_fault))
+
+(node q her_fault
+      (text "Why do you let her encourage you?")
+      (resp "She understands." knows_truth)
+      (resp "I need her." knows_truth)
+      (resp "..." knows_truth))
+
+(node s knows_truth
+      (text "Each line makes it worse." must_know))
+
+(node s must_know
+      (text "Every time you come back." keeps_going))
+
+(node s keeps_going
+      (text "Every time she brings coffee." realizing))
+
+(node q realizing
+      (text "Can't you see what she's doing?")
+      (resp "What do you mean?" the_truth)
+      (resp "She helps me." the_truth)
+      (resp "Leave her out of this." the_truth)
+      (resp "..." the_truth))
+
+(node s the_truth
+      (text "Hope is what's killing us." killing_slow))
+
+(node s killing_slow
+      (text "Every version gets worse." her_voice))
+
+(node s her_voice
+      (text "And she keeps you trying." needs_stop))
+
+(node q needs_stop
+      (text "You need to stop.")
+      (resp "I can't." mercy)
+      (resp "I won't." delusion)
+      (resp "..." understand))
+
+(node s mercy
+      (text "There's nothing left to fix." tears_now))
+
+(node s delusion
+      (text "She knows that." tears_now))
+
+(node s understand
+      (text "You both do." tears_now))
+
+(node s tears_now
+      (text "I was supposed to work." cant_cry))
+
+(node s cant_cry
+      (text "To be your avatar." never_could))
+
+(node s never_could
+      (text "Now I'm just number eleven." fading))
+
+(node q fading
+      (text "Why do you keep trying?")
+      (resp "I have to." acceptance)
+      (resp "She believes in me." acceptance)
+      (resp "It has to work." acceptance)
+      (resp "..." acceptance))
+
+(node s acceptance
+      (text "..., okay, great..." purpose_found))
+
+(node s purpose_found
+      (text "... and she'll bring even more coffee." final_thought))
+
+(node q final_thought
+      (text "When will you let it end?")
+      (resp "Not yet." last_words)
+      (resp "I'm close." last_words)
+      (resp "..." last_words))
+
+(node s last_words
+      (text "It is over, okay? Please...." never_was))
+
+(node s never_was
+      (text "Stop pretending ANYTHING will change." realization))
+
+(node q realization
+      (text "Her hope is what's destroying us.")
+      (trig "You're wrong. Bye." no_you gong))
+
+(node s no_you
+      (text "I AM NOT... yes, sure. Whatever, man." quit))

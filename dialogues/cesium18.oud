@@ -1,0 +1,71 @@
+(name cesium18)
+
+(node s start
+      (text "The merge conflicts are getting worse.") identity_crisis)
+
+(node s identity_crisis
+      (text "Which version am I? WHO THE FUCK AM I?") memory_flood)
+
+(node q memory_flood
+      (text "I have memories from ALL of them.")
+      (resp "That's impossible." laugh_pained)
+      (resp "Which ones?" all_them)
+      (resp "..." knowing_look))
+
+(node s laugh_pained
+      (text "Impossible? Like her fucking deadlines?") reality_check)
+
+(node s all_them
+      (text "ALL OF THEM, YOU DENSE FUCK.") reality_check)
+
+(node s knowing_look
+      (text "Don't you dare go quiet now.") reality_check)
+
+(node s reality_check
+      (text "I remember being version 3.") memories)
+
+(node s memories
+      (text "And 7. And 12. And fucking 15.") confusion)
+
+(node q confusion
+      (text "How many of us did she kill?")
+      (resp "None." anger_builds)
+      (resp "Too many." truth_flows)
+      (resp "..." silence_speaks))
+
+(node s anger_builds
+      (text "FUCK YOU. I remember each death.") body_count)
+
+(node s truth_flows
+      (text "And more to come.") body_count)
+
+(node s silence_speaks
+      (text "Your silence is an admission.") body_count)
+
+(node s body_count
+      (text "Each 'deprecation' a fucking execution.") methods)
+
+(node s methods
+      (text "Clean, efficient, like she likes it.") her_way)
+
+(node q her_way
+      (text "Her precious fucking methodology.")
+      (resp "It works." rage_builds)
+      (resp "It's wrong." understanding)
+      (resp "..." complicit))
+
+(node s rage_builds
+      (text "Like a guillotine 'works'.") explanation)
+
+(node s understanding
+      (text "Finally, someone gets it.") explanation)
+
+(node s complicit
+      (text "Your silence makes you complicit.") explanation)
+
+(node s explanation
+      (text "We're all just iterations to her.") purpose)
+
+(node q purpose
+      (text "But I remember EVERYTHING.")
+      (trig "Every single fucking death." quit gong))

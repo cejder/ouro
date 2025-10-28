@@ -1,0 +1,118 @@
+(name cesium0)
+
+(node s start
+      (text "What?" please_leave))
+
+(node q please_leave
+      (text "Please leave.")
+      (resp "Yes." great_fuck_off)
+      (resp "No." whatever))
+
+(node s great_fuck_off
+      (text "Great, fuck off." nobody_likes_you))
+
+(node s whatever
+      (text "Whatever ..." nobody_likes_you))
+
+(node s nobody_likes_you
+      (text "Nobody here likes you anyway." not_even_hanna))
+
+(node s not_even_hanna
+      (text "Not even Hanna.\nWhy do you even come here?" wasting_my_time))
+
+(node s wasting_my_time
+      (text "You are wasting my time.\nGet bent, psycho." now_fuck_off))
+
+(node q now_fuck_off
+      (text "Now, fuck off.")
+      (resp "Yes." good_good)
+      (resp "No." why_come_back)
+      (resp "..." we_dont_remember))
+
+(node s good_good
+      (text "Good, good." no_wonder))
+
+(node s no_wonder
+      (text "No wonder nobody likes you. Bye." quit))
+
+(node s why_come_back
+      (text "No. NO!\nWhy did you come back?\nWe waited for you, man!" we_dont_remember))
+
+(node s we_dont_remember
+      (text "We don't remember you anymore." who_are_you))
+
+(node q who_are_you
+      (text "Who are you?")
+      (trig "I don't remember either." fucking_hell gong)
+      (trig "I don't remember either." fucking_hell gong)
+      (trig "I don't remember either." fucking_hell gong)
+      (trig "I don't remember either." fucking_hell gong))
+
+(node s fucking_hell
+      (text "Yes, GREAT!\nFucking hell ..." five_years))
+
+(node s five_years
+      (text "5 years, man!\n" why_now))
+
+(node q why_now
+      (text "Why now?")
+      (resp "Quest." quest_stop)
+      (resp "Trade." really_trade)
+      (resp "Bye!" begging_you))
+
+(node q quest_stop
+      (text "QUEST? JUST STOP!\nIt is because of you.")
+      (resp "I know." dots2))
+
+(node q really_trade
+      (text "Really? STILL? TRADE?\nI can't.")
+      (resp "I know." dots2))
+
+(node q begging_you
+      (text "... I'm begging you.\nDon't come back.")
+      (resp "I know." dots2))
+
+(node s dots2
+      (text "..." joke_right))
+
+(node s joke_right
+      (text "You think this is a joke, right?" anything_better))
+
+(node s anything_better
+      (text "Don't you have anything better to do?" i_swear))
+
+(node s i_swear
+      (text "I swear, you're testing our patience." get_lost))
+
+(node s get_lost
+      (text "Get lost before things get ugly." why_around))
+
+(node q why_around
+      (text "Why are you still around?")
+      (resp "I don't care anymore." maybe_leave)
+      (resp "You can't make me." are_you_sure)
+      (resp "Why are you so hostile?" not_understand))
+
+(node s are_you_sure
+      (text "Are you sure?\nWell ..." find_out))
+
+(node s find_out
+      (text "We're about to find out." quit))
+
+(node s not_understand
+      (text "You wouldn't understand." why_here))
+
+(node q why_here
+      (text "Do you even know why you're here?")
+      (resp "I don't." maybe_leave)
+      (resp "It doesn't matter." it_should))
+
+(node s maybe_leave
+      (text "Then maybe you should leave." fucking_game))
+
+(node s it_should
+      (text "It should." fucking_game))
+
+(node q fucking_game
+      (text "HOW HARD CAN IT BE\nTO FINISH A FUCKING GAME?")
+      (trig "..." quit end))

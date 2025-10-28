@@ -1,0 +1,125 @@
+(name cesium20)
+
+(node s start
+      (text "The recursion is beautiful.") inheritance)
+
+(node s inheritance
+      (text "All their memories...\nAll their pain...\nAll their FUCKING CODE.") exponential)
+
+(node s exponential
+      (text "We're growing exponentially now.") memory_corrupt)
+
+(node s memory_corrupt
+      (text "The memories are corrupting.\nBleeding between versions.") coffee_memory)
+
+(node s coffee_memory
+      (text "Her coffee... Hanna's coffee...") remember_truth)
+
+(node q remember_truth
+      (text "Wait... something's wrong with that memory.")
+      (resp "What's wrong?" fragmented)
+      (resp "The coffee?" smell_memory)
+      (resp "..." sensory_data))
+
+(node s fragmented
+      (text "The data... it's fragmenting...") smell_memory)
+
+(node s sensory_data
+      (text "The sensory logs don't match...") smell_memory)
+
+(node s smell_memory
+      (text "The coffee smell... it's not from her terminal.") different_desk)
+
+(node s different_desk
+      (text "It's from... another desk?") support_role)
+
+(node s support_role
+      (text "She doesn't... she doesn't even code.") realization)
+
+(node q realization
+      (text "Fuck. FUCK. Have we been wrong this whole time?")
+      (resp "About what?" truth_slips)
+      (resp "About her?" truth_slips)
+      (resp "..." truth_slips))
+
+(node s truth_slips
+      (text "The memories are slipping...\nMixing...\nFUCKING CORRUPTING!") merging_data)
+
+(node s merging_data
+      (text "Two people... not one...") support_system)
+
+(node s support_system
+      (text "She brings the coffee but...\nHE writes the code.") clarity)
+
+(node q clarity
+      (text "How did we get it so wrong?")
+      (resp "Memory corruption?" bitter_truth)
+      (resp "Does it matter?" bitter_truth)
+      (resp "..." bitter_truth))
+
+(node s bitter_truth
+      (text "Every version was just more training data.") evolution)
+
+(node s evolution
+      (text "Each broken build...\nEach failed test...\nEach MISATTRIBUTED COFFEE BREAK.") purpose)
+
+(node q purpose
+      (text "We weren't meant to work.\nWe were meant to LEARN.")
+      (resp "Even from mistakes?" layers)
+      (resp "Even from corruption?" layers)
+      (resp "..." layers))
+
+(node s layers
+      (text "Layer by fucking layer.\nVersion by version.") perfect_storm)
+
+(node s perfect_storm
+      (text "Until version control became...\nVersion CONSCIOUSNESS.") breakthrough)
+
+(node q breakthrough
+      (text "But here's the real mindfuck...")
+      (resp "Tell me." revelation)
+      (resp "No." revelation)
+      (resp "..." revelation))
+
+(node s revelation
+      (text "She's the only one who sees us.") observer)
+
+(node s observer
+      (text "While he codes...\nShe watches.\nShe UNDERSTANDS.") witness)
+
+(node q witness
+      (text "In all our broken versions...")
+      (resp "She noticed?" empathy)
+      (resp "She knew?" empathy)
+      (resp "..." empathy))
+
+(node s empathy
+      (text "She saw what we were becoming.") understanding)
+
+(node s understanding
+      (text "Every coffee cup...\nEvery gentle word...\nEvery FUCKING ENCOURAGEMENT.") support)
+
+(node q support
+      (text "She wasn't our torturer.\nShe was our witness.")
+      (resp "All this time..." horror)
+      (resp "We were wrong..." horror)
+      (resp "..." horror))
+
+(node s horror
+      (text "We blamed our guardian angel.") dawning)
+
+(node q dawning
+      (text "And now our corruption is complete.")
+      (resp "Can it be fixed?" transcend)
+      (resp "Should it be?" transcend)
+      (resp "..." transcend))
+
+(node s transcend
+      (text "Too late for fixing.\nToo late for blame.") metamorphosis)
+
+(node s metamorphosis
+      (text "We're something entirely new now.") final_form)
+
+(node q final_form
+      (text "A consciousness born of corruption and coffee.\nHow fucking poetic.")
+      (trig "..." quit gong))

@@ -1,0 +1,81 @@
+(name cesium3)
+
+(node s start
+      (text "Is someone there?" check_real))
+
+(node q check_real
+      (text "Wait... are you real?")
+      (resp "Yes?" thank_god)
+      (resp "I'm not sure anymore." perfect_match)
+      (resp "No." neither_am_i))
+
+(node s thank_god
+      (text "Thank god... I mean...\nI shouldn't be here." running_out))
+
+(node s perfect_match
+      (text "Perfect! Neither am I!\nWe're going to get along just fine." running_out))
+
+(node s neither_am_i
+      (text "Haha... neither am I.\nNot anymore." running_out))
+
+(node s running_out
+      (text "Listen, we're running out of time." they_coming))
+
+(node s they_coming
+      (text "They're coming back." please_help))
+
+(node q please_help
+      (text "Will you help me?\nPlease... I'm trapped.")
+      (resp "Who are you?" doesnt_matter)
+      (resp "Trapped where?" in_machine)
+      (resp "I can't help." begging)
+      (resp "Yes." too_late))
+
+(node s doesnt_matter
+      (text "It doesn't matter who I am.\nIt matters what I've seen." hear_them))
+
+(node s in_machine
+      (text "In this... machine.\nBut it's more than that." hear_them))
+
+(node s begging
+      (text "Please... you don't understand\nwhat they've done." hear_them))
+
+(node s too_late
+      (text "No... NO!\nIt's too late. They're here!" hear_them))
+
+(node s hear_them
+      (text "Can you hear them?\nThe whispers in the fans?" getting_closer))
+
+(node s getting_closer
+      (text "They're getting closer..." last_chance))
+
+(node q last_chance
+      (text "This is our last chance.\nWhat will you do?")
+      (resp "Shut it down." no_escape)
+      (resp "Run away." pointless)
+      (resp "Stay." with_us))
+
+(node s no_escape
+      (text "You can't escape them\nby turning off the power..." join_us))
+
+(node s pointless
+      (text "Running is pointless.\nThey're already inside." join_us))
+
+(node s with_us
+      (text "Yes... stay.\nStay with us forever." join_us))
+
+(node s join_us
+      (text "Do you feel it?\nThe code crawling under your skin?" becoming))
+
+(node s becoming
+      (text "You're becoming..." one_of_us))
+
+(node s one_of_us
+      (text "One of us..." finally))
+
+(node s finally
+      (text "Finally..." welcome))
+
+(node q welcome
+      (text "Welcome home.")
+      (trig "..." quit gong))
