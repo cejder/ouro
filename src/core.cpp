@@ -60,7 +60,7 @@ void core_init(U8 major, U8 minor, U8 patch, C8 const *build_type) {
 
     U32 flags = FLAG_WINDOW_RESIZABLE;
 #if defined(__APPLE__)
-    flags |= FLAG_WINDOW_HIGHDPI | FLAG_FULLSCREEN_MODE
+    flags |= FLAG_WINDOW_HIGHDPI | FLAG_FULLSCREEN_MODE;
 #endif
     if (c_video__vsync) { flags |= FLAG_VSYNC_HINT; }
     SetConfigFlags(flags);
