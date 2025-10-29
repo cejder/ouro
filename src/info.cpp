@@ -196,7 +196,7 @@ void static i_print_compiler() {
 void static i_print_build_info() {
     lld("Built: " __DATE__ " " __TIME__);
 
-#if defined(OURO_DEBUG)
+#ifdef OURO_DEBUG
     lld("Configuration: Debug");
 #elif defined(OURO_RELEASE)
     lld("Configuration: Release");
@@ -232,7 +232,7 @@ VersionInfo info_create_version_info(U8 major, U8 minor, U8 patch, C8 const *bui
     return version_info;
 }
 
-#if defined(_WIN32)
+#ifdef _WIN32
 #include <windows.h>
 #else
 #include <unistd.h>
@@ -240,7 +240,7 @@ VersionInfo info_create_version_info(U8 major, U8 minor, U8 patch, C8 const *bui
 
 SZ info_get_cpu_core_count() {
     SZ cpu_count = 1;
-#if defined(_WIN32)
+#ifdef _WIN32
     SYSTEM_INFO sysinfo;
     GetSystemInfo(&sysinfo);
     cpu_count = (SZ)sysinfo.dwNumberOfProcessors;

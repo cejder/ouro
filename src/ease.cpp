@@ -141,17 +141,17 @@ F32 ease_out_quad(F32 t, F32 b, F32 c, F32 d) {
 }
 
 F32 ease_out_cubic(F32 t, F32 b, F32 c, F32 d) {
-    t = t / d - 1;
+    t = (t / d) - 1;
     return (c * (t * t * t + 1)) + b;
 }
 
 F32 ease_out_quart(F32 t, F32 b, F32 c, F32 d) {
-    t = t / d - 1;
+    t = (t / d) - 1;
     return (-c * (t * t * t * t - 1)) + b;
 }
 
 F32 ease_out_quint(F32 t, F32 b, F32 c, F32 d) {
-    t = t / d - 1;
+    t = (t / d) - 1;
     return (c * (t * t * t * t * t + 1)) + b;
 }
 
@@ -160,13 +160,13 @@ F32 ease_out_expo(F32 t, F32 b, F32 c, F32 d) {
 }
 
 F32 ease_out_circ(F32 t, F32 b, F32 c, F32 d) {
-    t = t / d - 1;
+    t = (t / d) - 1;
     return (c * math_sqrt_f32(1 - (t * t))) + b;
 }
 
 F32 ease_out_back(F32 t, F32 b, F32 c, F32 d) {
     F32 const s = 1.70158F;
-    t = t / d - 1;
+    t = (t / d) - 1;
     return (c * (t * t * ((s + 1) * t + s) + 1)) + b;
 }
 

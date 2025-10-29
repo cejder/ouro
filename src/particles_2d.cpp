@@ -15,7 +15,7 @@
 
 Particles2D g_particles2d = {};
 
-#if !defined(__APPLE__)
+#ifndef __APPLE__
 
 void particles2d_init() {
     // Load bindless texture extension

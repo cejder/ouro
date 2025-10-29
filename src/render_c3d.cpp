@@ -101,7 +101,7 @@ void c3d_pull_default_to_other(Camera3D *src) {
 BOOL c3d_is_point_in_frustum(Vector3 point) {
     // Check if point is inside all planes
     for (auto plane : g_render.cameras.c3d.frustum_planes) {
-        if ((plane.x * point.x + plane.y * point.y + plane.z * point.z + plane.w) < 0.0F) { return false; }
+        if (((plane.x * point.x) + (plane.y * point.y) + (plane.z * point.z) + plane.w) < 0.0F) { return false; }
     }
 
     return true;

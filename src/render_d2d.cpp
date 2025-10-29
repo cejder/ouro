@@ -482,7 +482,6 @@ void d2d_healthbar(EID id) {
     F32 const alpha      = ease_out_quart(1.0F - distance_t, 0.0F, 1.0F, 1.0F);
 
     F32 const health_perc  = glm::clamp((F32)g_world->health[id].current / (F32)g_world->health[id].max, 0.0F, 1.0F);
-    F32 const fill_width_t = ease_out_expo(health_perc, 0.0F, 1.0F, 1.0F);
 
     F32 const bar_width    = ui_scale_x(8.0F);
     F32 const bar_height   = ui_scale_y(2.30F);
@@ -512,13 +511,13 @@ void d2d_healthbar(EID id) {
 
     Vector2 const bar_pos       = {screen_pos.x - (bar_width * 0.5F), screen_pos.y - (bar_height * 0.5F)};
     Rectangle const bg_rect     = {bar_pos.x, bar_pos.y, bar_width, bar_height};
-    Rectangle const fill_rect   = {bar_pos.x, bar_pos.y, bar_width * fill_width_t, bar_height};
+    Rectangle const fill_rect   = {bar_pos.x, bar_pos.y, bar_width * health_perc, bar_height};
     Rectangle const shadow_rect = {bg_rect.x + 1.5F, bg_rect.y + 1.5F, bg_rect.width, bg_rect.height};
 
     d2d_rectangle_rounded_rec(shadow_rect, roundness, segments, Fade(BLACK, 0.25F * alpha));
     d2d_rectangle_rounded_rec(bg_rect, roundness, segments, bg_color);
 
-    if (fill_width_t > 0.01F) { d2d_rectangle_rounded_rec(fill_rect, roundness, segments, fill_color); }
+    if (health_perc > 0.01F) { d2d_rectangle_rounded_rec(fill_rect, roundness, segments, fill_color); }
 
     d2d_rectangle_rounded_lines_ex(bg_rect, roundness, segments, border_thick, border_color);
 

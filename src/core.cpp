@@ -89,7 +89,7 @@ void core_init(U8 major, U8 minor, U8 patch, C8 const *build_type) {
     // Nobody will ever know. But I digress.
     // Let's continue with the initialization. Eat my anus.
 
-    SceneType const start_scene = OURO_IS_DEBUG ? SCENE_MENU : SCENE_OVERWORLD;
+    SceneType const start_scene = OURO_IS_DEBUG ? SCENE_OVERWORLD : SCENE_MENU;
 
     LD_TRACK(&g_core.loading, "Initializing \\ouc{#b3ffb3ff}Profiler",      profiler_init());
     LD_TRACK(&g_core.loading, "Initializing \\ouc{#b3ffb3ff}Audio Manager", audio_init());

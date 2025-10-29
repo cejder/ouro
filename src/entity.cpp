@@ -204,7 +204,9 @@ Color entity_type_to_color(EntityType type) {
 }
 
 BOOL entity_is_valid(EID id) {
-    return id != INVALID_EID && ENTITY_HAS_FLAG(g_world->flags[id], ENTITY_FLAG_IN_USE);
+    return id != INVALID_EID &&
+           id < WORLD_MAX_ENTITIES &&
+           ENTITY_HAS_FLAG(g_world->flags[id], ENTITY_FLAG_IN_USE);
 }
 
 EID entity_find_at_mouse() {
