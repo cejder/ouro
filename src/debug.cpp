@@ -1597,9 +1597,9 @@ void dbg_update() {
 
 void static i_draw_paused_banner() {
     Vector2 const res      = render_get_render_resolution();;
-    AFont *const font      = asset_get_font("GoMono", ui_font_size(5));
+    AFont *const font      = asset_get_font("GoMono", ui_font_size(3));
     C8 const *text         = "TIME PAUSED";
-    F32 const padding      = ui_scale_x(2.5F);
+    F32 const padding      = ui_scale_x(0.5F);
     Vector2 const text_dim = measure_text(font, text);
     Rectangle const rec = {
         (res.x / 2.0F) - (text_dim.x / 2.0F) - padding,
@@ -1607,8 +1607,8 @@ void static i_draw_paused_banner() {
         text_dim.x + (padding * 2.0F),
         text_dim.y + (padding * 2.0F),
     };
-    d2d_rectangle_rounded_rec(rec, 0.15F, 12, color_sync_blinking_regular(Fade(ORANGE, 0.5F), Fade(RED, 0.5F)));
-    d2d_text(font, text, {rec.x + padding, rec.y + padding}, WHITE);
+    d2d_rectangle_rounded_rec(rec, 0.15F, 12, Fade(color_sync_blinking_fast(MAROON, RED), 0.66F));
+    d2d_text_shadow(font, text, {rec.x + padding, rec.y + padding}, WHITE, BLACK, ui_shadow_offset(0.075F, 0.1F));
 }
 
 void dbg_draw() {
