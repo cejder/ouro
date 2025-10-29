@@ -272,7 +272,7 @@ void world_update(F32 dt, F32 dtu) {
     grid_populate();
     edit_update(dt, dtu);
 
-    for (auto &count : g_world->entity_type_counts) { count = 0; }
+    for (U32 &count : g_world->entity_type_counts) { count = 0; }
 
     // Use active entities from last frame
     for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
@@ -739,7 +739,7 @@ BOOL world_triangle_mesh_collision() {
                     F32 const denom = ((v1z - v2z) * (v0x - v2x)) + ((v2x - v1x) * (v0z - v2z));
                     if (math_abs_f32(denom) < 0.000001F) { continue; }
 
-                    for (auto const &test_point : test_points) {
+                    for (Vector3 const &test_point : test_points) {
                         F32 const px = test_point.x;
                         F32 const pz = test_point.z;
 
@@ -780,7 +780,7 @@ BOOL world_triangle_mesh_collision() {
                         {v2, v0}
                     };
 
-                    for (auto const *edge : edges) {
+                    for (Vector3 const *edge : edges) {
                         Vector3 const edge_start = edge[0];
                         Vector3 const edge_end   = edge[1];
 

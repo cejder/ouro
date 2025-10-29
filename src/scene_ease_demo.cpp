@@ -77,7 +77,7 @@ SCENE_UPDATE(ease_demo) {
         s.ease_timer.elapsed = normalized_raxis_x * EASE_DURATION;
     }
 
-    for (auto &ball : s.ease_balls) {
+    for (IEaseBall &ball : s.ease_balls) {
         F32 const ball_delta = ball.end_x - ball.start_x;
         ball.pos_x = ease_use(ball.ease_type, alarm_get_progress(&s.ease_timer), ball.start_x, ball_delta, s.ease_timer.duration);
     }
