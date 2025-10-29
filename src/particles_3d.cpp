@@ -16,7 +16,7 @@
 
 Particles3D g_particles3d = {};
 
-#if !defined(__APPLE__)
+#ifndef __APPLE__
 
 void particles3d_init() {
     // Load bindless texture extension

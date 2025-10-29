@@ -2199,7 +2199,7 @@ void dbg_widget_timeline_draw(DBGWidgetDrawPackage *p) {
     // in i_parse_bounds and we need to now adjust the width, so it looks fine.
     // It is a cluster fuck but it's just debug tooling.
 
-    bounds.width -= (2.0F * DBG_WINDOW_BORDER_SIZE + DBG_WINDOW_INNER_PADDING);
+    bounds.width -= ((2.0F * DBG_WINDOW_BORDER_SIZE) + DBG_WINDOW_INNER_PADDING);
 
     if (tl->data_count < 2) { return; }
 

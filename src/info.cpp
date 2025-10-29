@@ -166,12 +166,12 @@ void static i_print_simd() {
 #ifdef GLM_FORCE_INTRINSICS
     lld("SIMD Intrinsics: Enabled");
 #else
-    lld("SIMD Intrinsics: Disabled");
+    lld("SIMD Intrinsics: Diosabled");
 #endif
 }
 
 void static i_print_compiler() {
-#if defined(__clang__)
+#ifdef __clang__
     lld("Compiler: Clang %d.%d.%d", __clang_major__, __clang_minor__, __clang_patchlevel__);
 #elif defined(__GNUC__)
     lld("Compiler: GCC %d.%d.%d", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);

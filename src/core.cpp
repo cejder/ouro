@@ -59,7 +59,7 @@ void core_init(U8 major, U8 minor, U8 patch, C8 const *build_type) {
     SetTraceLogLevel(rl_level);
 
     U32 flags = FLAG_WINDOW_RESIZABLE;
-#if defined(__APPLE__)
+#ifdef __APPLE__
     flags |= FLAG_WINDOW_HIGHDPI | FLAG_FULLSCREEN_MODE;
 #endif
     if (c_video__vsync) { flags |= FLAG_VSYNC_HINT; }
@@ -89,7 +89,7 @@ void core_init(U8 major, U8 minor, U8 patch, C8 const *build_type) {
     // Nobody will ever know. But I digress.
     // Let's continue with the initialization. Eat my anus.
 
-    SceneType const start_scene = OURO_IS_DEBUG ? SCENE_OVERWORLD : SCENE_OVERWORLD;
+    SceneType const start_scene = OURO_IS_DEBUG ? SCENE_MENU : SCENE_OVERWORLD;
 
     LD_TRACK(&g_core.loading, "Initializing \\ouc{#b3ffb3ff}Profiler",      profiler_init());
     LD_TRACK(&g_core.loading, "Initializing \\ouc{#b3ffb3ff}Audio Manager", audio_init());
@@ -110,7 +110,7 @@ void core_init(U8 major, U8 minor, U8 patch, C8 const *build_type) {
 
 
     // HACK: Check if we want the Steam Deck or macOS config
-#if defined(__APPLE__)
+#ifdef __APPLE__
     option_set_video_resolution({2560, 1664});
     option_set_video_max_fps(60);
     option_set_video_vsync(true);

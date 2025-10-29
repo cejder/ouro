@@ -559,7 +559,7 @@ void profiler_draw() {
             if (fg->selected_track_count > 0) {
                 F32 const legend_entry_height = (F32)c_profiler__frame_graph_legend_font_size + 6.0F;
                 F32 const legend_padding      = 20.0F;
-                legend_height = (F32)fg->selected_track_count * legend_entry_height + (legend_padding * 2.0F);
+                legend_height = ((F32)fg->selected_track_count * legend_entry_height) + (legend_padding * 2.0F);
             }
             F32 const frame_graph_height = 180.0F;
             F32 const container_padding  = 30.0F;
@@ -711,7 +711,7 @@ void profiler_draw() {
                 }
 
                 legend_width  = legend_padding + color_box_size + color_to_text_spacing + max_text_width + legend_padding;
-                legend_height = (F32)fg->selected_track_count * legend_entry_height + (legend_padding * 2.0F);
+                legend_height = ((F32)fg->selected_track_count * legend_entry_height) + (legend_padding * 2.0F);
             }
 
             // Determine total height needed - use the larger of frame graph or legend height

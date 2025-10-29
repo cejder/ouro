@@ -355,10 +355,10 @@ void world_update(F32 dt, F32 dtu) {
 }
 
 void world_draw_2d() {
-    for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
-        EID const i = g_world->active_entities[idx];
-        unused(i);
-    }
+    // for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
+    //     EID const i = g_world->active_entities[idx];
+    //     unused(i);
+    // }
 }
 
 void world_draw_2d_hud() {
@@ -399,31 +399,10 @@ void world_draw_2d_dbg() {
 }
 
 void world_draw_3d() {
-    for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
-        EID const i = g_world->active_entities[idx];
-
-        // if (g_world->selected_id == i) {
-        //     // Draw the selected entity in faded 3D as a "ghost" behind the sketch
-        //     if (g_world->animation[i].has_animations) {
-        //         d3d_model_animated(
-        //             g_world->model_name[i],
-        //             g_world->position[i],
-        //             g_world->rotation[i],
-        //             g_world->scale[i],
-        //             Fade(g_world->tint[i], 0.3F),
-        //             g_world->animation[i].bone_matrices,
-        //             g_world->animation[i].bone_count
-        //         );
-        //     } else {
-        //         d3d_model(
-        //             g_world->model_name[i],
-        //             g_world->position[i],
-        //             g_world->rotation[i],
-        //             g_world->scale[i],
-        //             Fade(g_world->tint[i], 0.3F));
-        //     }
-        // }
-    }
+    // for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
+    //     EID const i = g_world->active_entities[idx];
+    //     unused(i);
+    // }
 }
 
 // Backpack positioning constants
@@ -515,10 +494,10 @@ void world_draw_3d_sketch() {
 }
 
 void world_draw_3d_hud() {
-    for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
-        EID const i = g_world->active_entities[idx];
-        unused(i);
-    }
+    // for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
+    //     EID const i = g_world->active_entities[idx];
+    //     unused(i);
+    // }
 }
 
 void world_draw_3d_dbg() {

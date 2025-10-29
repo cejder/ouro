@@ -241,11 +241,11 @@ SCENE_DRAW(particles_demo) {
         d2d_text_ouc_shadow(font, h1->c,         {text_area_x, cur_y}, text_col, shadow_col, shadow_size); cur_y += h1_size.y;
         d2d_text_ouc_shadow(font, h2->c,         {text_area_x, cur_y}, text_col, shadow_col, shadow_size); cur_y += h2_size.y;
         d2d_text_ouc_shadow(font, h3->c,         {text_area_x, cur_y}, text_col, shadow_col, shadow_size); cur_y += h3_size.y        + padding;
-        d2d_text_ouc_shadow(font, controls_text, {text_area_x, cur_y}, text_col, shadow_col, shadow_size); cur_y += controls_size.y  + padding * 0.25F;
+        d2d_text_ouc_shadow(font, controls_text, {text_area_x, cur_y}, text_col, shadow_col, shadow_size); cur_y += controls_size.y  + (padding * 0.25F);
         d2d_text_ouc_shadow(font, up_text,       {text_area_x, cur_y}, text_col, shadow_col, shadow_size); cur_y += up_size.y;
         d2d_text_ouc_shadow(font, down_text,     {text_area_x, cur_y}, text_col, shadow_col, shadow_size); cur_y += down_size.y;
-        d2d_text_ouc_shadow(font, rec_text,      {text_area_x, cur_y}, text_col, shadow_col, shadow_size); cur_y += rec_size.y       + padding * 0.5F;
-        d2d_text_ouc_shadow(font, effects_text,  {text_area_x, cur_y}, text_col, shadow_col, shadow_size); cur_y += effects_size.y   + padding * 0.25F;
+        d2d_text_ouc_shadow(font, rec_text,      {text_area_x, cur_y}, text_col, shadow_col, shadow_size); cur_y += rec_size.y       + (padding * 0.5F);
+        d2d_text_ouc_shadow(font, effects_text,  {text_area_x, cur_y}, text_col, shadow_col, shadow_size); cur_y += effects_size.y   + (padding * 0.25F);
         d2d_text_ouc_shadow(font, effect1_text,  {text_area_x, cur_y}, text_col, shadow_col, shadow_size); cur_y += effect1_size.y;
         d2d_text_ouc_shadow(font, effect2_text,  {text_area_x, cur_y}, text_col, shadow_col, shadow_size); cur_y += effect2_size.y;
         d2d_text_ouc_shadow(font, effect3_text,  {text_area_x, cur_y}, text_col, shadow_col, shadow_size); cur_y += effect3_size.y;

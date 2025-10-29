@@ -636,9 +636,9 @@ void color_to_hsv(Color color, ColorHSV *color_hsv) {
         if (r == max_val) {
             color_hsv->h = (g - b) / delta;
         } else if (g == max_val) {
-            color_hsv->h = 2.0F + (b - r) / delta;
+            color_hsv->h = 2.0F + ((b - r) / delta);
         } else {
-            color_hsv->h = 4.0F + (r - g) / delta;
+            color_hsv->h = 4.0F + ((r - g) / delta);
         }
 
         color_hsv->h *= 60.0F;

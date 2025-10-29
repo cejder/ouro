@@ -183,7 +183,7 @@ SCENE_DRAW(fade_demo) {
         d2d_text_ouc_shadow(font, fade_type_text->c, {text_area_x, cur_y}, text_col, shadow_col, shadow_size); cur_y += fade_type_size.y;
         d2d_text_ouc_shadow(font, ease_type_text->c, {text_area_x, cur_y}, text_col, shadow_col, shadow_size); cur_y += ease_type_size.y;
         d2d_text_ouc_shadow(font, duration_text->c,  {text_area_x, cur_y}, text_col, shadow_col, shadow_size); cur_y += duration_size.y + padding;
-        d2d_text_ouc_shadow(font, controls_text,     {text_area_x, cur_y}, text_col, shadow_col, shadow_size); cur_y += controls_size.y + padding * 0.25F;
+        d2d_text_ouc_shadow(font, controls_text,     {text_area_x, cur_y}, text_col, shadow_col, shadow_size); cur_y += controls_size.y + (padding * 0.25F);
         d2d_text_ouc_shadow(font, enter_text,        {text_area_x, cur_y}, text_col, shadow_col, shadow_size); cur_y += enter_size.y;
         d2d_text_ouc_shadow(font, delete_text,       {text_area_x, cur_y}, text_col, shadow_col, shadow_size); cur_y += delete_size.y;
         d2d_text_ouc_shadow(font, space_text,        {text_area_x, cur_y}, text_col, shadow_col, shadow_size); cur_y += space_size.y;

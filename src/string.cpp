@@ -122,7 +122,7 @@ String *string_repeat(MemoryType memory_type, C8 const *cstr, SZ count) {
     }
 
     SZ const length = ou_strlen(cstr);
-    s->capacity     = length * count + 1;  // Include space for null terminator.
+    s->capacity     = (length * count) + 1;  // Include space for null terminator.
     s->memory_type  = memory_type;
     s->data         = mm(C8 *, s->capacity, s->memory_type);
 

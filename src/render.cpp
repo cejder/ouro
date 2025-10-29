@@ -642,7 +642,7 @@ C8 const *render_mode_to_cstr(RenderMode mode) {
 }
 
 void render_set_render_mode_order_for_frame(RenderModeOrderTarget target) {
-#if defined(OURO_DEVEL)
+#ifdef OURO_DEVEL
     // Check that all modes are present
     BOOL seen[RMODE_COUNT] = {false};
 
@@ -679,7 +679,7 @@ RenderModeOrderTarget render_get_default_render_mode_order() {
         RMODE_LAST_LAYER,
     };
 
-#if defined(OURO_DEVEL)
+#ifdef OURO_DEVEL
     // Check that all modes are present exactly once
     BOOL seen[RMODE_COUNT] = {false};
 

@@ -16,7 +16,7 @@ C8 static const *i_type_to_cstr[MEMORY_TYPE_COUNT] = {
 };
 
 void static i_free(void* ptr) {
-#if defined(_WIN32)
+#ifdef _WIN32
     _aligned_free(ptr); // NOLINT
 #else
     free(ptr); // NOLINT
@@ -39,7 +39,7 @@ Arena static *i_arena_create(SZ capacity) {
         return nullptr;
     }
 
-#if defined(_WIN32)
+#ifdef _WIN32
     arena->memory = _aligned_malloc(capacity, i_memory.memory_alignment);  // NOLINT
 #else
     arena->memory = aligned_alloc(i_memory.setup.alignment, capacity);  // NOLINT

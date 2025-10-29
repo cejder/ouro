@@ -359,13 +359,13 @@ MenuEntryUpdateResult menu_parse_entry(Menu *menu, SZ idx) {
 
     r.label_box.x      = r.label_text.x - ui_scale_x(menu->props.padding_between_entry_text_and_border_perc);
     r.label_box.y      = r.label_text.y - ui_scale_x(menu->props.padding_between_entry_text_and_border_perc);
-    r.label_box.width  = r.label_text.width + 2 * ui_scale_x(menu->props.padding_between_entry_text_and_border_perc);
-    r.label_box.height = r.label_text.height + 2 * ui_scale_x(menu->props.padding_between_entry_text_and_border_perc);
+    r.label_box.width  = r.label_text.width + (2 * ui_scale_x(menu->props.padding_between_entry_text_and_border_perc));
+    r.label_box.height = r.label_text.height + (2 * ui_scale_x(menu->props.padding_between_entry_text_and_border_perc));
 
     r.desc_box.x      = r.desc_text.x - ui_scale_x(menu->props.padding_between_entry_text_and_border_perc);
     r.desc_box.y      = r.desc_text.y - ui_scale_x(menu->props.padding_between_entry_text_and_border_perc);
-    r.desc_box.width  = r.desc_text.width + 2 * ui_scale_x(menu->props.padding_between_entry_text_and_border_perc);
-    r.desc_box.height = r.desc_text.height + 2 * ui_scale_x(menu->props.padding_between_entry_text_and_border_perc);
+    r.desc_box.width  = r.desc_text.width + (2 * ui_scale_x(menu->props.padding_between_entry_text_and_border_perc));
+    r.desc_box.height = r.desc_text.height + (2 * ui_scale_x(menu->props.padding_between_entry_text_and_border_perc));
 
     if (menu->value_get && value) {
         r.value_box.x      = r.value_text.x - ui_scale_x(menu->props.padding_between_entry_text_and_border_perc);
