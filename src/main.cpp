@@ -63,26 +63,19 @@ S32 main(S32 argc, C8 const **argv) {
         lld("Starting ouro %s build", build_type);
     }
 
-    MemorySetup const setup = {
-        .memory_alignment         = 64,
+    memory_init({
+        .alignment                             = 64,
+        .per_type[MEMORY_TYPE_ARENA_PERMANENT] = {false, MEBI(1024)},
+        .per_type[MEMORY_TYPE_ARENA_TRANSIENT] = {false, MEBI(512)},
+        .per_type[MEMORY_TYPE_ARENA_DEBUG]     = {false, MEBI(256)},
+        .per_type[MEMORY_TYPE_ARENA_MATH]      = {false, MEBI(64)},
+        .per_type[MEMORY_TYPE_FREELIST]        = {false, MEBI(1024)},
+    });
 
-        .permanent_arena_verbose  = false,
-        .permanent_arena_capacity = MEBI(1024),
-
-        .debug_arena_verbose      = false,
-        .debug_arena_capacity     = MEBI(256),
-
-        .transient_arena_verbose  = false,
-        .transient_arena_capacity = MEBI(512),
-
-        .math_arena_verbose       = false,
-        .math_arena_capacity      = MEBI(64),
-    };
-
-    memory_init(setup);
     core_init(OURO_MAJOR, OURO_MINOR, OURO_PATCH, build_type);
     core_run();
     core_quit();
+
     memory_quit();
 
     exit(EXIT_SUCCESS);

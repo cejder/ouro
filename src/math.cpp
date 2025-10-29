@@ -50,7 +50,7 @@ void math_update() {
     F32 const usage_percent = (F32)stats.total_used / (F32)stats.total_capacity;
 
     if (usage_percent > 0.95F) {
-        memory_reset_arena(MEMORY_TYPE_ARENA_MATH);
+        memory_reset_type(MEMORY_TYPE_ARENA_MATH);
         ITextCache_init(&i_cache.text, MEMORY_TYPE_ARENA_MATH, TEXT_CACHE_INITIAL_CAPACITY);
     }
 }

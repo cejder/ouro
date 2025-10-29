@@ -3,6 +3,7 @@
 #include "common.hpp"
 
 enum MemoryType : U8 {
+    MEMORY_TYPE_FREELIST,
     MEMORY_TYPE_ARENA_PERMANENT,
     MEMORY_TYPE_ARENA_TRANSIENT,
     MEMORY_TYPE_ARENA_DEBUG,
@@ -43,92 +44,112 @@ struct ArenaAllocator {
     Arena *arenas[ARENA_MAX];
     SZ arena_count;
     SZ arena_capacity;
-    ArenaStats last_stats;
+    ArenaStats previous_stats;
     ArenaTimeline timeline;
 };
 
+// ===============================================================
+// ========================== FREELIST ===========================
+// ===============================================================
+
+struct FreelistBlock {};
+
+struct Freelist {};
+
+// ===============================================================
+// =========================== MEMORY ============================
+// ===============================================================
+
+struct MemoryTypeSetup {
+    BOOL verbose;
+    SZ capacity;
+};
 
 struct MemorySetup {
-    SZ memory_alignment;
-
-    BOOL permanent_arena_verbose;
-    SZ permanent_arena_capacity;
-
-    BOOL transient_arena_verbose;
-    SZ transient_arena_capacity;
-
-    BOOL debug_arena_verbose;
-    SZ debug_arena_capacity;
-
-    BOOL math_arena_verbose;
-    SZ math_arena_capacity;
+    SZ alignment;
+    MemoryTypeSetup per_type[MEMORY_TYPE_COUNT];
 };
 
 struct Memory {
+    MemorySetup setup;
     ArenaAllocator arena_allocators[MEMORY_TYPE_COUNT];
-    SZ memory_alignment;
-    BOOL enabled_verbose_logging[MEMORY_TYPE_COUNT];
 };
 
 void memory_init(MemorySetup setup);
 void memory_post();
-void memory_reset_arena(MemoryType type);
+void memory_reset_type(MemoryType type);
 void memory_quit();
 ArenaStats memory_get_current_arena_stats(MemoryType type);
-ArenaStats memory_get_last_arena_stats(MemoryType type);
-ArenaTimeline *memory_get_timeline(MemoryType type);
+ArenaStats memory_get_previous_arena_stats(MemoryType type);
+ArenaTimeline *memory_get_arena_timeline(MemoryType type);
 C8 const *memory_type_to_cstr(MemoryType type);
-void *memory_oumalloc(SZ size, MemoryType type);
-void *memory_oucalloc(SZ count, SZ size, MemoryType type);
-void *memory_ourealloc(void *ptr, SZ old_capacity, SZ new_capacity, MemoryType type);
-void *memory_oumalloc_verbose(SZ size, MemoryType type, C8 const *file, S32 line);
-void *memory_oucalloc_verbose(SZ count, SZ size, MemoryType type, C8 const *file, S32 line);
-void *memory_ourealloc_verbose(void *ptr, SZ old_capacity, SZ new_capacity, MemoryType type, C8 const *file, S32 line);
 
-#ifdef OURO_TRACE
+void *memory_malloc(SZ size, MemoryType type);
+void *memory_calloc(SZ count, SZ size, MemoryType type);
+void *memory_realloc(void *ptr, SZ old_capacity, SZ new_capacity, MemoryType type);
+void memory_free(void* ptr, MemoryType type);
+
+void *memory_malloc_verbose(SZ size, MemoryType type, C8 const *file, S32 line);
+void *memory_calloc_verbose(SZ count, SZ size, MemoryType type, C8 const *file, S32 line);
+void *memory_realloc_verbose(void *ptr, SZ old_capacity, SZ new_capacity, MemoryType type, C8 const *file, S32 line);
+void memory_free_verbose(void* ptr, MemoryType type, C8 const *file, S32 line);
+
+#ifndef OURO_TRACE
 
 // General
-#define mm(t, size, type)                  (t)memory_oumalloc_verbose(size, type, __FILE__, __LINE__)
-#define mc(t, count, size, type)           (t)memory_oucalloc_verbose(count, size, type, __FILE__, __LINE__)
-#define mr(t, ptr, old_cap, new_cap, type) (t)memory_ourealloc_verbose(ptr, old_cap, new_cap, type, __FILE__, __LINE__)
-// Permanent
-#define mmpa(t, size)                      (t)memory_oumalloc_verbose(size, MEMORY_TYPE_ARENA_PERMANENT, __FILE__, __LINE__)
-#define mcpa(t, count, size)               (t)memory_oucalloc_verbose(count, size, MEMORY_TYPE_ARENA_PERMANENT, __FILE__, __LINE__)
-#define mrpa(t, ptr, old_cap, new_cap)     (t)memory_ourealloc_verbose(ptr, old_cap, new_cap, MEMORY_TYPE_ARENA_PERMANENT, __FILE__, __LINE__)
-// Transient
-#define mmta(t, size)                      (t)memory_oumalloc_verbose(size, MEMORY_TYPE_ARENA_TRANSIENT, __FILE__, __LINE__)
-#define mcta(t, count, size)               (t)memory_oucalloc_verbose(count, size, MEMORY_TYPE_ARENA_TRANSIENT, __FILE__, __LINE__)
-#define mrta(t, ptr, old_cap, new_cap)     (t)memory_ourealloc_verbose(ptr, old_cap, new_cap, MEMORY_TYPE_ARENA_TRANSIENT, __FILE__, __LINE__)
-// Debug
-#define mmda(t, size)                      (t)memory_oumalloc_verbose(size, MEMORY_TYPE_ARENA_DEBUG, __FILE__, __LINE__)
-#define mcda(t, count, size)               (t)memory_oucalloc_verbose(count, size, MEMORY_TYPE_ARENA_DEBUG, __FILE__, __LINE__)
-#define mrda(t, ptr, old_cap, new_cap)     (t)memory_ourealloc_verbose(ptr, old_cap, new_cap, MEMORY_TYPE_ARENA_DEBUG, __FILE__, __LINE__)
-// Math
-#define mmma(t, size)                      (t)memory_oumalloc_verbose(size, MEMORY_TYPE_ARENA_MATH, __FILE__, __LINE__)
-#define mcma(t, count, size)               (t)memory_oucalloc_verbose(count, size, MEMORY_TYPE_ARENA_MATH, __FILE__, __LINE__)
-#define mrma(t, ptr, old_cap, new_cap)     (t)memory_ourealloc_verbose(ptr, old_cap, new_cap, MEMORY_TYPE_ARENA_MATH, __FILE__, __LINE__)
+#define mm(t, size, type)                  (t)memory_malloc(size, type)
+#define mc(t, count, size, type)           (t)memory_calloc(count, size, type)
+#define mr(t, ptr, old_cap, new_cap, type) (t)memory_realloc(ptr, old_cap, new_cap, type)
+#define mf(ptr, type)                         memory_free(ptr, type)
+// ARENA: Permanent
+#define mmpa(t, size)                      (t)memory_malloc(size, MEMORY_TYPE_ARENA_PERMANENT)
+#define mcpa(t, count, size)               (t)memory_calloc(count, size, MEMORY_TYPE_ARENA_PERMANENT)
+#define mrpa(t, ptr, old_cap, new_cap)     (t)memory_realloc(ptr, old_cap, new_cap, MEMORY_TYPE_ARENA_PERMANENT)
+// ARENA: Transient
+#define mmta(t, size)                      (t)memory_malloc(size, MEMORY_TYPE_ARENA_TRANSIENT)
+#define mcta(t, count, size)               (t)memory_calloc(count, size, MEMORY_TYPE_ARENA_TRANSIENT)
+#define mrta(t, ptr, old_cap, new_cap)     (t)memory_realloc(ptr, old_cap, new_cap, MEMORY_TYPE_ARENA_TRANSIENT)
+// ARENA: Debug
+#define mmda(t, size)                      (t)memory_malloc(size, MEMORY_TYPE_ARENA_DEBUG)
+#define mcda(t, count, size)               (t)memory_calloc(count, size, MEMORY_TYPE_ARENA_DEBUG)
+#define mrda(t, ptr, old_cap, new_cap)     (t)memory_realloc(ptr, old_cap, new_cap, MEMORY_TYPE_ARENA_DEBUG)
+// ARENA: Math
+#define mmma(t, size)                      (t)memory_malloc(size, MEMORY_TYPE_ARENA_MATH)
+#define mcma(t, count, size)               (t)memory_calloc(count, size, MEMORY_TYPE_ARENA_MATH)
+#define mrma(t, ptr, old_cap, new_cap)     (t)memory_realloc(ptr, old_cap, new_cap, MEMORY_TYPE_ARENA_MATH)
+// FREELIST
+#define mmfl(t, size)                      (t)memory_malloc(size, MEMORY_TYPE_FREELIST)
+#define mcfl(t, count, size)               (t)memory_calloc(size, size, MEMORY_TYPE_FREELIST)
+#define mrfl(t, ptr, old_cap, new_cap)     (t)memory_realloc(ptr, old_cap, new_cap, MEMORY_TYPE_FREELIST)
+#define mffl(t, ptr, old_cap, new_cap)        memory_free(ptr, MEMORY_TYPE_FREELIST)
 
 #else
 
 // General
-#define mm(t, size, type)                  (t)memory_oumalloc(size, type)
-#define mc(t, count, size, type)           (t)memory_oucalloc(count, size, type)
-#define mr(t, ptr, old_cap, new_cap, type) (t)memory_ourealloc(ptr, old_cap, new_cap, type)
-// Permanent
-#define mmpa(t, size)                      (t)memory_oumalloc(size, MEMORY_TYPE_ARENA_PERMANENT)
-#define mcpa(t, count, size)               (t)memory_oucalloc(count, size, MEMORY_TYPE_ARENA_PERMANENT)
-#define mrpa(t, ptr, old_cap, new_cap)     (t)memory_ourealloc(ptr, old_cap, new_cap, MEMORY_TYPE_ARENA_PERMANENT)
-// Transient
-#define mmta(t, size)                      (t)memory_oumalloc(size, MEMORY_TYPE_ARENA_TRANSIENT)
-#define mcta(t, count, size)               (t)memory_oucalloc(count, size, MEMORY_TYPE_ARENA_TRANSIENT)
-#define mrta(t, ptr, old_cap, new_cap)     (t)memory_ourealloc(ptr, old_cap, new_cap, MEMORY_TYPE_ARENA_TRANSIENT)
-// Debug
-#define mmda(t, size)                      (t)memory_oumalloc(size, MEMORY_TYPE_ARENA_DEBUG)
-#define mcda(t, count, size)               (t)memory_oucalloc(count, size, MEMORY_TYPE_ARENA_DEBUG)
-#define mrda(t, ptr, old_cap, new_cap)     (t)memory_ourealloc(ptr, old_cap, new_cap, MEMORY_TYPE_ARENA_DEBUG)
-// Math
-#define mmma(t, size)                      (t)memory_oumalloc(size, MEMORY_TYPE_ARENA_MATH)
-#define mcma(t, count, size)               (t)memory_oucalloc(count, size, MEMORY_TYPE_ARENA_MATH)
-#define mrma(t, ptr, old_cap, new_cap)     (t)memory_ourealloc(ptr, old_cap, new_cap, MEMORY_TYPE_ARENA_MATH)
+#define mm(t, size, type)                  (t)memory_malloc_verbose(size, type, __FILE__, __LINE__)
+#define mc(t, count, size, type)           (t)memory_calloc_verbose(count, size, type, __FILE__, __LINE__)
+#define mr(t, ptr, old_cap, new_cap, type) (t)memory_realloc_verbose(ptr, old_cap, new_cap, type, __FILE__, __LINE__)
+#define mf(ptr, type)                         memory_free_verbose(ptr, type, __FILE__, __LINE__)
+// ARENA: Permanent
+#define mmpa(t, size)                      (t)memory_malloc_verbose(size, MEMORY_TYPE_ARENA_PERMANENT, __FILE__, __LINE__)
+#define mcpa(t, count, size)               (t)memory_calloc_verbose(count, size, MEMORY_TYPE_ARENA_PERMANENT, __FILE__, __LINE__)
+#define mrpa(t, ptr, old_cap, new_cap)     (t)memory_realloc_verbose(ptr, old_cap, new_cap, MEMORY_TYPE_ARENA_PERMANENT, __FILE__, __LINE__)
+// ARENA: Transient
+#define mmta(t, size)                      (t)memory_malloc_verbose(size, MEMORY_TYPE_ARENA_TRANSIENT, __FILE__, __LINE__)
+#define mcta(t, count, size)               (t)memory_calloc_verbose(count, size, MEMORY_TYPE_ARENA_TRANSIENT, __FILE__, __LINE__)
+#define mrta(t, ptr, old_cap, new_cap)     (t)memory_realloc_verbose(ptr, old_cap, new_cap, MEMORY_TYPE_ARENA_TRANSIENT, __FILE__, __LINE__)
+// ARENA: Debug
+#define mmda(t, size)                      (t)memory_malloc_verbose(size, MEMORY_TYPE_ARENA_DEBUG, __FILE__, __LINE__)
+#define mcda(t, count, size)               (t)memory_calloc_verbose(count, size, MEMORY_TYPE_ARENA_DEBUG, __FILE__, __LINE__)
+#define mrda(t, ptr, old_cap, new_cap)     (t)memory_realloc_verbose(ptr, old_cap, new_cap, MEMORY_TYPE_ARENA_DEBUG, __FILE__, __LINE__)
+// ARENA: Math
+#define mmma(t, size)                      (t)memory_malloc_verbose(size, MEMORY_TYPE_ARENA_MATH, __FILE__, __LINE__)
+#define mcma(t, count, size)               (t)memory_calloc_verbose(count, size, MEMORY_TYPE_ARENA_MATH, __FILE__, __LINE__)
+#define mrma(t, ptr, old_cap, new_cap)     (t)memory_realloc_verbose(ptr, old_cap, new_cap, MEMORY_TYPE_ARENA_MATH, __FILE__, __LINE__)
+// FREELIST
+#define mmfl(t, size)                      (t)memory_malloc_verbose(size, MEMORY_TYPE_FREELIST, __FILE__, __LINE__)
+#define mcfl(t, count, size)               (t)memory_calloc_verbose(size, size, MEMORY_TYPE_FREELIST, __FILE__, __LINE__)
+#define mrfl(t, ptr, old_cap, new_cap)     (t)memory_realloc_verbose(ptr, old_cap, new_cap, MEMORY_TYPE_FREELIST, __FILE__, __LINE__)
+#define mffl(t, ptr, old_cap, new_cap)        memory_free_verbose(ptr, MEMORY_TYPE_FREELIST, __FILE__, __LINE__)
 
 #endif

@@ -171,7 +171,7 @@ void *ou_memcpy(void *dst, void const *src, SZ num) {
 }
 
 void *ou_memdup(void const *src, SZ num, MemoryType memory_type) {
-    void *new_mem = memory_oumalloc(num, memory_type);
+    void *new_mem = memory_malloc(num, memory_type);
     if (new_mem == nullptr) { return nullptr; }
     memcpy(new_mem, src, num);
     return new_mem;
@@ -188,7 +188,7 @@ S32 ou_memcmp(void const *ptr1, void const *ptr2, SZ num) {
 C8 *ou_strdup(C8 const *str, MemoryType memory_type) {
     if (str == nullptr) { return nullptr; }
     SZ const len = strlen(str) + 1;
-    C8 *new_str = (C8 *)memory_oumalloc(len, memory_type);
+    C8 *new_str = (C8 *)memory_malloc(len, memory_type);
     if (new_str == nullptr) { return nullptr; }
     memcpy(new_str, str, len);
     return new_str;

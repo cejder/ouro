@@ -2,19 +2,25 @@
 #include "log.hpp"
 #include "std.hpp"
 
+#include <raylib.h>
 #include <stdlib.h>
 #include <glm/common.hpp>
 
 Memory static i_memory = {};
 
-C8 static const *i_memory_type_to_cstr[MEMORY_TYPE_COUNT] = {
-    "Permanent",
-    "Transient",
-    "Debug",
-    "Math",
+C8 static const *i_type_to_cstr[MEMORY_TYPE_COUNT] = {
+    "Freelist",
+    "Permanent Arena",
+    "Transient Arena",
+    "Debug Arena",
+    "Math Arena",
 };
 
-Arena static *i_memory_arena_create(SZ capacity) {
+// ===============================================================
+// ============================ ARENA ============================
+// ===============================================================
+
+Arena static *i_arena_create(SZ capacity) {
     if (capacity < 1) {
         lle("Arena size must be at least 1");
         return nullptr;
@@ -29,7 +35,7 @@ Arena static *i_memory_arena_create(SZ capacity) {
 #if defined(_WIN32)
     arena->memory = _aligned_malloc(capacity, i_memory.memory_alignment);  // NOLINT
 #else
-    arena->memory = aligned_alloc(i_memory.memory_alignment, capacity);  // NOLINT
+    arena->memory = aligned_alloc(i_memory.setup.alignment, capacity);  // NOLINT
 #endif
     if (!arena->memory) {
         free(arena);  // NOLINT
@@ -42,12 +48,12 @@ Arena static *i_memory_arena_create(SZ capacity) {
     return arena;
 }
 
-void static i_memory_arena_destroy(Arena *arena) {
+void static i_arena_destroy(Arena *arena) {
     free(arena->memory);  // NOLINT
     free(arena);          // NOLINT
 }
 
-void static *i_memory_arena_alloc(Arena *arena, SZ size) {
+void static *i_arena_alloc(Arena *arena, SZ size) {
     if (arena->used + size > arena->capacity) {
         llt("Arena is full, %zu + %zu > %zu", arena->used, size, arena->capacity);
         return nullptr;
@@ -61,13 +67,13 @@ void static *i_memory_arena_alloc(Arena *arena, SZ size) {
     return ptr;
 }
 
-void static *i_memory_arena_allocator_alloc(ArenaAllocator *allocator, SZ size) {
+void static *i_arena_allocator_alloc(ArenaAllocator *allocator, SZ size) {
     if (size < 1) {
         lle("Allocation size must be at least 1");
         return nullptr;
     }
 
-    SZ const aligned_size = (size + i_memory.memory_alignment - 1) & ~(i_memory.memory_alignment - 1);
+    SZ const aligned_size = (size + i_memory.setup.alignment - 1) & ~(i_memory.setup.alignment - 1);
 
     if (aligned_size > allocator->arena_capacity) {
         lle("Allocation size is too big %zu > %zu", size, allocator->arena_capacity);
@@ -75,7 +81,7 @@ void static *i_memory_arena_allocator_alloc(ArenaAllocator *allocator, SZ size) 
     }
 
     for (SZ i = 0; i < allocator->arena_count; ++i) {
-        void *ptr = i_memory_arena_alloc(allocator->arenas[i], aligned_size);
+        void *ptr = i_arena_alloc(allocator->arenas[i], aligned_size);
         if (ptr) { return ptr; }
     }
 
@@ -84,7 +90,7 @@ void static *i_memory_arena_allocator_alloc(ArenaAllocator *allocator, SZ size) 
         return nullptr;
     }
 
-    Arena *arena = i_memory_arena_create(allocator->arena_capacity);
+    Arena *arena = i_arena_create(allocator->arena_capacity);
     if (!arena) {
         lle("Could not allocate memory for arena");
         return nullptr;
@@ -92,139 +98,101 @@ void static *i_memory_arena_allocator_alloc(ArenaAllocator *allocator, SZ size) 
 
     allocator->arenas[allocator->arena_count++] = arena;
 
-    return i_memory_arena_alloc(arena, aligned_size);
+    return i_arena_alloc(arena, aligned_size);
 }
 
+// ===============================================================
+// ========================== FREELIST ===========================
+// ===============================================================
+
+// TODO:
+
+// ===============================================================
+// =========================== MEMORY ============================
+// ===============================================================
+
 void memory_init(MemorySetup setup) {
-    if (setup.permanent_arena_capacity < 1) {
-        lle("Permanent arena capacity must be at least 1 byte");
+    i_memory.setup = setup;
+
+    if (i_memory.setup.alignment == 0) {
+        lle("Memory alignment has to be set or not 0 (%zu)", i_memory.setup.alignment);
         return;
     }
 
-    if (setup.transient_arena_capacity < 1) {
-        lle("Transient arena capacity must be at least 1 byte");
-        return;
+    for (SZ i = 0; i < MEMORY_TYPE_COUNT; ++i) {
+        MemoryTypeSetup *s = &i_memory.setup.per_type[i];
+
+        if (s->capacity < 1) {
+            lle("\"%s\" allocator has less than 1 byte capacity", i_type_to_cstr[i]);
+            return;
+        }
+
+        i_memory.arena_allocators[i].arenas[0] = i_arena_create(s->capacity);
+        if (!i_memory.arena_allocators[i].arenas[0]) {
+            lle("Could not allocate memory for \"%s\" allocator", i_type_to_cstr[i]);
+            return;
+        }
+        i_memory.arena_allocators[i].arena_count    = 1;
+        i_memory.arena_allocators[i].arena_capacity = s->capacity;
     }
-
-    if (setup.debug_arena_capacity < 1) {
-        lle("Debug arena capacity must be at least 1 byte");
-        return;
-    }
-
-    if (setup.math_arena_capacity < 1) {
-        lle("Math arena capacity must be at least 1 byte");
-        return;
-    }
-
-    if (setup.memory_alignment == 0) {
-        lle("Memory alignment has to be set or not 0 (%zu)", setup.memory_alignment);
-        return;
-    }
-
-    i_memory.memory_alignment = setup.memory_alignment;
-
-    i_memory.arena_allocators[MEMORY_TYPE_ARENA_PERMANENT].arenas[0] = i_memory_arena_create(setup.permanent_arena_capacity);
-    if (!i_memory.arena_allocators[MEMORY_TYPE_ARENA_PERMANENT].arenas[0]) {
-        lle("Could not allocate memory for permanent arena allocator");
-        return;
-    }
-    i_memory.arena_allocators[MEMORY_TYPE_ARENA_PERMANENT].arena_count    = 1;
-    i_memory.arena_allocators[MEMORY_TYPE_ARENA_PERMANENT].arena_capacity = setup.permanent_arena_capacity;
-
-    i_memory.arena_allocators[MEMORY_TYPE_ARENA_TRANSIENT].arenas[0] = i_memory_arena_create(setup.transient_arena_capacity);
-    if (!i_memory.arena_allocators[MEMORY_TYPE_ARENA_TRANSIENT].arenas[0]) {
-        lle("Could not allocate memory for transient arena allocator");
-        return;
-    }
-    i_memory.arena_allocators[MEMORY_TYPE_ARENA_TRANSIENT].arena_count    = 1;
-    i_memory.arena_allocators[MEMORY_TYPE_ARENA_TRANSIENT].arena_capacity = setup.transient_arena_capacity;
-
-    i_memory.arena_allocators[MEMORY_TYPE_ARENA_DEBUG].arenas[0] = i_memory_arena_create(setup.debug_arena_capacity);
-    if (!i_memory.arena_allocators[MEMORY_TYPE_ARENA_DEBUG].arenas[0]) {
-        lle("Could not allocate memory for debug arena allocator");
-        return;
-    }
-    i_memory.arena_allocators[MEMORY_TYPE_ARENA_DEBUG].arena_count    = 1;
-    i_memory.arena_allocators[MEMORY_TYPE_ARENA_DEBUG].arena_capacity = setup.debug_arena_capacity;
-
-    i_memory.arena_allocators[MEMORY_TYPE_ARENA_MATH].arenas[0] = i_memory_arena_create(setup.math_arena_capacity);
-    if (!i_memory.arena_allocators[MEMORY_TYPE_ARENA_MATH].arenas[0]) {
-        lle("Could not allocate memory for math arena allocator");
-        return;
-    }
-    i_memory.arena_allocators[MEMORY_TYPE_ARENA_MATH].arena_count    = 1;
-    i_memory.arena_allocators[MEMORY_TYPE_ARENA_MATH].arena_capacity = setup.math_arena_capacity;
-
-    // NOTE: We don't free anything here when we fail because we don't care cleaning up since we're exiting anyway.
-
-    i_memory.enabled_verbose_logging[MEMORY_TYPE_ARENA_PERMANENT] = setup.permanent_arena_verbose;
-    i_memory.enabled_verbose_logging[MEMORY_TYPE_ARENA_TRANSIENT] = setup.transient_arena_verbose;
-    i_memory.enabled_verbose_logging[MEMORY_TYPE_ARENA_DEBUG] = setup.debug_arena_verbose;
-    i_memory.enabled_verbose_logging[MEMORY_TYPE_ARENA_MATH] = setup.math_arena_verbose;
 }
 
 void memory_quit() {
     for (const auto &arena_allocator : i_memory.arena_allocators) {
-        for (SZ j = 0; j < arena_allocator.arena_count; ++j) { i_memory_arena_destroy(arena_allocator.arenas[j]); }
+        for (SZ j = 0; j < arena_allocator.arena_count; ++j) { i_arena_destroy(arena_allocator.arenas[j]); }
     }
 }
 
-C8 static const *i_reduce_filepath(C8 const *file) {
-    C8 const *last_file = file;
-    for (SZ i = 0; i < ou_strlen(file); ++i) {
-        if (file[i] == '/' || file[i] == '\\') { last_file = &file[i + 1]; }
+void *memory_malloc_verbose(SZ size, MemoryType type, C8 const *file, S32 line) {
+    if (i_memory.setup.per_type[type].verbose) {
+        lltty("(%s) Mallocating %zu bytes of memory at %s:%d", i_type_to_cstr[type], size, GetFileName(file), line);
     }
-    return last_file;
+    return memory_malloc(size, type);
+}
+void *memory_malloc(SZ size, MemoryType type) {
+    return i_arena_allocator_alloc(&i_memory.arena_allocators[type], size);
 }
 
-void *memory_oumalloc_verbose(SZ size, MemoryType type, C8 const *file, S32 line) {
-    if (i_memory.enabled_verbose_logging[type]) {
-        lltty("(%s) Mallocating %zu bytes of memory at %s:%d", i_memory_type_to_cstr[type], size, i_reduce_filepath(file), line);
+void *memory_calloc_verbose(SZ count, SZ size, MemoryType type, C8 const *file, S32 line) {
+    if (i_memory.setup.per_type[type].verbose) {
+        lltty("(%s) Callocating %zu bytes of memory at %s:%d", i_type_to_cstr[type], count * size, GetFileName(file), line);
     }
-
-    return memory_oumalloc(size, type);
+    return memory_calloc(count, size, type);
 }
-
-void *memory_oumalloc(SZ size, MemoryType type) {
-    return i_memory_arena_allocator_alloc(&i_memory.arena_allocators[type], size);
-}
-
-void *memory_oucalloc_verbose(SZ count, SZ size, MemoryType type, C8 const *file, S32 line) {
-    if (i_memory.enabled_verbose_logging[type]) {
-        lltty("(%s) Callocating %zu bytes of memory at %s:%d", i_memory_type_to_cstr[type], count * size, i_reduce_filepath(file), line);
-    }
-    return memory_oucalloc(count, size, type);
-}
-
-void *memory_oucalloc(SZ count, SZ size, MemoryType type) {
-    void *ptr = memory_oumalloc(count * size, type);
+void *memory_calloc(SZ count, SZ size, MemoryType type) {
+    void *ptr = memory_malloc(count * size, type);
     if (!ptr) { return nullptr; }
     ou_memset(ptr, 0, count * size);
     return ptr;
 }
 
-void *memory_ourealloc(void *ptr, SZ old_capacity, SZ new_capacity, MemoryType type) {
-    void *new_ptr = memory_oumalloc(new_capacity, type);
+void *memory_realloc(void *ptr, SZ old_capacity, SZ new_capacity, MemoryType type) {
+    void *new_ptr = memory_malloc(new_capacity, type);
     if (!new_ptr) { return nullptr; }
     ou_memmove(new_ptr, ptr, old_capacity);
     return new_ptr;
 }
-
-void *memory_ourealloc_verbose(void *ptr, SZ old_capacity, SZ new_capacity, MemoryType type, C8 const *file, S32 line) {
-    if (i_memory.enabled_verbose_logging[type]) {
-        lltty("(%s) Reallocating from %zu to %zu bytes of memory at %s:%d", i_memory_type_to_cstr[type], old_capacity, new_capacity, i_reduce_filepath(file), line);
+void *memory_realloc_verbose(void *ptr, SZ old_capacity, SZ new_capacity, MemoryType type, C8 const *file, S32 line) {
+    if (i_memory.setup.per_type[type].verbose) {
+        lltty("(%s) Reallocating from %zu to %zu bytes of memory at %s:%d", i_type_to_cstr[type], old_capacity, new_capacity, GetFileName(file), line);
     }
-    return memory_ourealloc(ptr, old_capacity, new_capacity, type);
+    return memory_realloc(ptr, old_capacity, new_capacity, type);
+}
+
+void memory_free(void* ptr, MemoryType type) {}
+void memory_free_verbose(void* ptr, MemoryType type, C8 const *file, S32 line) {
+
+//TODO:
 }
 
 void memory_post() {
     for (S32 i = 0; i < MEMORY_TYPE_COUNT; ++i) {
         ArenaAllocator *a = &i_memory.arena_allocators[i];
-        a->last_stats = memory_get_current_arena_stats((MemoryType)i);
+        a->previous_stats = memory_get_current_arena_stats((MemoryType)i);
 
         for (SZ j = 0; j < ARENA_TIMELINE_MAX_COUNT - 1; ++j) { a->timeline.total_allocations_count[j] = a->timeline.total_allocations_count[j + 1]; }
 
-        a->timeline.total_allocations_count[ARENA_TIMELINE_MAX_COUNT - 1] = (F32)a->last_stats.total_allocation_count;
+        a->timeline.total_allocations_count[ARENA_TIMELINE_MAX_COUNT - 1] = (F32)a->previous_stats.total_allocation_count;
     }
 
     for (SZ i = 0; i < i_memory.arena_allocators[MEMORY_TYPE_ARENA_TRANSIENT].arena_count; ++i) {
@@ -238,10 +206,10 @@ void memory_post() {
     i_memory.arena_allocators[MEMORY_TYPE_ARENA_TRANSIENT].arena_count = 0;
 }
 
-void memory_reset_arena(MemoryType type) {
+void memory_reset_type(MemoryType type) {
     ArenaAllocator *allocator = &i_memory.arena_allocators[type];
     for (SZ i = 0; i < allocator->arena_count; ++i) {
-        Arena *arena      = allocator->arenas[i];
+        Arena *arena            = allocator->arenas[i];
         arena->used             = 0;
         arena->allocation_count = 0;
     }
@@ -263,14 +231,14 @@ ArenaStats memory_get_current_arena_stats(MemoryType type) {
     return stats;
 }
 
-ArenaStats memory_get_last_arena_stats(MemoryType type) {
-    return i_memory.arena_allocators[type].last_stats;
+ArenaStats memory_get_previous_arena_stats(MemoryType type) {
+    return i_memory.arena_allocators[type].previous_stats;
 }
 
-ArenaTimeline *memory_get_timeline(MemoryType type) {
+ArenaTimeline *memory_get_arena_timeline(MemoryType type) {
     return &i_memory.arena_allocators[type].timeline;
 }
 
 C8 const *memory_type_to_cstr(MemoryType type) {
-    return i_memory_type_to_cstr[type];
+    return i_type_to_cstr[type];
 }

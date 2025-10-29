@@ -174,7 +174,7 @@ void static i_setup_arena_info(C8 const *title, MemoryType type, ArenaStats *sta
     dwifb(nullptr, medium_font, DBG_FILLBAR_FG_COLOR, DBG_FILLBAR_BG_COLOR, DBG_FILLBAR_TEXT_COLOR, fillbar_size, (F32)stats->total_used, 0.0F,
           (F32)stats->total_capacity, false, nullptr, DBG_WIDGET_DATA_TYPE_FLOAT, DBG_WIDGET_CB_NONE);
 
-    ArenaTimeline *tl = memory_get_timeline(type);
+    ArenaTimeline *tl = memory_get_arena_timeline(type);
 
     F32 const max = type == MEMORY_TYPE_ARENA_DEBUG ? DBG_ARENA_ALLOCATIONS_TILL_RESET : 100000.0F;
     dwitl(LIME, NEARBLACK, tl->total_allocations_count, ARENA_TIMELINE_MAX_COUNT, 0.00F, max, "%.0f %s", "allocs");
@@ -378,10 +378,10 @@ void static i_setup_dbg_gui() {
     // ======================= Window: MEMORY ========================
     // ===============================================================
     dwnd(DBG_WID_MEMORY) {
-        ArenaStats perm_stats  = memory_get_last_arena_stats(MEMORY_TYPE_ARENA_PERMANENT);
-        ArenaStats trans_stats = memory_get_last_arena_stats(MEMORY_TYPE_ARENA_TRANSIENT);
-        ArenaStats debug_stats = memory_get_last_arena_stats(MEMORY_TYPE_ARENA_DEBUG);
-        ArenaStats math_stats  = memory_get_last_arena_stats(MEMORY_TYPE_ARENA_MATH);
+        ArenaStats perm_stats  = memory_get_previous_arena_stats(MEMORY_TYPE_ARENA_PERMANENT);
+        ArenaStats trans_stats = memory_get_previous_arena_stats(MEMORY_TYPE_ARENA_TRANSIENT);
+        ArenaStats debug_stats = memory_get_previous_arena_stats(MEMORY_TYPE_ARENA_DEBUG);
+        ArenaStats math_stats  = memory_get_previous_arena_stats(MEMORY_TYPE_ARENA_MATH);
 
         i_setup_arena_info("PERM Arena",  MEMORY_TYPE_ARENA_PERMANENT, &perm_stats,  DBG_REF_FILLBAR_SIZE); dwis(5.0F);
         i_setup_arena_info("TRANS Arena", MEMORY_TYPE_ARENA_TRANSIENT, &trans_stats, DBG_REF_FILLBAR_SIZE); dwis(5.0F);
@@ -1036,9 +1036,9 @@ String static *i_get_window_extra_title_info(SZ wid) {
         case DBG_WID_MEMORY: {
             // Return the total allocation count.
             SZ total_alloc_count = 0;
-            ArenaStats const perm_stats  = memory_get_last_arena_stats(MEMORY_TYPE_ARENA_PERMANENT);
-            ArenaStats const temp_stats  = memory_get_last_arena_stats(MEMORY_TYPE_ARENA_TRANSIENT);
-            ArenaStats const debug_stats = memory_get_last_arena_stats(MEMORY_TYPE_ARENA_DEBUG);
+            ArenaStats const perm_stats  = memory_get_previous_arena_stats(MEMORY_TYPE_ARENA_PERMANENT);
+            ArenaStats const temp_stats  = memory_get_previous_arena_stats(MEMORY_TYPE_ARENA_TRANSIENT);
+            ArenaStats const debug_stats = memory_get_previous_arena_stats(MEMORY_TYPE_ARENA_DEBUG);
             total_alloc_count += perm_stats.total_allocation_count;
             total_alloc_count += temp_stats.total_allocation_count;
             total_alloc_count += debug_stats.total_allocation_count;
@@ -1576,8 +1576,8 @@ void dbg_update() {
 
     PBEGIN("BODY_DBG_UPDATE_PART_2");
 
-    ArenaStats const stats = memory_get_last_arena_stats(MEMORY_TYPE_ARENA_DEBUG);
-    if (stats.total_allocation_count > DBG_ARENA_ALLOCATIONS_TILL_RESET) { memory_reset_arena(MEMORY_TYPE_ARENA_DEBUG); }
+    ArenaStats const stats = memory_get_previous_arena_stats(MEMORY_TYPE_ARENA_DEBUG);
+    if (stats.total_allocation_count > DBG_ARENA_ALLOCATIONS_TILL_RESET) { memory_reset_type(MEMORY_TYPE_ARENA_DEBUG); }
 
     if (c_debug__windows_sticky) { dbg_reset_windows(false); }
 

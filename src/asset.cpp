@@ -1311,7 +1311,7 @@ void asset_blob_write() {
     // Header
     total_size += sizeof(ABlobHeader);
 
-    U8 *write_data = (U8*)memory_oucalloc(1, total_size, MEMORY_TYPE_ARENA_TRANSIENT);
+    U8 *write_data = (U8*)memory_calloc(1, total_size, MEMORY_TYPE_ARENA_TRANSIENT);
     SZ  write_size = 0;
 
     // Write header

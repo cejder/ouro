@@ -21,7 +21,7 @@
         (ring)->capacity = (initial_capacity);                                                                                                        \
         (ring)->head = 0;                                                                                                                             \
         (ring)->tail = 0;                                                                                                                             \
-        (ring)->data = (ring)->capacity > 0 ? (__typeof__((ring)->data))memory_oumalloc((ring)->capacity * sizeof(*(ring)->data), (mtype)) : nullptr; \
+        (ring)->data = (ring)->capacity > 0 ? (__typeof__((ring)->data))memory_malloc((ring)->capacity * sizeof(*(ring)->data), (mtype)) : nullptr; \
     } while (0)
 
 #define ring_push(ring, item)                                     \
