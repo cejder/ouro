@@ -47,11 +47,11 @@ struct MemoryArenaAllocator {
 
 struct MemorySetup {
     SZ permanent_arena_capacity;
-    SZ temporary_arena_capacity;
+    SZ transient_arena_capacity;
     SZ debug_arena_capacity;
     SZ math_arena_capacity;
     BOOL verbose_permanent_arena;
-    BOOL verbose_temporary_arena;
+    BOOL verbose_transient_arena;
     BOOL verbose_debug_arena;
     BOOL verbose_math_arena;
     SZ memory_alignment;
@@ -59,8 +59,6 @@ struct MemorySetup {
 
 struct Memory {
     MemoryArenaAllocator arena_allocators[MEMORY_TYPE_COUNT];
-    MemoryArena **manual_arenas;
-    SZ manual_arena_count;
     SZ memory_alignment;
     BOOL enabled_verbose_logging[MEMORY_TYPE_COUNT];
 };
@@ -72,7 +70,6 @@ void memory_quit();
 MemoryArenaStats memory_get_current_arena_stats(MemoryType type);
 MemoryArenaStats memory_get_last_arena_stats(MemoryType type);
 MemoryArenaTimeline *memory_get_timeline(MemoryType type);
-MemoryArena **memory_manual_arenas_ptr(SZ *count);
 C8 const *memory_type_to_cstr(MemoryType type);
 void *memory_oumalloc(SZ size, MemoryType type);
 void *memory_oucalloc(SZ count, SZ size, MemoryType type);
@@ -91,7 +88,7 @@ void *memory_ourealloc_verbose(void *ptr, SZ old_capacity, SZ new_capacity, Memo
 #define mmpa(t, size)                      (t)memory_oumalloc_verbose(size, MEMORY_TYPE_PARENA, __FILE__, __LINE__)
 #define mcpa(t, count, size)               (t)memory_oucalloc_verbose(count, size, MEMORY_TYPE_PARENA, __FILE__, __LINE__)
 #define mrpa(t, ptr, old_cap, new_cap)     (t)memory_ourealloc_verbose(ptr, old_cap, new_cap, MEMORY_TYPE_PARENA, __FILE__, __LINE__)
-// Temporary
+// Transient
 #define mmta(t, size)                      (t)memory_oumalloc_verbose(size, MEMORY_TYPE_TARENA, __FILE__, __LINE__)
 #define mcta(t, count, size)               (t)memory_oucalloc_verbose(count, size, MEMORY_TYPE_TARENA, __FILE__, __LINE__)
 #define mrta(t, ptr, old_cap, new_cap)     (t)memory_ourealloc_verbose(ptr, old_cap, new_cap, MEMORY_TYPE_TARENA, __FILE__, __LINE__)
@@ -114,7 +111,7 @@ void *memory_ourealloc_verbose(void *ptr, SZ old_capacity, SZ new_capacity, Memo
 #define mmpa(t, size)                      (t)memory_oumalloc(size, MEMORY_TYPE_PARENA)
 #define mcpa(t, count, size)               (t)memory_oucalloc(count, size, MEMORY_TYPE_PARENA)
 #define mrpa(t, ptr, old_cap, new_cap)     (t)memory_ourealloc(ptr, old_cap, new_cap, MEMORY_TYPE_PARENA)
-// Temporary
+// Transient
 #define mmta(t, size)                      (t)memory_oumalloc(size, MEMORY_TYPE_TARENA)
 #define mcta(t, count, size)               (t)memory_oucalloc(count, size, MEMORY_TYPE_TARENA)
 #define mrta(t, ptr, old_cap, new_cap)     (t)memory_ourealloc(ptr, old_cap, new_cap, MEMORY_TYPE_TARENA)

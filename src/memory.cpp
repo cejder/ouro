@@ -9,7 +9,7 @@ Memory static i_memory = {};
 
 C8 static const *i_memory_type_to_cstr[MEMORY_TYPE_COUNT] = {
     "Permanent",
-    "Temporary",
+    "Transient",
     "Debug",
     "Math",
 };
@@ -101,8 +101,8 @@ void memory_init(MemorySetup setup) {
         return;
     }
 
-    if (setup.temporary_arena_capacity < 1) {
-        lle("Temporary arena capacity must be at least 1 byte");
+    if (setup.transient_arena_capacity < 1) {
+        lle("Transient arena capacity must be at least 1 byte");
         return;
     }
 
@@ -121,9 +121,7 @@ void memory_init(MemorySetup setup) {
         return;
     }
 
-    i_memory.memory_alignment   = setup.memory_alignment;
-    i_memory.manual_arena_count = 0;
-    i_memory.manual_arenas      = (MemoryArena **)calloc(ARENA_MAX, sizeof(MemoryArena *));  // NOLINT
+    i_memory.memory_alignment = setup.memory_alignment;
 
     i_memory.arena_allocators[MEMORY_TYPE_PARENA].arenas[0] = i_memory_arena_create(setup.permanent_arena_capacity);
     if (!i_memory.arena_allocators[MEMORY_TYPE_PARENA].arenas[0]) {
@@ -134,13 +132,13 @@ void memory_init(MemorySetup setup) {
     i_memory.arena_allocators[MEMORY_TYPE_PARENA].arena_capacity = setup.permanent_arena_capacity;
     i_memory.arena_allocators[MEMORY_TYPE_PARENA].type           = MEMORY_TYPE_PARENA;
 
-    i_memory.arena_allocators[MEMORY_TYPE_TARENA].arenas[0] = i_memory_arena_create(setup.temporary_arena_capacity);
+    i_memory.arena_allocators[MEMORY_TYPE_TARENA].arenas[0] = i_memory_arena_create(setup.transient_arena_capacity);
     if (!i_memory.arena_allocators[MEMORY_TYPE_TARENA].arenas[0]) {
-        lle("Could not allocate memory for temporary arena allocator");
+        lle("Could not allocate memory for transient arena allocator");
         return;
     }
     i_memory.arena_allocators[MEMORY_TYPE_TARENA].arena_count    = 1;
-    i_memory.arena_allocators[MEMORY_TYPE_TARENA].arena_capacity = setup.temporary_arena_capacity;
+    i_memory.arena_allocators[MEMORY_TYPE_TARENA].arena_capacity = setup.transient_arena_capacity;
     i_memory.arena_allocators[MEMORY_TYPE_TARENA].type           = MEMORY_TYPE_TARENA;
 
     i_memory.arena_allocators[MEMORY_TYPE_DARENA].arenas[0] = i_memory_arena_create(setup.debug_arena_capacity);
@@ -164,7 +162,7 @@ void memory_init(MemorySetup setup) {
     // NOTE: We don't free anything here when we fail because we don't care cleaning up since we're exiting anyway.
 
     i_memory.enabled_verbose_logging[MEMORY_TYPE_PARENA] = setup.verbose_permanent_arena;
-    i_memory.enabled_verbose_logging[MEMORY_TYPE_TARENA] = setup.verbose_temporary_arena;
+    i_memory.enabled_verbose_logging[MEMORY_TYPE_TARENA] = setup.verbose_transient_arena;
     i_memory.enabled_verbose_logging[MEMORY_TYPE_DARENA] = setup.verbose_debug_arena;
     i_memory.enabled_verbose_logging[MEMORY_TYPE_MARENA] = setup.verbose_math_arena;
 }
@@ -275,11 +273,6 @@ MemoryArenaStats memory_get_last_arena_stats(MemoryType type) {
 
 MemoryArenaTimeline *memory_get_timeline(MemoryType type) {
     return &i_memory.arena_allocators[type].timeline;
-}
-
-MemoryArena **memory_manual_arenas_ptr(SZ *count) {
-    *count = i_memory.manual_arena_count;
-    return i_memory.manual_arenas;
 }
 
 C8 const *memory_type_to_cstr(MemoryType type) {

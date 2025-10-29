@@ -379,25 +379,14 @@ void static i_setup_dbg_gui() {
     // ===============================================================
     dwnd(DBG_WID_MEMORY) {
         MemoryArenaStats perm_stats  = memory_get_last_arena_stats(MEMORY_TYPE_PARENA);
-        MemoryArenaStats temp_stats  = memory_get_last_arena_stats(MEMORY_TYPE_TARENA);
+        MemoryArenaStats trans_stats = memory_get_last_arena_stats(MEMORY_TYPE_TARENA);
         MemoryArenaStats debug_stats = memory_get_last_arena_stats(MEMORY_TYPE_DARENA);
         MemoryArenaStats math_stats  = memory_get_last_arena_stats(MEMORY_TYPE_MARENA);
 
         i_setup_arena_info("PERM Arena",  MEMORY_TYPE_PARENA, &perm_stats,  DBG_REF_FILLBAR_SIZE); dwis(5.0F);
-        i_setup_arena_info("TEMP Arena",  MEMORY_TYPE_TARENA, &temp_stats,  DBG_REF_FILLBAR_SIZE); dwis(5.0F);
+        i_setup_arena_info("TRANS Arena", MEMORY_TYPE_TARENA, &trans_stats, DBG_REF_FILLBAR_SIZE); dwis(5.0F);
         i_setup_arena_info("DEBUG Arena", MEMORY_TYPE_DARENA, &debug_stats, DBG_REF_FILLBAR_SIZE); dwis(5.0F);
         i_setup_arena_info("MATH Arena",  MEMORY_TYPE_MARENA, &math_stats,  DBG_REF_FILLBAR_SIZE); dwis(5.0F);
-
-        SZ manual_arena_count = 0;
-        MemoryArena **manual_arenas = memory_manual_arenas_ptr(&manual_arena_count);
-
-        if (manual_arena_count > 0) {
-            dwis(5.0F);
-
-            dwil("MANUAL Arenas", large_font, contrast_color);
-
-            for (SZ i = 0; i < manual_arena_count; ++i) { i_setup_light_arena_info(manual_arenas[i]->name, manual_arenas[i]); }
-        }
 
         i_call_cbs(DBG_WID_MEMORY);
     }

@@ -119,7 +119,7 @@ void static i_generate_collision_mesh(AModel *model) {
     U32 constexpr max_collision_triangles = 10000;
     U32 const collision_tri_count = (total_triangles < max_collision_triangles) ? total_triangles : max_collision_triangles;
 
-    // Use temporary arena for temp buffer during generation
+    // Use transient arena for temp buffer during generation
     auto *temp_verts = mmta(Vector3*, (SZ)(collision_tri_count) * 3 * sizeof(Vector3));
     U32 vert_count = 0;
 
