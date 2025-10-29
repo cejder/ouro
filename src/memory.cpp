@@ -14,13 +14,13 @@ C8 static const *i_memory_type_to_cstr[MEMORY_TYPE_COUNT] = {
     "Math",
 };
 
-MemoryArena static *i_memory_arena_create(SZ capacity) {
+Arena static *i_memory_arena_create(SZ capacity) {
     if (capacity < 1) {
         lle("Arena size must be at least 1");
         return nullptr;
     }
 
-    auto *arena = (MemoryArena *)calloc(1, sizeof(MemoryArena));  // NOLINT
+    auto *arena = (Arena *)calloc(1, sizeof(Arena));  // NOLINT
     if (!arena) {
         lle("Could not allocate memory for arena");
         return nullptr;
@@ -42,12 +42,12 @@ MemoryArena static *i_memory_arena_create(SZ capacity) {
     return arena;
 }
 
-void static i_memory_arena_destroy(MemoryArena *arena) {
+void static i_memory_arena_destroy(Arena *arena) {
     free(arena->memory);  // NOLINT
     free(arena);          // NOLINT
 }
 
-void static *i_memory_arena_alloc(MemoryArena *arena, SZ size) {
+void static *i_memory_arena_alloc(Arena *arena, SZ size) {
     if (arena->used + size > arena->capacity) {
         llt("Arena is full, %zu + %zu > %zu", arena->used, size, arena->capacity);
         return nullptr;
@@ -61,7 +61,7 @@ void static *i_memory_arena_alloc(MemoryArena *arena, SZ size) {
     return ptr;
 }
 
-void static *i_memory_arena_allocator_alloc(MemoryArenaAllocator *allocator, SZ size) {
+void static *i_memory_arena_allocator_alloc(ArenaAllocator *allocator, SZ size) {
     if (size < 1) {
         lle("Allocation size must be at least 1");
         return nullptr;
@@ -84,7 +84,7 @@ void static *i_memory_arena_allocator_alloc(MemoryArenaAllocator *allocator, SZ 
         return nullptr;
     }
 
-    MemoryArena *arena = i_memory_arena_create(allocator->arena_capacity);
+    Arena *arena = i_memory_arena_create(allocator->arena_capacity);
     if (!arena) {
         lle("Could not allocate memory for arena");
         return nullptr;
@@ -123,48 +123,44 @@ void memory_init(MemorySetup setup) {
 
     i_memory.memory_alignment = setup.memory_alignment;
 
-    i_memory.arena_allocators[MEMORY_TYPE_PARENA].arenas[0] = i_memory_arena_create(setup.permanent_arena_capacity);
-    if (!i_memory.arena_allocators[MEMORY_TYPE_PARENA].arenas[0]) {
+    i_memory.arena_allocators[MEMORY_TYPE_ARENA_PERMANENT].arenas[0] = i_memory_arena_create(setup.permanent_arena_capacity);
+    if (!i_memory.arena_allocators[MEMORY_TYPE_ARENA_PERMANENT].arenas[0]) {
         lle("Could not allocate memory for permanent arena allocator");
         return;
     }
-    i_memory.arena_allocators[MEMORY_TYPE_PARENA].arena_count    = 1;
-    i_memory.arena_allocators[MEMORY_TYPE_PARENA].arena_capacity = setup.permanent_arena_capacity;
-    i_memory.arena_allocators[MEMORY_TYPE_PARENA].type           = MEMORY_TYPE_PARENA;
+    i_memory.arena_allocators[MEMORY_TYPE_ARENA_PERMANENT].arena_count    = 1;
+    i_memory.arena_allocators[MEMORY_TYPE_ARENA_PERMANENT].arena_capacity = setup.permanent_arena_capacity;
 
-    i_memory.arena_allocators[MEMORY_TYPE_TARENA].arenas[0] = i_memory_arena_create(setup.transient_arena_capacity);
-    if (!i_memory.arena_allocators[MEMORY_TYPE_TARENA].arenas[0]) {
+    i_memory.arena_allocators[MEMORY_TYPE_ARENA_TRANSIENT].arenas[0] = i_memory_arena_create(setup.transient_arena_capacity);
+    if (!i_memory.arena_allocators[MEMORY_TYPE_ARENA_TRANSIENT].arenas[0]) {
         lle("Could not allocate memory for transient arena allocator");
         return;
     }
-    i_memory.arena_allocators[MEMORY_TYPE_TARENA].arena_count    = 1;
-    i_memory.arena_allocators[MEMORY_TYPE_TARENA].arena_capacity = setup.transient_arena_capacity;
-    i_memory.arena_allocators[MEMORY_TYPE_TARENA].type           = MEMORY_TYPE_TARENA;
+    i_memory.arena_allocators[MEMORY_TYPE_ARENA_TRANSIENT].arena_count    = 1;
+    i_memory.arena_allocators[MEMORY_TYPE_ARENA_TRANSIENT].arena_capacity = setup.transient_arena_capacity;
 
-    i_memory.arena_allocators[MEMORY_TYPE_DARENA].arenas[0] = i_memory_arena_create(setup.debug_arena_capacity);
-    if (!i_memory.arena_allocators[MEMORY_TYPE_DARENA].arenas[0]) {
+    i_memory.arena_allocators[MEMORY_TYPE_ARENA_DEBUG].arenas[0] = i_memory_arena_create(setup.debug_arena_capacity);
+    if (!i_memory.arena_allocators[MEMORY_TYPE_ARENA_DEBUG].arenas[0]) {
         lle("Could not allocate memory for debug arena allocator");
         return;
     }
-    i_memory.arena_allocators[MEMORY_TYPE_DARENA].arena_count    = 1;
-    i_memory.arena_allocators[MEMORY_TYPE_DARENA].arena_capacity = setup.debug_arena_capacity;
-    i_memory.arena_allocators[MEMORY_TYPE_DARENA].type           = MEMORY_TYPE_DARENA;
+    i_memory.arena_allocators[MEMORY_TYPE_ARENA_DEBUG].arena_count    = 1;
+    i_memory.arena_allocators[MEMORY_TYPE_ARENA_DEBUG].arena_capacity = setup.debug_arena_capacity;
 
-    i_memory.arena_allocators[MEMORY_TYPE_MARENA].arenas[0] = i_memory_arena_create(setup.math_arena_capacity);
-    if (!i_memory.arena_allocators[MEMORY_TYPE_MARENA].arenas[0]) {
+    i_memory.arena_allocators[MEMORY_TYPE_ARENA_MATH].arenas[0] = i_memory_arena_create(setup.math_arena_capacity);
+    if (!i_memory.arena_allocators[MEMORY_TYPE_ARENA_MATH].arenas[0]) {
         lle("Could not allocate memory for math arena allocator");
         return;
     }
-    i_memory.arena_allocators[MEMORY_TYPE_MARENA].arena_count    = 1;
-    i_memory.arena_allocators[MEMORY_TYPE_MARENA].arena_capacity = setup.math_arena_capacity;
-    i_memory.arena_allocators[MEMORY_TYPE_MARENA].type           = MEMORY_TYPE_MARENA;
+    i_memory.arena_allocators[MEMORY_TYPE_ARENA_MATH].arena_count    = 1;
+    i_memory.arena_allocators[MEMORY_TYPE_ARENA_MATH].arena_capacity = setup.math_arena_capacity;
 
     // NOTE: We don't free anything here when we fail because we don't care cleaning up since we're exiting anyway.
 
-    i_memory.enabled_verbose_logging[MEMORY_TYPE_PARENA] = setup.verbose_permanent_arena;
-    i_memory.enabled_verbose_logging[MEMORY_TYPE_TARENA] = setup.verbose_transient_arena;
-    i_memory.enabled_verbose_logging[MEMORY_TYPE_DARENA] = setup.verbose_debug_arena;
-    i_memory.enabled_verbose_logging[MEMORY_TYPE_MARENA] = setup.verbose_math_arena;
+    i_memory.enabled_verbose_logging[MEMORY_TYPE_ARENA_PERMANENT] = setup.permanent_arena_verbose;
+    i_memory.enabled_verbose_logging[MEMORY_TYPE_ARENA_TRANSIENT] = setup.transient_arena_verbose;
+    i_memory.enabled_verbose_logging[MEMORY_TYPE_ARENA_DEBUG] = setup.debug_arena_verbose;
+    i_memory.enabled_verbose_logging[MEMORY_TYPE_ARENA_MATH] = setup.math_arena_verbose;
 }
 
 void memory_quit() {
@@ -223,40 +219,40 @@ void *memory_ourealloc_verbose(void *ptr, SZ old_capacity, SZ new_capacity, Memo
 
 void memory_post() {
     for (S32 i = 0; i < MEMORY_TYPE_COUNT; ++i) {
-        MemoryArenaAllocator *a = &i_memory.arena_allocators[i];
+        ArenaAllocator *a = &i_memory.arena_allocators[i];
         a->last_stats = memory_get_current_arena_stats((MemoryType)i);
 
-        for (SZ j = 0; j < MEMORY_TIMELINE_MAX_COUNT - 1; ++j) { a->timeline.total_allocations_count[j] = a->timeline.total_allocations_count[j + 1]; }
+        for (SZ j = 0; j < ARENA_TIMELINE_MAX_COUNT - 1; ++j) { a->timeline.total_allocations_count[j] = a->timeline.total_allocations_count[j + 1]; }
 
-        a->timeline.total_allocations_count[MEMORY_TIMELINE_MAX_COUNT - 1] = (F32)a->last_stats.total_allocation_count;
+        a->timeline.total_allocations_count[ARENA_TIMELINE_MAX_COUNT - 1] = (F32)a->last_stats.total_allocation_count;
     }
 
-    for (SZ i = 0; i < i_memory.arena_allocators[MEMORY_TYPE_TARENA].arena_count; ++i) {
-        MemoryArena *arena = i_memory.arena_allocators[MEMORY_TYPE_TARENA].arenas[i];
+    for (SZ i = 0; i < i_memory.arena_allocators[MEMORY_TYPE_ARENA_TRANSIENT].arena_count; ++i) {
+        Arena *arena = i_memory.arena_allocators[MEMORY_TYPE_ARENA_TRANSIENT].arenas[i];
         if (arena) {
             free(arena->memory);  // NOLINT
             free(arena);          // NOLINT
         }
-        i_memory.arena_allocators[MEMORY_TYPE_TARENA].arenas[i] = nullptr;
+        i_memory.arena_allocators[MEMORY_TYPE_ARENA_TRANSIENT].arenas[i] = nullptr;
     }
-    i_memory.arena_allocators[MEMORY_TYPE_TARENA].arena_count = 0;
+    i_memory.arena_allocators[MEMORY_TYPE_ARENA_TRANSIENT].arena_count = 0;
 }
 
 void memory_reset_arena(MemoryType type) {
-    MemoryArenaAllocator *allocator = &i_memory.arena_allocators[type];
+    ArenaAllocator *allocator = &i_memory.arena_allocators[type];
     for (SZ i = 0; i < allocator->arena_count; ++i) {
-        MemoryArena *arena      = allocator->arenas[i];
+        Arena *arena      = allocator->arenas[i];
         arena->used             = 0;
         arena->allocation_count = 0;
     }
 }
 
-MemoryArenaStats memory_get_current_arena_stats(MemoryType type) {
-    MemoryArenaStats stats = {};
-    MemoryArenaAllocator *arena_allocator = &i_memory.arena_allocators[type];
+ArenaStats memory_get_current_arena_stats(MemoryType type) {
+    ArenaStats stats = {};
+    ArenaAllocator *arena_allocator = &i_memory.arena_allocators[type];
 
     for (SZ i = 0; i < arena_allocator->arena_count; ++i) {
-        MemoryArena const *arena = arena_allocator->arenas[i];
+        Arena const *arena = arena_allocator->arenas[i];
         stats.arena_count++;
         stats.total_allocation_count += arena->allocation_count;
         stats.total_capacity         += arena->capacity;
@@ -267,11 +263,11 @@ MemoryArenaStats memory_get_current_arena_stats(MemoryType type) {
     return stats;
 }
 
-MemoryArenaStats memory_get_last_arena_stats(MemoryType type) {
+ArenaStats memory_get_last_arena_stats(MemoryType type) {
     return i_memory.arena_allocators[type].last_stats;
 }
 
-MemoryArenaTimeline *memory_get_timeline(MemoryType type) {
+ArenaTimeline *memory_get_timeline(MemoryType type) {
     return &i_memory.arena_allocators[type].timeline;
 }
 

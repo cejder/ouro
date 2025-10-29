@@ -329,7 +329,7 @@ void world_update(F32 dt, F32 dtu) {
         if (g_world->animation[id].anim_time >= total_duration) {
             if (g_world->animation[id].anim_loop) {
                 // Preserve overflow time for smooth looping
-                g_world->animation[id].anim_time = fmodf(g_world->animation[id].anim_time, total_duration);
+                g_world->animation[id].anim_time = math_mod_f32(g_world->animation[id].anim_time, total_duration);
             } else {
                 g_world->animation[id].anim_time = total_duration - frame_duration;
                 g_world->animation[id].anim_playing = false;

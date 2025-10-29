@@ -38,8 +38,8 @@ void render_tooltip_add_progress(RenderTooltip *tt, String *key, F32 current, F3
     S32 const bar_length    = 15;
     S32 const filled_length = (S32)(progress * (F32)bar_length);
 
-    String *filled_part = string_create_empty(MEMORY_TYPE_TARENA);
-    String *empty_part  = string_create_empty(MEMORY_TYPE_TARENA);
+    String *filled_part = string_create_empty(MEMORY_TYPE_ARENA_TRANSIENT);
+    String *empty_part  = string_create_empty(MEMORY_TYPE_ARENA_TRANSIENT);
 
     for (S32 i = 0; i < filled_length; ++i)                { string_append(filled_part, "O"); }
     for (S32 i = 0; i < (bar_length - filled_length); ++i) { string_append(empty_part,  " "); }
@@ -52,7 +52,7 @@ void render_tooltip_add_progress(RenderTooltip *tt, String *key, F32 current, F3
 void render_tooltip_draw(RenderTooltip *tt) {
     Vector2 const render_res = render_get_render_resolution();
 
-    String *out = string_create_empty(MEMORY_TYPE_TARENA);
+    String *out = string_create_empty(MEMORY_TYPE_ARENA_TRANSIENT);
 
     for (SZ i = 0; i < tt->row_count; ++i) {
         string_appendf(out, "%-*s%s%s\n", (S32)tt->widest_key_char_count, tt->rows[i].key->c, tt->spacer->c, tt->rows[i].value->c);

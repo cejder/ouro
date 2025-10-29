@@ -12,27 +12,27 @@ RING_DECLARE(TestU64Ring, U64);
 
 void static test_ring_init() {
     TestU64Ring ring1;
-    ring_init(MEMORY_TYPE_TARENA, &ring1, 0);
+    ring_init(MEMORY_TYPE_ARENA_TRANSIENT, &ring1, 0);
     TEST_ASSERT_EQUAL_INT(ring1.capacity, 0);
     TEST_ASSERT_EQUAL_INT(ring1.count, 0);
     TEST_ASSERT_EQUAL_INT(ring1.head, 0);
     TEST_ASSERT_EQUAL_INT(ring1.tail, 0);
-    TEST_ASSERT_EQUAL_INT(ring1.mem_type, MEMORY_TYPE_TARENA);
+    TEST_ASSERT_EQUAL_INT(ring1.mem_type, MEMORY_TYPE_ARENA_TRANSIENT);
     TEST_ASSERT_NULL(ring1.data);
 
     TestU64Ring ring2;
-    ring_init(MEMORY_TYPE_TARENA, &ring2, 100);
+    ring_init(MEMORY_TYPE_ARENA_TRANSIENT, &ring2, 100);
     TEST_ASSERT_EQUAL_INT(ring2.capacity, 100);
     TEST_ASSERT_EQUAL_INT(ring2.count, 0);
     TEST_ASSERT_EQUAL_INT(ring2.head, 0);
     TEST_ASSERT_EQUAL_INT(ring2.tail, 0);
-    TEST_ASSERT_EQUAL_INT(ring2.mem_type, MEMORY_TYPE_TARENA);
+    TEST_ASSERT_EQUAL_INT(ring2.mem_type, MEMORY_TYPE_ARENA_TRANSIENT);
     TEST_ASSERT_NOT_NULL(ring2.data);
 }
 
 void static test_ring_push() {
     TestU64Ring ring1;
-    ring_init(MEMORY_TYPE_TARENA, &ring1, 3);
+    ring_init(MEMORY_TYPE_ARENA_TRANSIENT, &ring1, 3);
     ring_push(&ring1, 10);
     TEST_ASSERT_EQUAL_INT(ring1.capacity, 3);
     TEST_ASSERT_EQUAL_INT(ring1.count, 1);
@@ -67,7 +67,7 @@ void static test_ring_push() {
 
 void static test_ring_pop() {
     TestU64Ring ring1;
-    ring_init(MEMORY_TYPE_TARENA, &ring1, 3);
+    ring_init(MEMORY_TYPE_ARENA_TRANSIENT, &ring1, 3);
     ring_push(&ring1, 10);
     ring_push(&ring1, 20);
     ring_push(&ring1, 30);
@@ -94,7 +94,7 @@ void static test_ring_pop() {
 
 void static test_ring_peek() {
     TestU64Ring ring1;
-    ring_init(MEMORY_TYPE_TARENA, &ring1, 3);
+    ring_init(MEMORY_TYPE_ARENA_TRANSIENT, &ring1, 3);
 
     U64 const peek_empty = ring_peek(&ring1);
     TEST_ASSERT_TRUE(peek_empty == 0);
@@ -115,7 +115,7 @@ void static test_ring_peek() {
 
 void static test_ring_peek_last() {
     TestU64Ring ring1;
-    ring_init(MEMORY_TYPE_TARENA, &ring1, 3);
+    ring_init(MEMORY_TYPE_ARENA_TRANSIENT, &ring1, 3);
 
     U64 const peek_empty = ring_peek_last(&ring1);
     TEST_ASSERT_TRUE(peek_empty == 0);
@@ -136,7 +136,7 @@ void static test_ring_peek_last() {
 
 void static test_ring_get() {
     TestU64Ring ring1;
-    ring_init(MEMORY_TYPE_TARENA, &ring1, 3);
+    ring_init(MEMORY_TYPE_ARENA_TRANSIENT, &ring1, 3);
     ring_push(&ring1, 10);
     ring_push(&ring1, 20);
     ring_push(&ring1, 30);
@@ -161,7 +161,7 @@ void static test_ring_get() {
 
 void static test_ring_set() {
     TestU64Ring ring1;
-    ring_init(MEMORY_TYPE_TARENA, &ring1, 3);
+    ring_init(MEMORY_TYPE_ARENA_TRANSIENT, &ring1, 3);
     ring_push(&ring1, 0);
     ring_push(&ring1, 0);
     ring_push(&ring1, 0);
@@ -180,7 +180,7 @@ void static test_ring_set() {
 
 void static test_ring_clear() {
     TestU64Ring ring1;
-    ring_init(MEMORY_TYPE_TARENA, &ring1, 3);
+    ring_init(MEMORY_TYPE_ARENA_TRANSIENT, &ring1, 3);
     ring_push(&ring1, 10);
     ring_push(&ring1, 20);
     ring_clear(&ring1);
@@ -191,7 +191,7 @@ void static test_ring_clear() {
 
 void static test_ring_empty() {
     TestU64Ring ring1;
-    ring_init(MEMORY_TYPE_TARENA, &ring1, 3);
+    ring_init(MEMORY_TYPE_ARENA_TRANSIENT, &ring1, 3);
 
     BOOL empty = ring_empty(&ring1);
     TEST_ASSERT_TRUE(empty);
@@ -209,7 +209,7 @@ void static test_ring_empty() {
 
 void static test_ring_full() {
     TestU64Ring ring1;
-    ring_init(MEMORY_TYPE_TARENA, &ring1, 3);
+    ring_init(MEMORY_TYPE_ARENA_TRANSIENT, &ring1, 3);
 
     BOOL full = ring_full(&ring1);
     TEST_ASSERT_FALSE(full);
@@ -226,7 +226,7 @@ void static test_ring_full() {
 
 void static test_ring_each() {
     TestU64Ring ring1;
-    ring_init(MEMORY_TYPE_TARENA, &ring1, 5);
+    ring_init(MEMORY_TYPE_ARENA_TRANSIENT, &ring1, 5);
     ring_push(&ring1, 10);
     ring_push(&ring1, 20);
     ring_push(&ring1, 30);
@@ -242,7 +242,7 @@ void static test_ring_each() {
 
 void static test_ring_each_reverse() {
     TestU64Ring ring1;
-    ring_init(MEMORY_TYPE_TARENA, &ring1, 5);
+    ring_init(MEMORY_TYPE_ARENA_TRANSIENT, &ring1, 5);
     ring_push(&ring1, 10);
     ring_push(&ring1, 20);
     ring_push(&ring1, 30);
@@ -259,7 +259,7 @@ void static test_ring_each_reverse() {
 
 void static test_ring_find() {
     TestU64Ring ring1;
-    ring_init(MEMORY_TYPE_TARENA, &ring1, 5);
+    ring_init(MEMORY_TYPE_ARENA_TRANSIENT, &ring1, 5);
     ring_push(&ring1, 10);
     ring_push(&ring1, 20);
     ring_push(&ring1, 30);
@@ -283,7 +283,7 @@ void static test_ring_find() {
 
 void static test_ring_remove_at() {
     TestU64Ring ring1;
-    ring_init(MEMORY_TYPE_TARENA, &ring1, 5);
+    ring_init(MEMORY_TYPE_ARENA_TRANSIENT, &ring1, 5);
     ring_push(&ring1, 10);
     ring_push(&ring1, 20);
     ring_push(&ring1, 30);
@@ -306,7 +306,7 @@ void static test_ring_remove_at() {
 
 void static test_ring_remove_value() {
     TestU64Ring ring1;
-    ring_init(MEMORY_TYPE_TARENA, &ring1, 5);
+    ring_init(MEMORY_TYPE_ARENA_TRANSIENT, &ring1, 5);
     ring_push(&ring1, 10);
     ring_push(&ring1, 20);
     ring_push(&ring1, 30);
@@ -329,7 +329,7 @@ void static test_ring_remove_value() {
 
 void static test_ring_wraparound() {
     TestU64Ring ring1;
-    ring_init(MEMORY_TYPE_TARENA, &ring1, 3);
+    ring_init(MEMORY_TYPE_ARENA_TRANSIENT, &ring1, 3);
 
     ring_push(&ring1, 10);
     ring_push(&ring1, 20);
@@ -358,7 +358,7 @@ void static test_ring_performance_benchmark() {
     TestU64Ring ring1;
 
     U64 const capacity = 100'000;
-    ring_init(MEMORY_TYPE_TARENA, &ring1, capacity);
+    ring_init(MEMORY_TYPE_ARENA_TRANSIENT, &ring1, capacity);
 
     U64 const num_operations = 1'000'000;
 

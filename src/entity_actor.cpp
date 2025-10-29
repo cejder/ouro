@@ -837,7 +837,7 @@ void entity_actor_update(EID id, F32 dt) {
                         F32 const shake_frequency  = 8.0F;  // Slower wobble
                         F32 const shake_amplitude  = 0.035F;  // Subtle variation
                         F32 const shake_decay      = ease_out_elastic(rustle_progress, 1.0F, -1.0F, 1.0F);  // Bouncy decay
-                        F32 const shake            = sinf(progress * shake_frequency * PI * 2.0F) * shake_amplitude * shake_decay;
+                        F32 const shake            = math_sin_f32(progress * shake_frequency * glm::pi<F32>() * 2.0F) * shake_amplitude * shake_decay;
                         scale_factor              += shake;
                     }
 

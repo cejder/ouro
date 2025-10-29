@@ -12,15 +12,15 @@ MAP_DECLARE(TestCstrMap, C8 const *, S32, MAP_HASH_CSTR, MAP_EQUAL_CSTR);
 
 void static test_hashmap_u64_init() {
     TestU64Map map;
-    TestU64Map_init(&map, MEMORY_TYPE_TARENA, 0);
+    TestU64Map_init(&map, MEMORY_TYPE_ARENA_TRANSIENT, 0);
     TEST_ASSERT_EQUAL_INT(0, map.count);
     TEST_ASSERT_EQUAL_INT(16, map.capacity);
     TEST_ASSERT_EQUAL_INT(0, map.tombstone_count);
-    TEST_ASSERT_EQUAL_INT(MEMORY_TYPE_TARENA, map.memory_type);
+    TEST_ASSERT_EQUAL_INT(MEMORY_TYPE_ARENA_TRANSIENT, map.memory_type);
     TEST_ASSERT_NOT_NULL(map.slots);
 
     TestU64Map map_custom;
-    TestU64Map_init(&map_custom, MEMORY_TYPE_TARENA, 32);
+    TestU64Map_init(&map_custom, MEMORY_TYPE_ARENA_TRANSIENT, 32);
     TEST_ASSERT_EQUAL_INT(0, map_custom.count);
     TEST_ASSERT_EQUAL_INT(32, map_custom.capacity);
     TEST_ASSERT_EQUAL_INT(0, map_custom.tombstone_count);
@@ -29,7 +29,7 @@ void static test_hashmap_u64_init() {
 
 void static test_hashmap_u64_insert_get() {
     TestU64Map map;
-    TestU64Map_init(&map, MEMORY_TYPE_TARENA, 0);
+    TestU64Map_init(&map, MEMORY_TYPE_ARENA_TRANSIENT, 0);
 
     TestU64Map_insert(&map, 42, 100);
     TEST_ASSERT_EQUAL_INT(1, map.count);
@@ -44,7 +44,7 @@ void static test_hashmap_u64_insert_get() {
 
 void static test_hashmap_u64_insert_update() {
     TestU64Map map;
-    TestU64Map_init(&map, MEMORY_TYPE_TARENA, 0);
+    TestU64Map_init(&map, MEMORY_TYPE_ARENA_TRANSIENT, 0);
 
     TestU64Map_insert(&map, 42, 100);
     TEST_ASSERT_EQUAL_INT(1, map.count);
@@ -63,7 +63,7 @@ void static test_hashmap_u64_insert_update() {
 
 void static test_hashmap_u64_has() {
     TestU64Map map;
-    TestU64Map_init(&map, MEMORY_TYPE_TARENA, 0);
+    TestU64Map_init(&map, MEMORY_TYPE_ARENA_TRANSIENT, 0);
 
     TEST_ASSERT_FALSE(TestU64Map_has(&map, 42));
 
@@ -74,7 +74,7 @@ void static test_hashmap_u64_has() {
 
 void static test_hashmap_u64_remove() {
     TestU64Map map;
-    TestU64Map_init(&map, MEMORY_TYPE_TARENA, 0);
+    TestU64Map_init(&map, MEMORY_TYPE_ARENA_TRANSIENT, 0);
 
     TestU64Map_insert(&map, 42, 100);
     TestU64Map_insert(&map, 84, 200);
@@ -94,7 +94,7 @@ void static test_hashmap_u64_remove() {
 
 void static test_hashmap_u64_clear() {
     TestU64Map map;
-    TestU64Map_init(&map, MEMORY_TYPE_TARENA, 0);
+    TestU64Map_init(&map, MEMORY_TYPE_ARENA_TRANSIENT, 0);
 
     TestU64Map_insert(&map, 42, 100);
     TestU64Map_insert(&map, 84, 200);
@@ -110,7 +110,7 @@ void static test_hashmap_u64_clear() {
 
 void static test_hashmap_u64_load_factor() {
     TestU64Map map;
-    TestU64Map_init(&map, MEMORY_TYPE_TARENA, 4);
+    TestU64Map_init(&map, MEMORY_TYPE_ARENA_TRANSIENT, 4);
 
     TEST_ASSERT_EQUAL_FLOAT(0.0F, TestU64Map_load_factor(&map));
 
@@ -126,7 +126,7 @@ void static test_hashmap_u64_load_factor() {
 
 void static test_hashmap_u64_rehashing() {
     TestU64Map map;
-    TestU64Map_init(&map, MEMORY_TYPE_TARENA, 4);
+    TestU64Map_init(&map, MEMORY_TYPE_ARENA_TRANSIENT, 4);
 
     TestU64Map_insert(&map, 1, 10);
     TestU64Map_insert(&map, 2, 20);
@@ -155,7 +155,7 @@ void static test_hashmap_u64_rehashing() {
 
 void static test_hashmap_u64_iteration() {
     TestU64Map map;
-    TestU64Map_init(&map, MEMORY_TYPE_TARENA, 0);
+    TestU64Map_init(&map, MEMORY_TYPE_ARENA_TRANSIENT, 0);
 
     TestU64Map_insert(&map, 10, 100);
     TestU64Map_insert(&map, 20, 200);
@@ -182,7 +182,7 @@ void static test_hashmap_u64_iteration() {
 
 void static test_hashmap_u64_iteration_ptr() {
     TestU64Map map;
-    TestU64Map_init(&map, MEMORY_TYPE_TARENA, 0);
+    TestU64Map_init(&map, MEMORY_TYPE_ARENA_TRANSIENT, 0);
 
     TestU64Map_insert(&map, 10, 100);
     TestU64Map_insert(&map, 20, 200);
@@ -204,7 +204,7 @@ void static test_hashmap_u64_iteration_ptr() {
 
 void static test_hashmap_string_operations() {
     TestStringMap map;
-    TestStringMap_init(&map, MEMORY_TYPE_TARENA, 0);
+    TestStringMap_init(&map, MEMORY_TYPE_ARENA_TRANSIENT, 0);
 
     String *key1 = TS("hello");
     String *key2 = TS("world");
@@ -241,7 +241,7 @@ void static test_hashmap_string_operations() {
 
 void static test_hashmap_cstr_operations() {
     TestCstrMap map;
-    TestCstrMap_init(&map, MEMORY_TYPE_TARENA, 0);
+    TestCstrMap_init(&map, MEMORY_TYPE_ARENA_TRANSIENT, 0);
 
     C8 const *key1 = "apple";
     C8 const *key2 = "banana";
@@ -277,7 +277,7 @@ void static test_hashmap_cstr_operations() {
 
 void static test_hashmap_edge_cases() {
     TestU64Map map;
-    TestU64Map_init(&map, MEMORY_TYPE_TARENA, 0);
+    TestU64Map_init(&map, MEMORY_TYPE_ARENA_TRANSIENT, 0);
 
     S32 *empty_get = TestU64Map_get(&map, 42);
     TEST_ASSERT_NULL(empty_get);
@@ -290,13 +290,13 @@ void static test_hashmap_edge_cases() {
     TEST_ASSERT_EQUAL_INT(0, map.count);
 
     TestU64Map empty_map;
-    TestU64Map_init(&empty_map, MEMORY_TYPE_TARENA, 0);
+    TestU64Map_init(&empty_map, MEMORY_TYPE_ARENA_TRANSIENT, 0);
     TEST_ASSERT_EQUAL_FLOAT(0.0F, TestU64Map_load_factor(&empty_map));
 }
 
 void static test_hashmap_collision_handling() {
     TestU64Map map;
-    TestU64Map_init(&map, MEMORY_TYPE_TARENA, 4);
+    TestU64Map_init(&map, MEMORY_TYPE_ARENA_TRANSIENT, 4);
 
     U64 const key1 = 0;
     U64 const key2 = 4;
@@ -323,7 +323,7 @@ void static test_hashmap_collision_handling() {
 
 void static test_hashmap_tombstone_reuse() {
     TestU64Map map;
-    TestU64Map_init(&map, MEMORY_TYPE_TARENA, 8);
+    TestU64Map_init(&map, MEMORY_TYPE_ARENA_TRANSIENT, 8);
 
     TestU64Map_insert(&map, 1, 10);
     TestU64Map_insert(&map, 2, 20);
@@ -348,7 +348,7 @@ void static test_hashmap_tombstone_reuse() {
 
 void static test_hashmap_stress_many_insertions() {
     TestU64Map map;
-    TestU64Map_init(&map, MEMORY_TYPE_TARENA, 4);
+    TestU64Map_init(&map, MEMORY_TYPE_ARENA_TRANSIENT, 4);
 
     for (U64 i = 0; i < 100; i++) { TestU64Map_insert(&map, i, (S32)(i * 10)); }
 
@@ -368,7 +368,7 @@ void static test_hashmap_stress_many_insertions() {
 
 void static test_hashmap_stress_remove_all() {
     TestU64Map map;
-    TestU64Map_init(&map, MEMORY_TYPE_TARENA, 4);
+    TestU64Map_init(&map, MEMORY_TYPE_ARENA_TRANSIENT, 4);
 
     for (U64 i = 0; i < 20; i++) { TestU64Map_insert(&map, i, (S32)(i * 10)); }
     TEST_ASSERT_EQUAL_INT(20, map.count);
@@ -385,7 +385,7 @@ void static test_hashmap_stress_remove_all() {
 
 void static test_hashmap_stress_hash_collisions() {
     TestU64Map map;
-    TestU64Map_init(&map, MEMORY_TYPE_TARENA, 8);
+    TestU64Map_init(&map, MEMORY_TYPE_ARENA_TRANSIENT, 8);
 
     U64 const keys[] = {0, 8, 16, 24, 32, 40, 48, 56};
     S32 const values[] = {10, 20, 30, 40, 50, 60, 70, 80};
@@ -423,7 +423,7 @@ void static test_hashmap_stress_hash_collisions() {
 
 void static test_hashmap_stress_update_values() {
     TestU64Map map;
-    TestU64Map_init(&map, MEMORY_TYPE_TARENA, 0);
+    TestU64Map_init(&map, MEMORY_TYPE_ARENA_TRANSIENT, 0);
 
     for (U64 i = 0; i < 50; i++) { TestU64Map_insert(&map, i, (S32)i); }
     for (U64 i = 0; i < 50; i++) { TestU64Map_insert(&map, i, (S32)(i * 100)); }
@@ -439,7 +439,7 @@ void static test_hashmap_stress_update_values() {
 
 void static test_hashmap_edge_case_empty_operations() {
     TestU64Map map;
-    TestU64Map_init(&map, MEMORY_TYPE_TARENA, 0);
+    TestU64Map_init(&map, MEMORY_TYPE_ARENA_TRANSIENT, 0);
 
     TEST_ASSERT_NULL(TestU64Map_get(&map, 999));
     TEST_ASSERT_FALSE(TestU64Map_has(&map, 999));
@@ -454,7 +454,7 @@ void static test_hashmap_edge_case_empty_operations() {
 
 void static test_hashmap_iteration_with_tombstones() {
     TestU64Map map;
-    TestU64Map_init(&map, MEMORY_TYPE_TARENA, 0);
+    TestU64Map_init(&map, MEMORY_TYPE_ARENA_TRANSIENT, 0);
 
     for (U64 i = 0; i < 10; i++) { TestU64Map_insert(&map, i, (S32)(i * 10)); }
 
@@ -483,7 +483,7 @@ void static test_hashmap_performance_benchmark() {
     C8 pretty_buffer[PRETTY_BUFFER_SIZE] = {};
 
     TestU64Map map;
-    TestU64Map_init(&map, MEMORY_TYPE_TARENA, 16);
+    TestU64Map_init(&map, MEMORY_TYPE_ARENA_TRANSIENT, 16);
 
     U64 const num_operations = 1'000'000;
 

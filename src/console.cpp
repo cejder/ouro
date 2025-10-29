@@ -257,8 +257,8 @@ BOOL con_cmd_test(ConCMD const *cmd) {
     C8 pretty_buffer_max[PRETTY_BUFFER_SIZE]  = {};
 
     // We also print the current memory statistics.
-    for (S32 i = MEMORY_TYPE_PARENA; i < MEMORY_TYPE_COUNT; ++i) {
-        MemoryArenaStats const stats = memory_get_current_arena_stats((MemoryType)i);
+    for (S32 i = MEMORY_TYPE_ARENA_PERMANENT; i < MEMORY_TYPE_COUNT; ++i) {
+        ArenaStats const stats = memory_get_current_arena_stats((MemoryType)i);
         unit_to_pretty_prefix_binary_u("B", stats.total_used, pretty_buffer_used, PRETTY_BUFFER_SIZE, UNIT_PREFIX_BINARY_MEBI);
         unit_to_pretty_prefix_binary_u("B", stats.max_used, pretty_buffer_max, PRETTY_BUFFER_SIZE, UNIT_PREFIX_BINARY_MEBI);
         lln("Memory_%s: %zu arenas, %zu allocations, %s used, %s max",
@@ -634,7 +634,7 @@ BOOL con_cmd_e_goto(ConCMD const *cmd) {
 }
 
 BOOL con_cmd_e_goto_name(ConCMD const *cmd) {
-    String *name = string_create_empty(MEMORY_TYPE_TARENA);
+    String *name = string_create_empty(MEMORY_TYPE_ARENA_TRANSIENT);
 
     for (SZ i = 0; cmd->args[i] != nullptr; ++i) {
         string_append(name, cmd->args[i]);
@@ -1065,7 +1065,7 @@ BOOL con_cmd_shell(ConCMD const *cmd) {
     }
 
     pthread_t thread_id = 0;
-    C8 *shell_cmd_copy  = ou_strdup(shell_cmd, MEMORY_TYPE_DARENA);
+    C8 *shell_cmd_copy  = ou_strdup(shell_cmd, MEMORY_TYPE_ARENA_DEBUG);
     pthread_create(&thread_id, nullptr, i_execute_shell_cmd, (void *)shell_cmd_copy);
     pthread_detach(thread_id);
 
@@ -1216,7 +1216,7 @@ SZ static i_get_visible_line_count() {
 void static i_save_history_to_file() {
     if (g_console.cmd_history_buffer.count == 0) { return; }
 
-    String *history_text = string_create_empty(MEMORY_TYPE_TARENA);
+    String *history_text = string_create_empty(MEMORY_TYPE_ARENA_TRANSIENT);
 
     for (SZ i = 0; i < g_console.cmd_history_buffer.count; ++i) {
         C8 const *cmd = ring_get(&g_console.cmd_history_buffer, i);
@@ -1239,7 +1239,7 @@ void static i_load_history_from_file() {
     C8 const *line = ou_strtok(file_contents, "\n", &saveptr);
 
     while (line) {
-        if (ou_strlen(line) > 0) { ring_push(&g_console.cmd_history_buffer, ou_strdup(line, MEMORY_TYPE_DARENA)); }
+        if (ou_strlen(line) > 0) { ring_push(&g_console.cmd_history_buffer, ou_strdup(line, MEMORY_TYPE_ARENA_DEBUG)); }
         line = ou_strtok(nullptr, "\n", &saveptr);
     }
 
@@ -1249,8 +1249,8 @@ void static i_load_history_from_file() {
 void console_init() {
     g_console.scrollbar = asset_get_texture("cursor_re_vertical.png");
 
-    ring_init(MEMORY_TYPE_DARENA, &g_console.output_buffer, 1000);
-    ring_init(MEMORY_TYPE_DARENA, &g_console.cmd_history_buffer, 1000);
+    ring_init(MEMORY_TYPE_ARENA_DEBUG, &g_console.output_buffer, 1000);
+    ring_init(MEMORY_TYPE_ARENA_DEBUG, &g_console.cmd_history_buffer, 1000);
 
     g_console.visible_line_count = i_get_visible_line_count();
     g_console.initialized        = true;
@@ -1620,7 +1620,7 @@ void console_do_parse_input() {
     }
 
     if (!is_duplicate) {
-        ring_push(&g_console.cmd_history_buffer, ou_strdup(g_console.input_buffer, MEMORY_TYPE_DARENA));
+        ring_push(&g_console.cmd_history_buffer, ou_strdup(g_console.input_buffer, MEMORY_TYPE_ARENA_DEBUG));
         i_save_history_to_file();
     }
 
@@ -1887,7 +1887,7 @@ void console_do_parse_input() {
     }
 
     // Set the first argument to the entire input string
-    C8 *shell_arg = ou_strdup(g_console.input_buffer, MEMORY_TYPE_TARENA);
+    C8 *shell_arg = ou_strdup(g_console.input_buffer, MEMORY_TYPE_ARENA_TRANSIENT);
     shell_cmd.args[0] = shell_arg;
 
     // Execute as shell command
@@ -2225,13 +2225,13 @@ BOOL console_autocomplete_input_buffer() {
 void console_print_to_output(C8 const *message) {
     if (!g_console.initialized) { return; }
     // Duplicate the message on the heap since the callee will free it.
-    C8 const *message_copy = ou_strdup(message, MEMORY_TYPE_DARENA);
+    C8 const *message_copy = ou_strdup(message, MEMORY_TYPE_ARENA_DEBUG);
     if (message_copy == nullptr) { return; }
     ring_push(&g_console.output_buffer, message_copy);
 }
 
 void console_draw_separator() {
-    ring_push(&g_console.output_buffer, ou_strdup("----", MEMORY_TYPE_DARENA));
+    ring_push(&g_console.output_buffer, ou_strdup("----", MEMORY_TYPE_ARENA_DEBUG));
 }
 
 void console_clear() {

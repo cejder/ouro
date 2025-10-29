@@ -64,5 +64,5 @@ void string_truncate(String *s, SZ max_length, C8 const *append);
 S32 string_to_s32(String *s);
 F32 string_to_f32(String *s);
 
-#define PS(...) string_create(MEMORY_TYPE_PARENA, __VA_ARGS__)
-#define TS(...) string_create(MEMORY_TYPE_TARENA, __VA_ARGS__)
+#define PS(...) string_create(MEMORY_TYPE_ARENA_PERMANENT, __VA_ARGS__)
+#define TS(...) string_create(MEMORY_TYPE_ARENA_TRANSIENT, __VA_ARGS__)

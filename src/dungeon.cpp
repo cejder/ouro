@@ -89,8 +89,8 @@ struct IDungeonData {
 
 IDungeonData static i_parse_dungeon(C8 const* filepath) {
     IDungeonData data = {};
-    array_init(MEMORY_TYPE_PARENA, &data.tiles, (SZ)(100 * 100));
-    array_init(MEMORY_TYPE_PARENA, &data.collision_walls, (SZ)(100 * 100));
+    array_init(MEMORY_TYPE_ARENA_PERMANENT, &data.tiles, (SZ)(100 * 100));
+    array_init(MEMORY_TYPE_ARENA_PERMANENT, &data.collision_walls, (SZ)(100 * 100));
 
     IDungeonTileData tdata = {};
 

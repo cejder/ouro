@@ -198,7 +198,7 @@ void static inline i_end_frame(ProfilerTrack *t) {
 void profiler_init() {
     g_profiler.call_stack_depth = 0;
 
-    ProfilerTrackMap_init(&g_profiler.track_map, MEMORY_TYPE_PARENA, 0);
+    ProfilerTrackMap_init(&g_profiler.track_map, MEMORY_TYPE_ARENA_PERMANENT, 0);
 
     g_profiler.initialized = true;
 }

@@ -37,8 +37,8 @@ void particles2d_init() {
     g_particles2d.comp_current_scene_loc  = GetShaderLocation(g_particles2d.compute_shader->base, "u_current_scene");
 
     // Initialize dynamic texture array and bindless handles array
-    array_init(MEMORY_TYPE_PARENA, &g_particles2d.textures, 8);
-    array_init(MEMORY_TYPE_PARENA, &g_particles2d.texture_handles, 8);
+    array_init(MEMORY_TYPE_ARENA_PERMANENT, &g_particles2d.textures, 8);
+    array_init(MEMORY_TYPE_ARENA_PERMANENT, &g_particles2d.texture_handles, 8);
 
     // Base quad vertices for instanced rendering
     F32 const quad_vertices[] = {

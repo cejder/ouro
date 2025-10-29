@@ -17,7 +17,7 @@ CVarMeta const cvar_meta_table[CVAR_COUNT] = {
 };
 
 void cvar_save() {
-    String *t = string_create_empty(MEMORY_TYPE_TARENA);
+    String *t = string_create_empty(MEMORY_TYPE_ARENA_TRANSIENT);
 
     // Calculate the maximum variable name length
     SZ max_var_name_length = 0;

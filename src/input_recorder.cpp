@@ -1,8 +1,8 @@
 #include "input.hpp"
 
 void mouse_recorder_init(MouseTape *tape, C8 const *name) {
-    array_init(MEMORY_TYPE_PARENA, &tape->frames, 0);
-    tape->name = string_create(MEMORY_TYPE_PARENA, "%s", name);
+    array_init(MEMORY_TYPE_ARENA_PERMANENT, &tape->frames, 0);
+    tape->name = string_create(MEMORY_TYPE_ARENA_PERMANENT, "%s", name);
 }
 
 void mouse_recorder_record_frame(MouseTape* tape) {
@@ -25,7 +25,7 @@ void mouse_recorder_reset(MouseTape* tape) {
 
 void mouse_recorder_save(MouseTape *tape) {
     String *path = TS("%s%s.out", MOUSE_TAPES_PATH, tape->name->c);
-    String *out  = string_create_empty(MEMORY_TYPE_TARENA);
+    String *out  = string_create_empty(MEMORY_TYPE_ARENA_TRANSIENT);
 
     for (SZ i = 1; i < tape->frames.count; ++i) {
         string_appendf(out, "%.2f;", tape->frames.data[i].position.x);
@@ -85,7 +85,7 @@ void mouse_recorder_load(MouseTape *tape, C8 const *name) {
     array_clear(&tape->frames);
 
     SZ count = SZ_MAX;
-    String **split = string_split(string_create(MEMORY_TYPE_TARENA, "%s", (C8 const *)data), ';', &count);
+    String **split = string_split(string_create(MEMORY_TYPE_ARENA_TRANSIENT, "%s", (C8 const *)data), ';', &count);
     MemFree(data);
 
     SZ const position_fields         = 3;

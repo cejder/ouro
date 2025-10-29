@@ -45,7 +45,7 @@ void static i_set_cursor() {
 void static i_set_icon() {
     ATexture *icon_texture = asset_get_texture("icon.png");
     SetWindowIcon(icon_texture->image);
-    // TODO: void SetWindowIcons(Image *images, int count)
+    // TODO: void SetWindowIcons(Image *images, S32 count)
 }
 
 void core_init(U8 major, U8 minor, U8 patch, C8 const *build_type) {

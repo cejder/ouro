@@ -474,10 +474,10 @@ void input_draw() {
     auto **mouse_strings   = mmta(String **, sizeof(String *) * IA_COUNT);
 
     for (SZ i = 0; i < IA_COUNT; ++i) {
-        action_strings[i]  = string_create_empty(MEMORY_TYPE_TARENA);
-        keybind_strings[i] = string_create_empty(MEMORY_TYPE_TARENA);
-        gamepad_strings[i] = string_create_empty(MEMORY_TYPE_TARENA);
-        mouse_strings[i]   = string_create_empty(MEMORY_TYPE_TARENA);
+        action_strings[i]  = string_create_empty(MEMORY_TYPE_ARENA_TRANSIENT);
+        keybind_strings[i] = string_create_empty(MEMORY_TYPE_ARENA_TRANSIENT);
+        gamepad_strings[i] = string_create_empty(MEMORY_TYPE_ARENA_TRANSIENT);
+        mouse_strings[i]   = string_create_empty(MEMORY_TYPE_ARENA_TRANSIENT);
     }
 
     // First pass: create strings and calculate maximum widths

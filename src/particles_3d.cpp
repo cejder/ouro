@@ -40,8 +40,8 @@ void particles3d_init() {
     g_particles3d.comp_current_scene_loc  = GetShaderLocation(g_particles3d.compute_shader->base, "u_current_scene");
 
     // Initialize dynamic texture array and bindless handles array
-    array_init(MEMORY_TYPE_PARENA, &g_particles3d.textures, 8);
-    array_init(MEMORY_TYPE_PARENA, &g_particles3d.texture_handles, 8);
+    array_init(MEMORY_TYPE_ARENA_PERMANENT, &g_particles3d.textures, 8);
+    array_init(MEMORY_TYPE_ARENA_PERMANENT, &g_particles3d.texture_handles, 8);
 
     // Base quad vertices for instanced rendering (billboards)
     F32 const quad_vertices[] = {

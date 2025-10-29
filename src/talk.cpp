@@ -245,7 +245,7 @@ void talker_draw(EntityTalker *talker, C8 const *name) {
         C8 const *sentence      = node->node_text->c;
         Vector2 text_dimensions = measure_text(node_font, sentence);
         // NOTE: We still use the full sentence for the text dimensions.
-        if (con->char_count_to_print < node->node_text->length) { sentence = ou_strn(sentence, con->char_count_to_print, MEMORY_TYPE_TARENA); }
+        if (con->char_count_to_print < node->node_text->length) { sentence = ou_strn(sentence, con->char_count_to_print, MEMORY_TYPE_ARENA_TRANSIENT); }
 
         Vector2 const text_position = {
             box_position.x + (box_size.x / 2.0F) - (text_dimensions.x / 2.0F),

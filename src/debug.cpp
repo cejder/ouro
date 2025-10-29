@@ -154,7 +154,7 @@ void static i_setup_typical_label_vec2_with_sep(C8 const *label, Vector2 value, 
     dwis(3.0F);
 }
 
-void static i_setup_arena_info(C8 const *title, MemoryType type, MemoryArenaStats *stats, Vector2 fillbar_size) {
+void static i_setup_arena_info(C8 const *title, MemoryType type, ArenaStats *stats, Vector2 fillbar_size) {
     AFont *medium_font = g_dbg.medium_font;
     AFont *large_font  = g_dbg.large_font;
 
@@ -174,13 +174,13 @@ void static i_setup_arena_info(C8 const *title, MemoryType type, MemoryArenaStat
     dwifb(nullptr, medium_font, DBG_FILLBAR_FG_COLOR, DBG_FILLBAR_BG_COLOR, DBG_FILLBAR_TEXT_COLOR, fillbar_size, (F32)stats->total_used, 0.0F,
           (F32)stats->total_capacity, false, nullptr, DBG_WIDGET_DATA_TYPE_FLOAT, DBG_WIDGET_CB_NONE);
 
-    MemoryArenaTimeline *tl = memory_get_timeline(type);
+    ArenaTimeline *tl = memory_get_timeline(type);
 
-    F32 const max = type == MEMORY_TYPE_DARENA ? DBG_ARENA_ALLOCATIONS_TILL_RESET : 100000.0F;
-    dwitl(LIME, NEARBLACK, tl->total_allocations_count, MEMORY_TIMELINE_MAX_COUNT, 0.00F, max, "%.0f %s", "allocs");
+    F32 const max = type == MEMORY_TYPE_ARENA_DEBUG ? DBG_ARENA_ALLOCATIONS_TILL_RESET : 100000.0F;
+    dwitl(LIME, NEARBLACK, tl->total_allocations_count, ARENA_TIMELINE_MAX_COUNT, 0.00F, max, "%.0f %s", "allocs");
 }
 
-void static i_setup_light_arena_info(C8 const *name, MemoryArena *arena) {
+void static i_setup_light_arena_info(C8 const *name, Arena *arena) {
     AFont *font = g_dbg.medium_font;
 
     C8 pretty_buffer_1[PRETTY_BUFFER_SIZE] = {};
@@ -212,7 +212,7 @@ void static i_setup_dbg_gui() {
     // ===============================================================
     dwnd(DBG_WID_RENDER) {
         RenderMode *render_order = g_render.rmode_order;
-        String *render_order_str = string_create_empty(MEMORY_TYPE_TARENA);
+        String *render_order_str = string_create_empty(MEMORY_TYPE_ARENA_TRANSIENT);
 
         SZ longest_render_mode_str_len = 0;
         for (SZ i = 0; i < RMODE_COUNT; ++i) {
@@ -378,15 +378,15 @@ void static i_setup_dbg_gui() {
     // ======================= Window: MEMORY ========================
     // ===============================================================
     dwnd(DBG_WID_MEMORY) {
-        MemoryArenaStats perm_stats  = memory_get_last_arena_stats(MEMORY_TYPE_PARENA);
-        MemoryArenaStats trans_stats = memory_get_last_arena_stats(MEMORY_TYPE_TARENA);
-        MemoryArenaStats debug_stats = memory_get_last_arena_stats(MEMORY_TYPE_DARENA);
-        MemoryArenaStats math_stats  = memory_get_last_arena_stats(MEMORY_TYPE_MARENA);
+        ArenaStats perm_stats  = memory_get_last_arena_stats(MEMORY_TYPE_ARENA_PERMANENT);
+        ArenaStats trans_stats = memory_get_last_arena_stats(MEMORY_TYPE_ARENA_TRANSIENT);
+        ArenaStats debug_stats = memory_get_last_arena_stats(MEMORY_TYPE_ARENA_DEBUG);
+        ArenaStats math_stats  = memory_get_last_arena_stats(MEMORY_TYPE_ARENA_MATH);
 
-        i_setup_arena_info("PERM Arena",  MEMORY_TYPE_PARENA, &perm_stats,  DBG_REF_FILLBAR_SIZE); dwis(5.0F);
-        i_setup_arena_info("TRANS Arena", MEMORY_TYPE_TARENA, &trans_stats, DBG_REF_FILLBAR_SIZE); dwis(5.0F);
-        i_setup_arena_info("DEBUG Arena", MEMORY_TYPE_DARENA, &debug_stats, DBG_REF_FILLBAR_SIZE); dwis(5.0F);
-        i_setup_arena_info("MATH Arena",  MEMORY_TYPE_MARENA, &math_stats,  DBG_REF_FILLBAR_SIZE); dwis(5.0F);
+        i_setup_arena_info("PERM Arena",  MEMORY_TYPE_ARENA_PERMANENT, &perm_stats,  DBG_REF_FILLBAR_SIZE); dwis(5.0F);
+        i_setup_arena_info("TRANS Arena", MEMORY_TYPE_ARENA_TRANSIENT, &trans_stats, DBG_REF_FILLBAR_SIZE); dwis(5.0F);
+        i_setup_arena_info("DEBUG Arena", MEMORY_TYPE_ARENA_DEBUG, &debug_stats, DBG_REF_FILLBAR_SIZE); dwis(5.0F);
+        i_setup_arena_info("MATH Arena",  MEMORY_TYPE_ARENA_MATH, &math_stats,  DBG_REF_FILLBAR_SIZE); dwis(5.0F);
 
         i_call_cbs(DBG_WID_MEMORY);
     }
@@ -1036,9 +1036,9 @@ String static *i_get_window_extra_title_info(SZ wid) {
         case DBG_WID_MEMORY: {
             // Return the total allocation count.
             SZ total_alloc_count = 0;
-            MemoryArenaStats const perm_stats  = memory_get_last_arena_stats(MEMORY_TYPE_PARENA);
-            MemoryArenaStats const temp_stats  = memory_get_last_arena_stats(MEMORY_TYPE_TARENA);
-            MemoryArenaStats const debug_stats = memory_get_last_arena_stats(MEMORY_TYPE_DARENA);
+            ArenaStats const perm_stats  = memory_get_last_arena_stats(MEMORY_TYPE_ARENA_PERMANENT);
+            ArenaStats const temp_stats  = memory_get_last_arena_stats(MEMORY_TYPE_ARENA_TRANSIENT);
+            ArenaStats const debug_stats = memory_get_last_arena_stats(MEMORY_TYPE_ARENA_DEBUG);
             total_alloc_count += perm_stats.total_allocation_count;
             total_alloc_count += temp_stats.total_allocation_count;
             total_alloc_count += debug_stats.total_allocation_count;
@@ -1576,8 +1576,8 @@ void dbg_update() {
 
     PBEGIN("BODY_DBG_UPDATE_PART_2");
 
-    MemoryArenaStats const stats = memory_get_last_arena_stats(MEMORY_TYPE_DARENA);
-    if (stats.total_allocation_count > DBG_ARENA_ALLOCATIONS_TILL_RESET) { memory_reset_arena(MEMORY_TYPE_DARENA); }
+    ArenaStats const stats = memory_get_last_arena_stats(MEMORY_TYPE_ARENA_DEBUG);
+    if (stats.total_allocation_count > DBG_ARENA_ALLOCATIONS_TILL_RESET) { memory_reset_arena(MEMORY_TYPE_ARENA_DEBUG); }
 
     if (c_debug__windows_sticky) { dbg_reset_windows(false); }
 
@@ -2491,7 +2491,7 @@ void dbg_reset_windows(BOOL everything) {
 
 void dbg_load_ini() {
     BOOL exists = false;
-    g_dbg.ini = ini_file_create(MEMORY_TYPE_TARENA, DBG_INI_FILE_PATH, &exists);
+    g_dbg.ini = ini_file_create(MEMORY_TYPE_ARENA_TRANSIENT, DBG_INI_FILE_PATH, &exists);
     if (!exists) {
         // Since the config did not exist, we just want to reset everything to default and return early
         dbg_reset_windows(true);
@@ -2512,7 +2512,7 @@ void dbg_load_ini() {
 }
 
 void dbg_save_ini() {
-    INIFile *ini = ini_file_create(MEMORY_TYPE_TARENA, DBG_INI_FILE_PATH, nullptr);
+    INIFile *ini = ini_file_create(MEMORY_TYPE_ARENA_TRANSIENT, DBG_INI_FILE_PATH, nullptr);
 
     for (SZ i = 0; i < DBG_WID_COUNT; ++i) {
         String *label = TS("window_%s", i_dbg_window_name_strings[i]);

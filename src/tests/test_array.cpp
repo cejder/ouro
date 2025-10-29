@@ -11,23 +11,23 @@ ARRAY_DECLARE(TestU64Array, U64);
 
 void static test_array_init() {
     TestU64Array array1;
-    array_init(MEMORY_TYPE_TARENA, &array1, 0);
+    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &array1, 0);
     TEST_ASSERT_EQUAL_INT(array1.capacity, 0);
     TEST_ASSERT_EQUAL_INT(array1.count, 0);
-    TEST_ASSERT_EQUAL_INT(array1.mem_type, MEMORY_TYPE_TARENA);
+    TEST_ASSERT_EQUAL_INT(array1.mem_type, MEMORY_TYPE_ARENA_TRANSIENT);
     TEST_ASSERT_NULL(array1.data);
 
     TestU64Array array2;
-    array_init(MEMORY_TYPE_TARENA, &array2, 100);
+    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &array2, 100);
     TEST_ASSERT_EQUAL_INT(array2.capacity, 100);
     TEST_ASSERT_EQUAL_INT(array2.count, 0);
-    TEST_ASSERT_EQUAL_INT(array2.mem_type, MEMORY_TYPE_TARENA);
+    TEST_ASSERT_EQUAL_INT(array2.mem_type, MEMORY_TYPE_ARENA_TRANSIENT);
     TEST_ASSERT_NOT_NULL(array2.data);
 }
 
 void static test_array_push() {
     TestU64Array array1;
-    array_init(MEMORY_TYPE_TARENA, &array1, 0);
+    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &array1, 0);
     array_push(&array1, 10);
     TEST_ASSERT_EQUAL_INT(array1.capacity, 8);
     TEST_ASSERT_EQUAL_INT(array1.count, 1);
@@ -40,7 +40,7 @@ void static test_array_push() {
     TEST_ASSERT_TRUE(array1.data[1] == 20);
 
     TestU64Array array2;
-    array_init(MEMORY_TYPE_TARENA, &array2, 100);
+    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &array2, 100);
     array_push(&array2, 10);
     TEST_ASSERT_EQUAL_INT(array2.capacity, 100);
     TEST_ASSERT_EQUAL_INT(array2.count, 1);
@@ -56,7 +56,7 @@ void static test_array_push() {
 void static test_array_push_multiple() {
     U64 const arr[] = {10, 20};
     TestU64Array array1;
-    array_init(MEMORY_TYPE_TARENA, &array1, 0);
+    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &array1, 0);
     array_push_multiple(&array1, arr, 2);
     TEST_ASSERT_EQUAL_INT(array1.count, 2);
     TEST_ASSERT_TRUE(array1.data[0] == 10);
@@ -66,7 +66,7 @@ void static test_array_push_multiple() {
 void static test_array_pop() {
     U64 const arr[] = {10, 20};
     TestU64Array array1;
-    array_init(MEMORY_TYPE_TARENA, &array1, 0);
+    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &array1, 0);
     array_push_multiple(&array1, arr, 2);
     U64 const popped = array_pop(&array1);
     TEST_ASSERT_TRUE(popped == 20);
@@ -76,7 +76,7 @@ void static test_array_pop() {
 void static test_array_get() {
     U64 const arr[] = {10, 20, 30};
     TestU64Array array1;
-    array_init(MEMORY_TYPE_TARENA, &array1, 0);
+    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &array1, 0);
     array_push_multiple(&array1, arr, 3);
     U64 got = array_get(&array1, 0);
     TEST_ASSERT_TRUE(got == 10);
@@ -89,7 +89,7 @@ void static test_array_get() {
 void static test_array_set() {
     U64 const arr[] = {0, 0, 0};
     TestU64Array array1;
-    array_init(MEMORY_TYPE_TARENA, &array1, 0);
+    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &array1, 0);
     array_push_multiple(&array1, arr, 3);
     array_set(&array1, 0, 10);
     array_set(&array1, 1, 20);
@@ -105,7 +105,7 @@ void static test_array_set() {
 void static test_array_clear() {
     U64 const arr[] = {10, 20};
     TestU64Array array1;
-    array_init(MEMORY_TYPE_TARENA, &array1, 0);
+    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &array1, 0);
     array_push_multiple(&array1, arr, 2);
     array_clear(&array1);
     TEST_ASSERT_EQUAL_INT(array1.count, 0);
@@ -114,7 +114,7 @@ void static test_array_clear() {
 void static test_array_last() {
     U64 const arr[] = {10, 20, 30};
     TestU64Array array1;
-    array_init(MEMORY_TYPE_TARENA, &array1, 0);
+    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &array1, 0);
     array_push_multiple(&array1, arr, 3);
     U64 const got = array_last(&array1);
     TEST_ASSERT_TRUE(got == 30);
@@ -123,7 +123,7 @@ void static test_array_last() {
 void static test_array_first() {
     U64 const arr[] = {10, 20, 30};
     TestU64Array array1;
-    array_init(MEMORY_TYPE_TARENA, &array1, 0);
+    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &array1, 0);
     array_push_multiple(&array1, arr, 3);
     U64 const got = array_first(&array1);
     TEST_ASSERT_TRUE(got == 10);
@@ -132,7 +132,7 @@ void static test_array_first() {
 void static test_array_empty() {
     U64 const arr[] = {10, 20, 30};
     TestU64Array array1;
-    array_init(MEMORY_TYPE_TARENA, &array1, 0);
+    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &array1, 0);
     array_push_multiple(&array1, arr, 3);
     BOOL empty = array_empty(&array1);
     TEST_ASSERT_FALSE(empty);
@@ -147,7 +147,7 @@ void static test_array_empty() {
 void static test_array_full() {
     U64 const arr[] = {10, 20, 30};
     TestU64Array array1;
-    array_init(MEMORY_TYPE_TARENA, &array1, 3);
+    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &array1, 3);
     array_push_multiple(&array1, arr, 3);
     BOOL full = array_full(&array1);
     TEST_ASSERT_TRUE(full);
@@ -161,7 +161,7 @@ void static test_array_full() {
 
 void static test_array_reserve() {
     TestU64Array array1;
-    array_init(MEMORY_TYPE_TARENA, &array1, 0);
+    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &array1, 0);
     TEST_ASSERT_EQUAL_INT(array1.capacity, 0);
     array_reserve(&array1, 256);
     TEST_ASSERT_EQUAL_INT(array1.capacity, 256);
@@ -170,7 +170,7 @@ void static test_array_reserve() {
 void static test_array_each() {
     U64 const arr[] = {10, 20, 30};
     TestU64Array array1;
-    array_init(MEMORY_TYPE_TARENA, &array1, 3);
+    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &array1, 3);
     array_push_multiple(&array1, arr, 3);
     array_each(i, &array1) {
         TEST_ASSERT_EQUAL_INT(array1.data[i], (i + 1) * 10);
@@ -180,7 +180,7 @@ void static test_array_each() {
 void static test_array_each_ptr() {
     U64 const arr[] = {10, 20, 30};
     TestU64Array array1;
-    array_init(MEMORY_TYPE_TARENA, &array1, 3);
+    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &array1, 3);
     array_push_multiple(&array1, arr, 3);
     array_each_ptr(ptr, &array1) {
         *ptr += 10;
@@ -193,7 +193,7 @@ void static test_array_each_ptr() {
 void static test_array_each_reverse() {
     U64 const arr[] = {10, 20, 30};
     TestU64Array array1;
-    array_init(MEMORY_TYPE_TARENA, &array1, 3);
+    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &array1, 3);
     array_push_multiple(&array1, arr, 3);
     array_each_ptr(ptr, &array1) {
         *ptr += 10;
@@ -206,7 +206,7 @@ void static test_array_each_reverse() {
 void static test_array_find() {
     U64 const arr[] = {10, 20, 30, 40, 50, 60, 70, 80, 90, 00};
     TestU64Array array1;
-    array_init(MEMORY_TYPE_TARENA, &array1, 10);
+    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &array1, 10);
     array_push_multiple(&array1, arr, 10);
     SZ result = 0;
     array_find(&array1, 00, result);
@@ -218,7 +218,7 @@ void static test_array_find() {
 void static test_array_remove_at() {
     U64 const arr[] = {10, 20, 30, 40, 50};
     TestU64Array array1;
-    array_init(MEMORY_TYPE_TARENA, &array1, 5);
+    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &array1, 5);
     array_push_multiple(&array1, arr, 5);
     array_remove_at(&array1, 1);
     TEST_ASSERT_EQUAL_INT(array1.data[0], 10);
@@ -236,7 +236,7 @@ void static test_array_remove_at() {
 void static test_array_remove_value() {
     U64 const arr[] = {10, 20, 30, 40, 50};
     TestU64Array array1;
-    array_init(MEMORY_TYPE_TARENA, &array1, 5);
+    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &array1, 5);
     array_push_multiple(&array1, arr, 5);
     array_remove_value(&array1, 20);
     TEST_ASSERT_EQUAL_INT(array1.data[0], 10);
@@ -254,16 +254,16 @@ void static test_array_remove_value() {
 void static test_array_last_ptr() {
     U64 const arr[] = {10, 20, 30};
     TestU64Array array1;
-    array_init(MEMORY_TYPE_TARENA, &array1, 0);
+    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &array1, 0);
     array_push_multiple(&array1, arr, 3);
     U64 *last_ptr = array_last_ptr(&array1);
     TEST_ASSERT_NOT_NULL(last_ptr);
     TEST_ASSERT_EQUAL_INT(*last_ptr, 30);
     *last_ptr = 99;
     TEST_ASSERT_EQUAL_INT(array1.data[2], 99);
-    
+
     TestU64Array empty_array;
-    array_init(MEMORY_TYPE_TARENA, &empty_array, 0);
+    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &empty_array, 0);
     U64 *empty_last_ptr = array_last_ptr(&empty_array);
     TEST_ASSERT_NULL(empty_last_ptr);
 }
@@ -271,16 +271,16 @@ void static test_array_last_ptr() {
 void static test_array_first_ptr() {
     U64 const arr[] = {10, 20, 30};
     TestU64Array array1;
-    array_init(MEMORY_TYPE_TARENA, &array1, 0);
+    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &array1, 0);
     array_push_multiple(&array1, arr, 3);
     U64 *first_ptr = array_first_ptr(&array1);
     TEST_ASSERT_NOT_NULL(first_ptr);
     TEST_ASSERT_EQUAL_INT(*first_ptr, 10);
     *first_ptr = 99;
     TEST_ASSERT_EQUAL_INT(array1.data[0], 99);
-    
+
     TestU64Array empty_array;
-    array_init(MEMORY_TYPE_TARENA, &empty_array, 0);
+    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &empty_array, 0);
     U64 *empty_first_ptr = array_first_ptr(&empty_array);
     TEST_ASSERT_NULL(empty_first_ptr);
 }
@@ -289,7 +289,7 @@ void static test_array_performance_benchmark() {
     C8 pretty_buffer[PRETTY_BUFFER_SIZE] = {};
 
     TestU64Array array1;
-    array_init(MEMORY_TYPE_TARENA, &array1, 16);
+    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &array1, 16);
 
     U64 const num_operations = 1'000'000;
 

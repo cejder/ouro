@@ -64,15 +64,19 @@ S32 main(S32 argc, C8 const **argv) {
     }
 
     MemorySetup const setup = {
-        .permanent_arena_capacity = MEBI(1024),
-        .transient_arena_capacity = MEBI(512),
-        .debug_arena_capacity     = MEBI(256),
-        .math_arena_capacity      = MEBI(64),
-        .verbose_permanent_arena  = false,
-        .verbose_transient_arena  = false,
-        .verbose_debug_arena      = false,
-        .verbose_math_arena       = false,
         .memory_alignment         = 64,
+
+        .permanent_arena_verbose  = false,
+        .permanent_arena_capacity = MEBI(1024),
+
+        .debug_arena_verbose      = false,
+        .debug_arena_capacity     = MEBI(256),
+
+        .transient_arena_verbose  = false,
+        .transient_arena_capacity = MEBI(512),
+
+        .math_arena_verbose       = false,
+        .math_arena_capacity      = MEBI(64),
     };
 
     memory_init(setup);

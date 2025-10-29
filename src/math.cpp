@@ -42,16 +42,16 @@ IMathCache static i_cache = {};
 
 void math_init() {
     random_seed(RANDOM_SEED);
-    ITextCache_init(&i_cache.text, MEMORY_TYPE_MARENA, TEXT_CACHE_INITIAL_CAPACITY);
+    ITextCache_init(&i_cache.text, MEMORY_TYPE_ARENA_MATH, TEXT_CACHE_INITIAL_CAPACITY);
 }
 
 void math_update() {
-    MemoryArenaStats const stats = memory_get_current_arena_stats(MEMORY_TYPE_MARENA);
+    ArenaStats const stats = memory_get_current_arena_stats(MEMORY_TYPE_ARENA_MATH);
     F32 const usage_percent = (F32)stats.total_used / (F32)stats.total_capacity;
 
     if (usage_percent > 0.95F) {
-        memory_reset_arena(MEMORY_TYPE_MARENA);
-        ITextCache_init(&i_cache.text, MEMORY_TYPE_MARENA, TEXT_CACHE_INITIAL_CAPACITY);
+        memory_reset_arena(MEMORY_TYPE_ARENA_MATH);
+        ITextCache_init(&i_cache.text, MEMORY_TYPE_ARENA_MATH, TEXT_CACHE_INITIAL_CAPACITY);
     }
 }
 

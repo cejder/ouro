@@ -530,7 +530,7 @@ void render_draw_3d_dbg(Camera3D *camera) {
         U32 const sample_stride  = 4;
         Color const normal_color = BEIGE;
         MatrixArray batch_transforms;
-        array_init(MEMORY_TYPE_TARENA, &batch_transforms, (SZ)A_TERRAIN_DEFAULT_SIZE * (SZ)A_TERRAIN_DEFAULT_SIZE);
+        array_init(MEMORY_TYPE_ARENA_TRANSIENT, &batch_transforms, (SZ)A_TERRAIN_DEFAULT_SIZE * (SZ)A_TERRAIN_DEFAULT_SIZE);
 
         for (U32 z = 0U; z < A_TERRAIN_DEFAULT_SIZE; z += r) {
             if ((z / r) % sample_stride != 0) {

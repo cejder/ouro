@@ -734,9 +734,9 @@ void static i_load_terrain(C8 const *path, Vector3 dimensions) {
 
     // Generate terrain info data
     SZ const cap = (SZ)A_TERRAIN_DEFAULT_SIZE * (SZ)A_TERRAIN_DEFAULT_SIZE;
-    array_init(MEMORY_TYPE_PARENA, &a->info_positions,  cap);
-    array_init(MEMORY_TYPE_PARENA, &a->info_normals,    cap);
-    array_init(MEMORY_TYPE_PARENA, &a->info_transforms, cap);
+    array_init(MEMORY_TYPE_ARENA_PERMANENT, &a->info_positions,  cap);
+    array_init(MEMORY_TYPE_ARENA_PERMANENT, &a->info_normals,    cap);
+    array_init(MEMORY_TYPE_ARENA_PERMANENT, &a->info_transforms, cap);
 
     U32 r = A_TERRAIN_DEFAULT_SIZE / A_TERRAIN_SAMPLE_RATE;  // NOLINT
     F32 const normal_length = 2.0F;
@@ -1289,7 +1289,7 @@ void asset_blob_write() {
 
     // Reuse existing array instead of allocating new one
     if (g_assets.blobs.data == nullptr) {
-        array_init(MEMORY_TYPE_PARENA, &g_assets.blobs, list.count);
+        array_init(MEMORY_TYPE_ARENA_PERMANENT, &g_assets.blobs, list.count);
     } else {
         array_clear(&g_assets.blobs);
     }
@@ -1311,7 +1311,7 @@ void asset_blob_write() {
     // Header
     total_size += sizeof(ABlobHeader);
 
-    U8 *write_data = (U8*)memory_oucalloc(1, total_size, MEMORY_TYPE_TARENA);
+    U8 *write_data = (U8*)memory_oucalloc(1, total_size, MEMORY_TYPE_ARENA_TRANSIENT);
     SZ  write_size = 0;
 
     // Write header
