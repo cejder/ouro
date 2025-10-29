@@ -9,12 +9,19 @@
 Memory static i_memory = {};
 
 C8 static const *i_type_to_cstr[MEMORY_TYPE_COUNT] = {
-    "Freelist",
     "Permanent Arena",
     "Transient Arena",
     "Debug Arena",
     "Math Arena",
 };
+
+void static i_free(void* ptr) {
+#if defined(_WIN32)
+    _aligned_free(ptr); // NOLINT
+#else
+    free(ptr); // NOLINT
+#endif
+}
 
 // ===============================================================
 // ============================ ARENA ============================
@@ -38,7 +45,7 @@ Arena static *i_arena_create(SZ capacity) {
     arena->memory = aligned_alloc(i_memory.setup.alignment, capacity);  // NOLINT
 #endif
     if (!arena->memory) {
-        free(arena);  // NOLINT
+        i_free(arena);  // NOLINT
         lle("Could not allocate memory for arena base");
         return nullptr;
     }
@@ -49,8 +56,8 @@ Arena static *i_arena_create(SZ capacity) {
 }
 
 void static i_arena_destroy(Arena *arena) {
-    free(arena->memory);  // NOLINT
-    free(arena);          // NOLINT
+    i_free(arena->memory);  // NOLINT
+    i_free(arena);          // NOLINT
 }
 
 void static *i_arena_alloc(Arena *arena, SZ size) {
@@ -100,12 +107,6 @@ void static *i_arena_allocator_alloc(ArenaAllocator *allocator, SZ size) {
 
     return i_arena_alloc(arena, aligned_size);
 }
-
-// ===============================================================
-// ========================== FREELIST ===========================
-// ===============================================================
-
-// TODO:
 
 // ===============================================================
 // =========================== MEMORY ============================
@@ -179,12 +180,6 @@ void *memory_realloc_verbose(void *ptr, SZ old_capacity, SZ new_capacity, Memory
     return memory_realloc(ptr, old_capacity, new_capacity, type);
 }
 
-void memory_free(void* ptr, MemoryType type) {}
-void memory_free_verbose(void* ptr, MemoryType type, C8 const *file, S32 line) {
-
-//TODO:
-}
-
 void memory_post() {
     for (S32 i = 0; i < MEMORY_TYPE_COUNT; ++i) {
         ArenaAllocator *a = &i_memory.arena_allocators[i];
@@ -198,8 +193,8 @@ void memory_post() {
     for (SZ i = 0; i < i_memory.arena_allocators[MEMORY_TYPE_ARENA_TRANSIENT].arena_count; ++i) {
         Arena *arena = i_memory.arena_allocators[MEMORY_TYPE_ARENA_TRANSIENT].arenas[i];
         if (arena) {
-            free(arena->memory);  // NOLINT
-            free(arena);          // NOLINT
+            i_free(arena->memory);  // NOLINT
+            i_free(arena);          // NOLINT
         }
         i_memory.arena_allocators[MEMORY_TYPE_ARENA_TRANSIENT].arenas[i] = nullptr;
     }
