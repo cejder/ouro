@@ -136,6 +136,7 @@ BOOL static inline i_has_reached_target(EID actor_id, Vector3 target_position, E
     F32 threshold_sq             = actor_radius * actor_radius;                         // Default threshold for invalid target
 
     if (entity_is_valid(target_id)) {
+        // NOLINTNEXTLINE(clang-analyzer-security.ArrayBound) - entity_is_valid() guards against INVALID_EID
         target_position            = g_world->position[target_id];
         dist_sq                    = Vector3DistanceSqr(actor_position, target_position);
         F32 const target_radius    = g_world->radius[target_id];
