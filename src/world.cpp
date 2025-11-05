@@ -239,10 +239,15 @@ void world_init(World *world) {
     world->fog.color_loc = GetShaderLocation(world->fog.shader->base, "fog.color");
     world->fog.color = BLACK;
 
-    // Set up default lights
-    g_world = world;  // Temporarily set for lighting_default_lights_setup
+    // Set up default lights and initialize per-world systems
+    g_world = world;  // Set g_world for initialization functions that need it
     lighting_default_lights_setup();
     world->lighting.initialized = true;
+
+    // Initialize per-world systems
+    entity_actor_init();
+    entity_building_init();
+    world_recorder_init();
 }
 
 // TODO: This basically is just a retarded dumb idea. We are technically not reseting anything reliably idk man. We should set flags for sub things like talker
