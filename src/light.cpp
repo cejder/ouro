@@ -1,4 +1,5 @@
 #include "light.hpp"
+#include "world.hpp"
 #include "assert.hpp"
 #include "asset.hpp"
 #include "color.hpp"
@@ -11,19 +12,17 @@
 
 #include <raymath.h>
 
-Lighting g_lighting = {};
-
 void lighting_init() {
-    g_lighting.model_shader = asset_get_shader(A_MODEL_SHADER_NAME);
-    g_lighting.model_shader_view_pos_loc = GetShaderLocation(g_lighting.model_shader->base, "viewPos");
-    g_lighting.model_shader_ambient_color_loc = GetShaderLocation(g_lighting.model_shader->base, "ambient");
+    g_world->lighting.model_shader = asset_get_shader(A_MODEL_SHADER_NAME);
+    g_world->lighting.model_shader_view_pos_loc = GetShaderLocation(g_world->lighting.model_shader->base, "viewPos");
+    g_world->lighting.model_shader_ambient_color_loc = GetShaderLocation(g_world->lighting.model_shader->base, "ambient");
     lighting_default_lights_setup();
 
-    g_lighting.initialized = true;
+    g_world->lighting.initialized = true;
 }
 
 void lighting_disable_all_lights() {
-    for (auto &light : g_lighting.lights) {
+    for (auto &light : g_world->lighting.lights) {
         light.enabled = false;
     }
 }
@@ -40,8 +39,8 @@ void static i_get_shader_locations(SZ idx, Light* light, AShader* shader) {
 }
 
 void lighting_set_point_light(SZ idx, BOOL enabled, Vector3 position, Color color, F32 intensity) {
-    AShader *shader = g_lighting.model_shader;
-    Light *light    = &g_lighting.lights[idx];
+    AShader *shader = g_world->lighting.model_shader;
+    Light *light    = &g_world->lighting.lights[idx];
 
     light->enabled      = enabled;
     light->type         = LIGHT_TYPE_POINT;
@@ -57,8 +56,8 @@ void lighting_set_point_light(SZ idx, BOOL enabled, Vector3 position, Color colo
 }
 
 void lighting_set_spot_light(SZ idx, BOOL enabled, Vector3 position, Vector3 direction, Color color, F32 intensity, F32 inner_cutoff, F32 outer_cutoff) {
-    AShader *shader = g_lighting.model_shader;
-    Light *light    = &g_lighting.lights[idx];
+    AShader *shader = g_world->lighting.model_shader;
+    Light *light    = &g_world->lighting.lights[idx];
 
     light->enabled      = enabled;
     light->type         = LIGHT_TYPE_SPOT;
@@ -74,13 +73,13 @@ void lighting_set_spot_light(SZ idx, BOOL enabled, Vector3 position, Vector3 dir
 }
 
 void lighting_set_light_enabled(SZ idx, BOOL enabled) {
-    g_lighting.lights[idx].enabled = enabled ? 1 : 0;
-    g_lighting.lights[idx].dirty   = true;
+    g_world->lighting.lights[idx].enabled = enabled ? 1 : 0;
+    g_world->lighting.lights[idx].dirty   = true;
 }
 
 void lighting_set_light_position(SZ idx, Vector3 position) {
-    g_lighting.lights[idx].position = position;
-    g_lighting.lights[idx].dirty    = true;
+    g_world->lighting.lights[idx].position = position;
+    g_world->lighting.lights[idx].dirty    = true;
 }
 
 Color static i_overworld_light_colors[LIGHTS_MAX] = {
@@ -109,9 +108,9 @@ void lighting_default_lights_setup() {
 }
 
 void lighting_update(Camera3D *camera) {
-    AShader *shader = g_lighting.model_shader;
+    AShader *shader = g_world->lighting.model_shader;
 
-    for (auto &light : g_lighting.lights) {
+    for (auto &light : g_world->lighting.lights) {
         light.in_frustum = c3d_is_point_in_frustum(light.position);
 
         if (!light.dirty) { continue; }
@@ -128,7 +127,7 @@ void lighting_update(Camera3D *camera) {
     }
 
     F32 camera_pos[3] = {camera->position.x, camera->position.y, camera->position.z};
-    SetShaderValue(shader->base, g_lighting.model_shader_view_pos_loc, camera_pos, SHADER_UNIFORM_VEC3);
+    SetShaderValue(shader->base, g_world->lighting.model_shader_view_pos_loc, camera_pos, SHADER_UNIFORM_VEC3);
 }
 
 ATexture static *i_get_icon(LightType type) {
@@ -157,7 +156,7 @@ void lighting_draw_2d_dbg() {
     for (SZ i = 0; i < LIGHTS_MAX; ++i) {
         F32 const x             = x_start + ((size + spacing) * (F32)(i % 5));
         F32 const y             = y_start + ((size + spacing) * (F32)(S32)(i / 5));
-        Light *light            = &g_lighting.lights[i];
+        Light *light            = &g_world->lighting.lights[i];
         Color const state_color = light->enabled ? GREEN : RED;
         Color light_color       = {};
         color_from_vec4(&light_color, light->color);
@@ -194,7 +193,7 @@ void lighting_draw_3d_dbg() {
 
     Camera const camera = c3d_get();
 
-    for (auto &light : g_lighting.lights) {
+    for (auto &light : g_world->lighting.lights) {
         if (!light.in_frustum) { continue; }
 
         Color color = {};
@@ -221,7 +220,7 @@ void lighting_draw_3d_dbg() {
 
 void lighting_dump() {
     for (SZ i = 0; i < LIGHTS_MAX; ++i) {
-        Light *light = &g_lighting.lights[i];
+        Light *light = &g_world->lighting.lights[i];
 
         if (light->type == LIGHT_TYPE_POINT) {
             lln("\\ouc{#00ddddff}Light[%zu] POINT: %s | pos(%7.1f,%7.1f,%7.1f) | color(%.2f,%.2f,%.2f,%.2f) | intensity=%7.1f", i,

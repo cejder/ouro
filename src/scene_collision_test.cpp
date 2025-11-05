@@ -31,6 +31,8 @@
 #include <glm/gtc/type_ptr.hpp>
 
 struct State {
+    World world;  // Scene-local world with its own lighting and fog
+
     struct {
         BOOL enabled;
         F32 duration;
@@ -418,6 +420,13 @@ SCENE_INIT(collision_test) {
                                           (void *)(&s.menu.selected_entry));
     s.menu.enabled = false;
 
+    // Initialize scene-local world with lighting and fog
+    world_init(&s.world);
+    g_world = &s.world;  // Set global pointer to this scene's world
+
+    // Set terrain for this world
+    s.world.base_terrain = asset_get_terrain("terrain2", {(F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE});
+
     s.ambient_particles_per_second         = 10.0F;
     s.ambient_particles_scale              = 1.0F;
     s.particle_start_color_state.color     = WHITE;
@@ -427,9 +436,12 @@ SCENE_INIT(collision_test) {
 }
 
 SCENE_ENTER(collision_test) {
+    // Set global world pointer to this scene's world
+    g_world = &s.world;
+
+    // Reset world and respawn entities
+    world_reset(&s.world);
     lighting_default_lights_setup();
-    world_reset();
-    world_set_overworld(asset_get_terrain("terrain2", {(F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE}));
     entity_spawn_test_overworld_set(&s.entities);
     entity_spawn_random_vegetation_on_terrain(g_world->base_terrain, (SZ)TREE_COUNT * 2, false);
     entity_init_test_overworld_set_talkers(&s.entities, cb_trigger_gong, cb_trigger_end);
@@ -516,7 +528,7 @@ SKIP_OTHER_INPUT:
     if (is_down(IA_DBG_WORLD_STATE_FORWARD))     { world_recorder_forward_state();       }
 
     // End-of-frame updates
-    g_fog.density = c_render__overworld_fog_density;
+    g_world->fog.density = c_render__overworld_fog_density;
     PP(screen_fade_update(dt));
     PP(i_fade_out_maybe(dt));
 

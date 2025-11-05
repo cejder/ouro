@@ -17,8 +17,8 @@
 #include <string.h>
 #include <sys/stat.h>
 
-WorldState g_world_state = {};
-World* g_world = g_world_state.current;
+// Global world pointer - scenes set this to their local world
+World* g_world = nullptr;
 
 // Helper: Find bone index by name (case-insensitive search)
 // Returns -1 if bone not found
@@ -222,45 +222,54 @@ void static i_compute_entity_bone_matrices(EID id) {
     }
 }
 
-void world_init() {
-    // Reset both worlds and default on start on overworld
-    g_world = &g_world_state.dungeon;
-    world_reset();
+void world_init(World *world) {
+    // Reset the world
+    world_reset(world);
 
-    g_world = &g_world_state.overworld;
-    world_reset();
+    // Initialize lighting and fog for this world
+    world->lighting.initialized = false;
+    world->lighting.model_shader = asset_get_shader(A_MODEL_SHADER_NAME);
+    world->lighting.model_shader_view_pos_loc = GetShaderLocation(world->lighting.model_shader->base, "viewPos");
+    world->lighting.model_shader_ambient_color_loc = GetShaderLocation(world->lighting.model_shader->base, "ambient");
 
-    world_recorder_init();
-    entity_init();
-    grid_init({A_TERRAIN_DEFAULT_SIZE, A_TERRAIN_DEFAULT_SIZE}); // TODO: We need to make sure that we set the proper size. Right now we are defaulting.
-    g_world_state.initialized = true;
+    // Initialize fog
+    world->fog.shader = asset_get_shader(A_MODEL_SHADER_NAME);
+    world->fog.density = 0.0F;
+    world->fog.density_loc = GetShaderLocation(world->fog.shader->base, "fog.density");
+    world->fog.color_loc = GetShaderLocation(world->fog.shader->base, "fog.color");
+    world->fog.color = BLACK;
+
+    // Set up default lights
+    g_world = world;  // Temporarily set for lighting_default_lights_setup
+    lighting_default_lights_setup();
+    world->lighting.initialized = true;
 }
 
 // TODO: This basically is just a retarded dumb idea. We are technically not reseting anything reliably idk man. We should set flags for sub things like talker
 // and when we set the flag to enable or something we also reset idk.
-void world_reset() {
+void world_reset(World *world) {
     for (EID i = 0; i < WORLD_MAX_ENTITIES; ++i) {
-        g_world->flags[i]          = 0;
-        g_world->type[i]           = ENTITY_TYPE_NONE;
-        g_world->lifetime[i]       = 0.0F;
-        g_world->position[i]       = {};
-        g_world->scale[i]          = {};
-        g_world->original_scale[i] = {};
-        g_world->rotation[i]       = {};
-        g_world->obb[i]            = {};
-        g_world->radius[i]         = 0.0F;
-        g_world->model_name[i][0]  = '\0';
-        g_world->tint[i]           = {};
-        g_world->generation[i]     = 0;
-        g_world->talker[i]         = {};
-        g_world->building[i]       = {};
-        g_world->name[i][0]        = '\0';
+        world->flags[i]          = 0;
+        world->type[i]           = ENTITY_TYPE_NONE;
+        world->lifetime[i]       = 0.0F;
+        world->position[i]       = {};
+        world->scale[i]          = {};
+        world->original_scale[i] = {};
+        world->rotation[i]       = {};
+        world->obb[i]            = {};
+        world->radius[i]         = 0.0F;
+        world->model_name[i][0]  = '\0';
+        world->tint[i]           = {};
+        world->generation[i]     = 0;
+        world->talker[i]         = {};
+        world->building[i]       = {};
+        world->name[i][0]        = '\0';
     }
 
-    g_world->active_ent_count    = 0;
-    g_world->active_entity_count = 0;
-    g_world->max_gen             = 0;
-    g_world->selected_id         = INVALID_EID;
+    world->active_ent_count    = 0;
+    world->active_entity_count = 0;
+    world->max_gen             = 0;
+    world->selected_id         = INVALID_EID;
 
     grid_clear();
 }
@@ -877,18 +886,6 @@ void world_dump_all_entities() {
 void world_dump_all_entities_cb(void *data) {
     unused(data);
     world_dump_all_entities();
-}
-
-void world_set_overworld(ATerrain *terrain) {
-    g_world = &g_world_state.overworld;
-    g_world->base_terrain = terrain;
-    if (!g_world_state.initialized) { world_init(); }
-}
-
-void world_set_dungeon(ATerrain *terrain) {
-    g_world = &g_world_state.dungeon;
-    g_world->base_terrain = terrain;
-    if (!g_world_state.initialized) { world_init(); }
 }
 
 #define WORLD_RECORDER_FOLDER "state"

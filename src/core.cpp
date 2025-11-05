@@ -96,7 +96,9 @@ void core_init(U8 major, U8 minor, U8 patch, C8 const *build_type) {
     LD_TRACK(&g_core.loading, "Initializing \\ouc{#b3ffb3ff}Input Manager", input_init());
     LD_TRACK(&g_core.loading, "Initializing \\ouc{#b3ffb3ff}Debug Manager", dbg_init());
     LD_TRACK(&g_core.loading, "Initializing \\ouc{#b3ffb3ff}Asset Manager", asset_init());
-    LD_TRACK(&g_core.loading, "Initializing \\ouc{#b3ffb3ff}World",         world_init());
+    LD_TRACK(&g_core.loading, "Initializing \\ouc{#b3ffb3ff}Entity System", entity_init());
+    LD_TRACK(&g_core.loading, "Initializing \\ouc{#b3ffb3ff}Grid System",   grid_init({A_TERRAIN_DEFAULT_SIZE, A_TERRAIN_DEFAULT_SIZE}));
+    LD_TRACK(&g_core.loading, "Initializing \\ouc{#b3ffb3ff}World Recorder", world_recorder_init());
     LD_TRACK(&g_core.loading, "Initializing \\ouc{#b3ffb3ff}Scenes",        scenes_init());
     LD_TRACK(&g_core.loading, TS("Entering \\ouc{#b3ffb3ff}Scene: \\ouc{#9db4c0ff}%s", scenes_to_str(start_scene)->c)->c, scenes_set_scene(start_scene));
 

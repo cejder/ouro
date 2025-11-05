@@ -97,8 +97,9 @@ void render_init() {
     render_sketch_set_minor_color(RENDER_DEFAULT_MINOR_COLOR);
     render_set_accent_color(BLACK);
 
-    lighting_init();
-    fog_init(asset_get_shader(A_MODEL_SHADER_NAME));
+    // NOTE: lighting_init() and fog_init() are now called per-world in world_init()
+    // Each scene has its own world with its own lighting and fog configuration
+
     render_set_ambient_color(RENDER_DEFAULT_AMBIENT_COLOR);
 
     particles2d_init();
@@ -576,7 +577,9 @@ void render_set_accent_color(Color color) {
 
 void render_set_ambient_color(Color color) {
      color_to_vec4(color, g_render.ambient_color);
-    SetShaderValue(g_lighting.model_shader->base, g_lighting.model_shader_ambient_color_loc, g_render.ambient_color, SHADER_UNIFORM_VEC4);
+    if (g_world) {
+        SetShaderValue(g_world->lighting.model_shader->base, g_world->lighting.model_shader_ambient_color_loc, g_render.ambient_color, SHADER_UNIFORM_VEC4);
+    }
     SetShaderValue(g_render.skybox_shader->base, g_render.skybox_ambient_color_loc, g_render.ambient_color, SHADER_UNIFORM_VEC4);
 }
 

@@ -12,11 +12,62 @@
 
 #include <raylib.h>
 
+#define LIGHTS_MAX 10
+#define LIGHT_DEFAULT_INTENSITY 2000.0F
+
 #define WORLD_MAX_ENTITIES 5000
 
 fwd_decl(ATerrain);
 fwd_decl(ASound);
 fwd_decl(AModel);
+fwd_decl(AShader);
+
+// Light Types:
+// - POINT: Emits light omnidirectionally from a position (like a light bulb)
+// - SPOT: Cone of light from a position in a direction (like a flashlight)
+enum LightType : U8 {
+    LIGHT_TYPE_POINT = 0,
+    LIGHT_TYPE_SPOT = 1,
+};
+
+struct Light {
+    BOOL dirty;
+    BOOL in_frustum;
+
+    S32 enabled;
+    LightType type;
+    Vector3 position;
+    Vector3 direction;
+    F32 color[4];
+    F32 intensity;
+    F32 inner_cutoff;
+    F32 outer_cutoff;
+
+    S32 enabled_loc;
+    S32 type_loc;
+    S32 position_loc;
+    S32 direction_loc;
+    S32 intensity_loc;
+    S32 color_loc;
+    S32 inner_cutoff_loc;
+    S32 outer_cutoff_loc;
+};
+
+struct Lighting {
+    BOOL initialized;
+    Light lights[LIGHTS_MAX];
+    AShader *model_shader;
+    S32 model_shader_view_pos_loc;
+    S32 model_shader_ambient_color_loc;
+};
+
+struct Fog {
+    AShader *shader;
+    F32 density;
+    Color color;
+    S32 density_loc;
+    S32 color_loc;
+};
 
 // TODO: This needs to be skinnier
 
@@ -27,6 +78,10 @@ struct TriangleMeshCollider {
 };
 
 struct World {
+    // Lighting and fog (scene-specific)
+    Lighting lighting;
+    Fog fog;
+
     SZ visible_vertex_count;
     ATerrain *base_terrain;
     Player player;
@@ -80,19 +135,11 @@ struct World {
     } target_trackers[WORLD_MAX_ENTITIES];
 };
 
-struct WorldState {
-    BOOL initialized;
-    World* current;
-
-    World overworld;
-    World dungeon;
-};
-
-WorldState extern g_world_state;
+// World state - scenes set g_world to their local world
 World extern *g_world;
 
-void world_init();
-void world_reset();
+void world_init(World *world);
+void world_reset(World *world);
 void world_update(F32 dt, F32 dtu);
 void world_draw_2d();
 void world_draw_2d_hud();
@@ -109,8 +156,23 @@ F32 world_get_distance_to_player(Vector3 position);
 void world_randomly_rotate_entities();
 void world_dump_all_entities();
 void world_dump_all_entities_cb(void *data);
-void world_set_overworld(ATerrain *terrain);
-void world_set_dungeon(ATerrain *terrain);
+
+// Lighting functions (operate on g_world->lighting)
+void lighting_init();
+void lighting_disable_all_lights();
+void lighting_set_point_light(SZ idx, BOOL enabled, Vector3 position, Color color, F32 intensity);
+void lighting_set_spot_light(SZ idx, BOOL enabled, Vector3 position, Vector3 direction, Color color, F32 intensity, F32 inner_cutoff, F32 outer_cutoff);
+void lighting_set_light_enabled(SZ idx, BOOL enabled);
+void lighting_set_light_position(SZ idx, Vector3 position);
+void lighting_default_lights_setup();
+void lighting_update(Camera3D *camera);
+void lighting_draw_2d_dbg();
+void lighting_draw_3d_dbg();
+void lighting_dump();
+
+// Fog functions (operate on g_world->fog)
+void fog_init(AShader *shader);
+void fog_update();
 
 struct WorldRecorder {
     BOOL record_world_state;

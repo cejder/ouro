@@ -30,6 +30,7 @@
 #include <raymath.h>
 
 struct State {
+    World world;  // Scene-local world with its own lighting and fog
     Menu menu;
     Scene *scene;
 } static s = {};
@@ -100,7 +101,12 @@ SCENE_INIT(dungeon) {
                                           (void *)(&s.menu.selected_entry));
     s.menu.enabled = false;
 
-    world_set_dungeon(g_world->base_terrain = asset_get_terrain("flat", {(F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE}));
+    // Initialize scene-local world with lighting and fog
+    world_init(&s.world);
+    g_world = &s.world;  // Set global pointer to this scene's world
+
+    // Set terrain for this world
+    s.world.base_terrain = asset_get_terrain("flat", {(F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE});
 
     entity_create(ENTITY_TYPE_PROP, "TORCH_LEFT", {502.50F, 5.5F, 776.20F}, 0.0F, {10.0F, 10.0F, 10.0F}, WHITE, "torch.glb");
     entity_create(ENTITY_TYPE_PROP, "TORCH_RIGHT", {517.50F, 5.5F, 776.20F}, 0.0F, {10.0F, 10.0F, 10.0F}, WHITE, "torch.glb");
@@ -121,7 +127,8 @@ SCENE_INIT(dungeon) {
 }
 
 SCENE_ENTER(dungeon) {
-    world_set_dungeon(g_world->base_terrain = asset_get_terrain("flat", {(F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE}));
+    // Set global world pointer to this scene's world
+    g_world = &s.world;
 
     s.scene->clear_color = BLACK;
 
@@ -189,7 +196,7 @@ SKIP_OTHER_INPUT:
     if (is_down(IA_DBG_WORLD_STATE_FORWARD))     { world_recorder_forward_state();       }
 
     // End-of-frame updates
-    g_fog.density = c_render__dungeon_fog_density;
+    g_world->fog.density = c_render__dungeon_fog_density;
     PP(screen_fade_update(dt));
 
     PP(player_update(&g_world->player, g_world, dt, dtu));

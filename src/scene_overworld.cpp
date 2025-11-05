@@ -30,6 +30,8 @@
 #include <glm/gtc/type_ptr.hpp>
 
 struct State {
+    World world;  // Scene-local world with its own lighting and fog
+
     struct {
         BOOL enabled;
         F32 duration;
@@ -405,9 +407,12 @@ SCENE_INIT(overworld) {
                                           (void *)(&s.menu.selected_entry));
     s.menu.enabled = false;
 
-    lighting_default_lights_setup();
+    // Initialize scene-local world with lighting and fog
+    world_init(&s.world);
+    g_world = &s.world;  // Set global pointer to this scene's world
 
-    world_set_overworld(asset_get_terrain("terrain2", {(F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE}));
+    // Set terrain for this world
+    s.world.base_terrain = asset_get_terrain("terrain2", {(F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE});
 
     entity_spawn_test_overworld_set(&s.entities);
     entity_spawn_random_vegetation_on_terrain(g_world->base_terrain, TREE_COUNT, false);
@@ -433,7 +438,8 @@ SCENE_INIT(overworld) {
 }
 
 SCENE_ENTER(overworld) {
-    world_set_overworld(asset_get_terrain("terrain2", {(F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE}));
+    // Set global world pointer to this scene's world
+    g_world = &s.world;
 
     s.scene->clear_color = BLACK;
 
@@ -507,7 +513,7 @@ SKIP_OTHER_INPUT:
     if (is_down(IA_DBG_WORLD_STATE_FORWARD))     { world_recorder_forward_state();       }
 
     // End-of-frame updates
-    g_fog.density = c_render__overworld_fog_density;
+    g_world->fog.density = c_render__overworld_fog_density;
     PP(screen_fade_update(dt));
     PP(i_fade_out_maybe(dt));
 
