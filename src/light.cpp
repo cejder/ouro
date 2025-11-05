@@ -24,6 +24,7 @@ void lighting_init() {
 void lighting_disable_all_lights() {
     for (auto &light : g_world->lighting.lights) {
         light.enabled = false;
+        light.dirty = true;
     }
 }
 

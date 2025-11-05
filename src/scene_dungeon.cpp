@@ -148,6 +148,7 @@ SCENE_ENTER(dungeon) {
     g_world->player.non_player_camera = false;
 
     lighting_disable_all_lights();
+    lighting_update(&g_world->player.camera3d);  // Force immediate shader update
 
     screen_fade_init(SCREEN_FADE_TYPE_FADE_OUT, SCREEN_FADE_DEFAULT_DURATION, g_render.accent_color, EASE_IN_OUT_SINE, nullptr);
 }

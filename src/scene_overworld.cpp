@@ -445,13 +445,14 @@ SCENE_ENTER(overworld) {
 
     hud_init(10.0F, 12.5F, 5.0F, 5.0F);
 
-    i_reset_lights(nullptr);
-
     dbg_add_cb(DBG_WID_CUSTOM_0, {i_dbg_ui_cb_0, nullptr});
     dbg_add_cb(DBG_WID_CUSTOM_1, {i_dbg_ui_cb_1, nullptr});
 
     player_init(&g_world->player, PLAYER_POSITION, PLAYER_LOOK_AT);
     player_activate_camera(&g_world->player);
+
+    i_reset_lights(nullptr);
+    lighting_update(&g_world->player.camera3d);  // Force immediate shader update
 
     i_reset_cameras((void *)true);
     c3d_copy_from_other(c3d_get_default_ptr(), &g_world->player.camera3d);
