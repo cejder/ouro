@@ -560,7 +560,7 @@ BOOL con_cmd_teleport(ConCMD const *cmd) {
 }
 
 void static i_goto_light(SZ idx) {
-    Vector3 const position = g_lighting.lights[idx].position;
+    Vector3 const position = g_world->lighting.lights[idx].position;
     Camera3D *camera       = c3d_get_ptr();
     camera->target         = position;
     camera->position       = (Vector3AddValue(position, 2.5F));

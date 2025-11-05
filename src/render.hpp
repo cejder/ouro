@@ -1,8 +1,6 @@
 #pragma once
 
 #include "common.hpp"
-#include "fog.hpp"
-#include "light.hpp"
 #include "math.hpp"
 
 #define RENDER_DEFAULT_AMBIENT_COLOR BLACK

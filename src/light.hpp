@@ -1,9 +1,5 @@
 #pragma once
 
-// NOTE: Light and Lighting structures have been moved to world.hpp
-// This header is kept for backward compatibility but all lighting
-// functions now operate on g_world->lighting
-
 #include "common.hpp"
 #include <raylib.h>
 

@@ -328,7 +328,7 @@ void static i_setup_dbg_gui() {
         // Light intensity
         F32 static last_intensity[LIGHTS_MAX] = {};
         for (SZ i = 0; i < LIGHTS_MAX; ++i) {
-            Light *light = &g_lighting.lights[i];
+            Light *light = &g_world->lighting.lights[i];
 
             auto fg = DBG_FILLBAR_FG_COLOR;
             if (!light->enabled) { fg = color_darken(DBG_FILLBAR_FG_COLOR, 0.5F); }

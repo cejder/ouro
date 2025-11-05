@@ -936,7 +936,7 @@ void input_lighting_input_update() {
         if (is_mod(I_MODIFIER_CTRL)) {
             lighting_set_light_position(i, camera->position);
         } else {
-            Light *light = &g_lighting.lights[i];
+            Light *light = &g_world->lighting.lights[i];
             lighting_set_light_enabled(i, !light->enabled);
             Color color = {};
             color_from_vec4(&color, light->color);
@@ -947,7 +947,7 @@ void input_lighting_input_update() {
     for (SZ i = 0; i < editable_lights_count; ++i) {
         if (!is_pressed((IAction)(IA_DBG_TOGGLE_LIGHT_TYPE_1 + i))) { continue; }
 
-        Light *light = &g_lighting.lights[i];
+        Light *light = &g_world->lighting.lights[i];
 
         LightType const new_type = (light->type == LIGHT_TYPE_POINT) ? LIGHT_TYPE_SPOT : LIGHT_TYPE_POINT;
 
@@ -981,7 +981,7 @@ void input_lighting_input_update() {
     for (SZ i = 0; i < editable_lights_count; ++i) {
         if (!is_pressed((IAction)(IA_DBG_MOVE_LIGHT_1 + i))) { continue; }
 
-        Light *light = &g_lighting.lights[i];
+        Light *light = &g_world->lighting.lights[i];
 
         Color color = {};
         color_from_vec4(&color, light->color);
