@@ -15,8 +15,6 @@
 #include "scene_extra.hpp"
 #include "string.hpp"
 
-#include <stdio.h> // TODO: delete me
-
 struct State {
     Scene *scene;
     Menu menu;
