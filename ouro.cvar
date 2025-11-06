@@ -41,7 +41,7 @@ light_info                   : false
 medium_font                  : GoMono
 medium_font_size             : 18
 menu_info                    : false
-noclip                       : true
+noclip                       : false
 noclip_move_speed            : 50.00000000
 profiler_hide_trivial_tracks : true
 profiler_tracks              : true
