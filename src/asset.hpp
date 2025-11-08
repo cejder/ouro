@@ -64,6 +64,7 @@ struct AHeader {
     AType type;
     C8 path[A_PATH_MAX_LENGTH];
     C8 name[A_NAME_MAX_LENGTH];
+    U32 name_hash;         // Cached hash of name (for fast lookups)
     time_t last_access;
     time_t last_modified;
     BOOL want_reload;

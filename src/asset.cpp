@@ -92,6 +92,7 @@ void static i_fill_header(AHeader *header, C8 const *path, AType type) {
 
     ou_strncpy((C8 *)header->path, path, A_PATH_MAX_LENGTH);
     ou_strncpy((C8 *)header->name, file_name, A_NAME_MAX_LENGTH);
+    header->name_hash     = (U32)hash_cstr(header->name);  // Cache hash for fast lookups
     header->file_size     = file_size;
     header->last_modified = GetFileModTime(header->path);
     header->type          = type;
