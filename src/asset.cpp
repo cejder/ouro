@@ -579,6 +579,7 @@ void static i_delete_outdated_terrain_caches(C8 const *path, S64 heightmap_modti
 struct ITerrainThreadData {
     ATerrain *terrain;
     Vector3 dimensions;
+    Image heightmap_image;
     U32 start_z;
     U32 end_z;
 };
@@ -587,16 +588,49 @@ S32 static i_terrain_thread_func(void *arg) {
     auto *data = (ITerrainThreadData *)arg;
     ATerrain *a = data->terrain;
     Vector3 const dimensions = data->dimensions;
+    Image const heightmap = data->heightmap_image;
+
+    // Get image dimensions and pixel data
+    U32 const img_width  = (U32)heightmap.width;
+    U32 const img_height = (U32)heightmap.height;
+    auto const *pixels   = (U8 *)heightmap.data;
+    U32 const channels   = (U32)(heightmap.format == PIXELFORMAT_UNCOMPRESSED_GRAYSCALE ? 1 : 4);
 
     for (U32 z = data->start_z; z < data->end_z; z++) {
         U32 const z_idx = z * A_TERRAIN_SAMPLE_RATE;
         for (U32 x = 0U; x < A_TERRAIN_SAMPLE_RATE; x++) {
-            U32 const idx                = z_idx + x;
-            F32 const world_x            = ((F32)x / (F32)(A_TERRAIN_SAMPLE_RATE - 1U)) * dimensions.x;
-            F32 const world_z            = ((F32)z / (F32)(A_TERRAIN_SAMPLE_RATE - 1U)) * dimensions.z;
-            Vector3 const ray_start      = {world_x, dimensions.y * 2.0F, world_z};
-            RayCollision const collision = math_ray_collision_to_terrain(a, ray_start, {0.0F, -1.0F, 0.0F});
-            a->height_field[idx] = collision.hit ? collision.point.y : 0.0F;
+            U32 const idx = z_idx + x;
+
+            // Map grid coordinates to image coordinates
+            F32 const u = (F32)x / (F32)(A_TERRAIN_SAMPLE_RATE - 1U);
+            F32 const v = (F32)z / (F32)(A_TERRAIN_SAMPLE_RATE - 1U);
+
+            // Sample the heightmap image (with bilinear interpolation for smoothness)
+            F32 const img_x = u * (F32)(img_width - 1);
+            F32 const img_z = v * (F32)(img_height - 1);
+
+            U32 const x0 = (U32)img_x;
+            U32 const z0 = (U32)img_z;
+            U32 const x1 = glm::min(x0 + 1, img_width - 1);
+            U32 const z1 = glm::min(z0 + 1, img_height - 1);
+
+            F32 const fx = img_x - (F32)x0;
+            F32 const fz = img_z - (F32)z0;
+
+            // Sample four pixels for bilinear interpolation
+            U8 const p00 = pixels[(z0 * img_width + x0) * channels];
+            U8 const p10 = pixels[(z0 * img_width + x1) * channels];
+            U8 const p01 = pixels[(z1 * img_width + x0) * channels];
+            U8 const p11 = pixels[(z1 * img_width + x1) * channels];
+
+            // Bilinear interpolation
+            F32 const h0 = (F32)p00 * (1.0F - fx) + (F32)p10 * fx;
+            F32 const h1 = (F32)p01 * (1.0F - fx) + (F32)p11 * fx;
+            F32 const height_value = h0 * (1.0F - fz) + h1 * fz;
+
+            // Convert normalized height (0-255) to world height (0 to dimensions.y)
+            // This matches how GenMeshHeightmap works in Raylib
+            a->height_field[idx] = (height_value / 255.0F) * dimensions.y;
         }
     }
 
@@ -706,11 +740,12 @@ void static i_load_terrain(C8 const *path, Vector3 dimensions) {
         U32 current_row           = 0;
 
         for (U32 i = 0; i < core_count; i++) {
-            thread_data[i].terrain    = a;
-            thread_data[i].dimensions = dimensions;
-            thread_data[i].start_z    = current_row;
-            thread_data[i].end_z      = current_row + rows_per_thread + (i < remaining_rows ? 1 : 0);
-            current_row               = thread_data[i].end_z;
+            thread_data[i].terrain         = a;
+            thread_data[i].dimensions      = dimensions;
+            thread_data[i].heightmap_image = heightmap_image;
+            thread_data[i].start_z         = current_row;
+            thread_data[i].end_z           = current_row + rows_per_thread + (i < remaining_rows ? 1 : 0);
+            current_row                    = thread_data[i].end_z;
 
             if (thrd_create(&threads[i], i_terrain_thread_func, &thread_data[i]) != thrd_success) {
                 lld("Failed to create thread %u", i);
