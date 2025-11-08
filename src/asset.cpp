@@ -585,10 +585,10 @@ struct ITerrainThreadData {
 };
 
 S32 static i_terrain_thread_func(void *arg) {
-    auto *data = (ITerrainThreadData *)arg;
-    ATerrain *a = data->terrain;
+    auto *data               = (ITerrainThreadData *)arg;
+    ATerrain *a              = data->terrain;
     Vector3 const dimensions = data->dimensions;
-    Image const heightmap = data->heightmap_image;
+    Image const heightmap    = data->heightmap_image;
 
     // Get image dimensions and pixel data
     U32 const img_width  = (U32)heightmap.width;
@@ -618,14 +618,14 @@ S32 static i_terrain_thread_func(void *arg) {
             F32 const fz = img_z - (F32)z0;
 
             // Sample four pixels for bilinear interpolation
-            U8 const p00 = pixels[(SZ)(z0 * img_width + x0) * channels];
-            U8 const p10 = pixels[(SZ)(z0 * img_width + x1) * channels];
-            U8 const p01 = pixels[(SZ)(z1 * img_width + x0) * channels];
-            U8 const p11 = pixels[(SZ)(z1 * img_width + x1) * channels];
+            U8 const p00 = pixels[(SZ)((z0 * img_width) + x0) * channels];
+            U8 const p10 = pixels[(SZ)((z0 * img_width) + x1) * channels];
+            U8 const p01 = pixels[(SZ)((z1 * img_width) + x0) * channels];
+            U8 const p11 = pixels[(SZ)((z1 * img_width) + x1) * channels];
 
             // Bilinear interpolation
-            F32 const h0 = ((F32)p00 * (1.0F - fx)) + ((F32)p10 * fx);
-            F32 const h1 = ((F32)p01 * (1.0F - fx)) + ((F32)p11 * fx);
+            F32 const h0           = ((F32)p00 * (1.0F - fx)) + ((F32)p10 * fx);
+            F32 const h1           = ((F32)p01 * (1.0F - fx)) + ((F32)p11 * fx);
             F32 const height_value = (h0 * (1.0F - fz)) + (h1 * fz);
 
             // Convert normalized height (0-255) to world height (0 to dimensions.y)
