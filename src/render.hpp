@@ -30,6 +30,7 @@ fwd_decl(AFont);
 fwd_decl(AModel);
 fwd_decl(ATerrain);
 fwd_decl(ASkybox);
+fwd_decl(AShader);
 fwd_decl(CollisionMesh);
 
 #define RMODE_BEGIN(mode) render_begin_render_mode(mode);
@@ -96,10 +97,36 @@ struct RenderSketchEffect {
     Color major_color;
     Color minor_color;
     AShader *shader;
-    S32 resolution_uniform_location;
-    S32 major_color_uniform_location;
-    S32 minor_color_uniform_location;
-    S32 time_uniform_location;
+    S32 resolution_loc;
+    S32 major_color_loc;
+    S32 minor_color_loc;
+    S32 time_loc;
+};
+
+struct RenderModelShader {
+    AShader *shader;
+    S32 animation_enabled_loc;
+    S32 view_pos_loc;
+    S32 ambient_color_loc;
+
+    FogUniforms fog;
+    LightUniforms light;
+};
+
+struct RenderModelInstancedShader {
+    AShader *shader;
+    S32 mvp_loc;
+    S32 view_pos_loc;
+    S32 ambient_color_loc;
+    S32 instance_tint_loc;
+
+    FogUniforms fog;
+    LightUniforms light;
+};
+
+struct RenderSkyboxShader {
+    AShader *shader;
+    S32 ambient_color_loc;
 };
 
 struct Render {
@@ -109,11 +136,15 @@ struct Render {
     SZ request_capacity;
 
     RenderSketchEffect sketch;
+    RenderSkyboxShader skybox_shader;
+    RenderModelShader model_shader;
+    RenderModelInstancedShader model_instanced_shader;
 
     BOOL wireframe_mode;
     F32 aspect_ratio;
 
     Color accent_color;
+    F32 ambient_color[4];
 
     RenderTexture final_render_target;
     Material default_material;
@@ -128,19 +159,6 @@ struct Render {
     ATexture *default_crosshair;
     ATexture *speaker_icon_texture;
     ATexture *camera_icon_texture;
-
-    AShader *skybox_shader;
-    F32 ambient_color[4];
-    S32 skybox_ambient_color_loc;
-
-    AShader *model_shader;
-    S32 model_animation_enabled_loc;
-
-    AShader *model_shader_instanced;
-    S32 model_instanced_mvp_loc;
-    S32 model_instanced_view_pos_loc;
-    S32 model_instanced_ambient_loc;
-    S32 model_instanced_instance_color_loc;
 };
 
 extern Render g_render;

@@ -21,6 +21,7 @@ fwd_decl_ns(FMOD, Sound);
 #define A_TERRAIN_SAMPLE_RATE 1024
 #define A_MODEL_ICON_SIZE 256
 #define A_MODEL_SHADER_NAME "model"
+#define A_MODEL_INSTANCED_SHADER_NAME "model_instanced"
 #define A_SKYBOX_SHADER_NAME "skybox"
 #define A_CUBEMAP_SHADER_NAME "cubemap"
 #define A_TERRAIN_INFO_SHADER_NAME "terrain_info"

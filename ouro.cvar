@@ -31,13 +31,13 @@ bone_label_font_size         : 24
 camera_info                  : false
 cursor_info                  : false
 dungeon_info                 : false
-enabled                      : false
+enabled                      : true
 gizmo_info                   : false
 grid_info                    : false
 keybindings_info             : false
 large_font                   : GoMono
 large_font_size              : 20
-light_info                   : false
+light_info                   : true
 medium_font                  : GoMono
 medium_font_size             : 18
 menu_info                    : false

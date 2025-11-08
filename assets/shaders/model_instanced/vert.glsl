@@ -8,7 +8,7 @@ in vec4 vertexColor;
 
 // Per-instance attributes
 in mat4 instanceTransform;
-in vec4 instanceColor;  // Per-instance tint color
+in vec4 instanceTint;  // Per-instance tint color
 
 // Input uniform values
 uniform mat4 mvp;  // View-projection matrix (shared across all instances)
@@ -34,7 +34,7 @@ void main() {
     fragTexCoord = vertexTexCoord;
     fragColor = vertexColor;
     fragNormal = transformedNormal;
-    fragInstanceTint = instanceColor;  // Pass instance tint to fragment shader
+    fragInstanceTint = instanceTint;  // Pass instance tint to fragment shader
 
     // Calculate final vertex position in clip space
     gl_Position = mvp * worldPosition;

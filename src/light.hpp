@@ -15,9 +15,19 @@ enum LightType : U8 {
     LIGHT_TYPE_SPOT = 1,
 };
 
-fwd_decl(AShader);
 fwd_decl(AFont);
 fwd_decl(ATexture);
+
+struct LightUniforms {
+    S32 enabled_loc;
+    S32 type_loc;
+    S32 position_loc;
+    S32 direction_loc;
+    S32 intensity_loc;
+    S32 color_loc;
+    S32 inner_cutoff_loc;
+    S32 outer_cutoff_loc;
+};
 
 struct Light {
     BOOL dirty;
@@ -31,36 +41,11 @@ struct Light {
     F32 intensity;
     F32 inner_cutoff;
     F32 outer_cutoff;
-
-    S32 enabled_loc;
-    S32 type_loc;
-    S32 position_loc;
-    S32 direction_loc;
-    S32 intensity_loc;
-    S32 color_loc;
-    S32 inner_cutoff_loc;
-    S32 outer_cutoff_loc;
-
-    S32 enabled_loc_instanced;
-    S32 type_loc_instanced;
-    S32 position_loc_instanced;
-    S32 direction_loc_instanced;
-    S32 intensity_loc_instanced;
-    S32 color_loc_instanced;
-    S32 inner_cutoff_loc_instanced;
-    S32 outer_cutoff_loc_instanced;
 };
 
 struct Lighting {
     BOOL initialized;
     Light lights[LIGHTS_MAX];
-    AShader *model_shader;
-    S32 model_shader_view_pos_loc;
-    S32 model_shader_ambient_color_loc;
-
-    AShader *model_shader_instanced;
-    S32 model_shader_instanced_view_pos_loc;
-    S32 model_shader_instanced_ambient_color_loc;
 };
 
 Lighting extern g_lighting;
