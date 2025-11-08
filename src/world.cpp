@@ -206,7 +206,7 @@ void static i_compute_entity_bone_matrices(EID id) {
     if (frame >= (U32)anim.frameCount) { return; }
 
     // Check cache for already-computed bone matrices (using pre-computed hash from asset)
-    IBoneMatrixCacheKey const key = {model->header.name_hash, anim_idx, frame};
+    IBoneMatrixCacheKey const key = {model->header.name_hash, (U16)anim_idx, (U16)frame};
 
     Matrix new_bone_matrices[ENTITY_MAX_BONES];
     S32 bone_count = anim.boneCount < ENTITY_MAX_BONES ? anim.boneCount : ENTITY_MAX_BONES;
