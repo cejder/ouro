@@ -92,29 +92,30 @@ void lighting_update(Camera3D *camera) {
     RenderModelShader *ms           = &g_render.model_shader;
     RenderModelInstancedShader *mis = &g_render.model_instanced_shader;
 
-    for (auto &light : g_lighting.lights) {
-        light.in_frustum = c3d_is_point_in_frustum(light.position);
+    for (SZ i = 0; i < LIGHTS_MAX; ++i) {
+        Light *light = &g_lighting.lights[i];
+        light->in_frustum = c3d_is_point_in_frustum(light->position);
 
-        if (!light.dirty) { continue; }
-        light.dirty = false;
+        if (!light->dirty) { continue; }
+        light->dirty = false;
 
-        SetShaderValue(ms->shader->base, ms->light.enabled_loc, &light.enabled, SHADER_UNIFORM_INT);
-        SetShaderValue(ms->shader->base, ms->light.type_loc, &light.type, SHADER_UNIFORM_INT);
-        SetShaderValue(ms->shader->base, ms->light.position_loc, &light.position, SHADER_UNIFORM_VEC3);
-        SetShaderValue(ms->shader->base, ms->light.direction_loc, &light.direction, SHADER_UNIFORM_VEC3);
-        SetShaderValue(ms->shader->base, ms->light.color_loc, light.color, SHADER_UNIFORM_VEC4);
-        SetShaderValue(ms->shader->base, ms->light.intensity_loc, &light.intensity, SHADER_UNIFORM_FLOAT);
-        SetShaderValue(ms->shader->base, ms->light.inner_cutoff_loc, &light.inner_cutoff, SHADER_UNIFORM_FLOAT);
-        SetShaderValue(ms->shader->base, ms->light.outer_cutoff_loc, &light.outer_cutoff, SHADER_UNIFORM_FLOAT);
+        SetShaderValue(ms->shader->base, ms->light[i].enabled_loc, &light->enabled, SHADER_UNIFORM_INT);
+        SetShaderValue(ms->shader->base, ms->light[i].type_loc, &light->type, SHADER_UNIFORM_INT);
+        SetShaderValue(ms->shader->base, ms->light[i].position_loc, &light->position, SHADER_UNIFORM_VEC3);
+        SetShaderValue(ms->shader->base, ms->light[i].direction_loc, &light->direction, SHADER_UNIFORM_VEC3);
+        SetShaderValue(ms->shader->base, ms->light[i].color_loc, light->color, SHADER_UNIFORM_VEC4);
+        SetShaderValue(ms->shader->base, ms->light[i].intensity_loc, &light->intensity, SHADER_UNIFORM_FLOAT);
+        SetShaderValue(ms->shader->base, ms->light[i].inner_cutoff_loc, &light->inner_cutoff, SHADER_UNIFORM_FLOAT);
+        SetShaderValue(ms->shader->base, ms->light[i].outer_cutoff_loc, &light->outer_cutoff, SHADER_UNIFORM_FLOAT);
 
-        SetShaderValue(mis->shader->base, mis->light.enabled_loc, &light.enabled, SHADER_UNIFORM_INT);
-        SetShaderValue(mis->shader->base, mis->light.type_loc, &light.type, SHADER_UNIFORM_INT);
-        SetShaderValue(mis->shader->base, mis->light.position_loc, &light.position, SHADER_UNIFORM_VEC3);
-        SetShaderValue(mis->shader->base, mis->light.direction_loc, &light.direction, SHADER_UNIFORM_VEC3);
-        SetShaderValue(mis->shader->base, mis->light.color_loc, light.color, SHADER_UNIFORM_VEC4);
-        SetShaderValue(mis->shader->base, mis->light.intensity_loc, &light.intensity, SHADER_UNIFORM_FLOAT);
-        SetShaderValue(mis->shader->base, mis->light.inner_cutoff_loc, &light.inner_cutoff, SHADER_UNIFORM_FLOAT);
-        SetShaderValue(mis->shader->base, mis->light.outer_cutoff_loc, &light.outer_cutoff, SHADER_UNIFORM_FLOAT);
+        SetShaderValue(mis->shader->base, mis->light[i].enabled_loc, &light->enabled, SHADER_UNIFORM_INT);
+        SetShaderValue(mis->shader->base, mis->light[i].type_loc, &light->type, SHADER_UNIFORM_INT);
+        SetShaderValue(mis->shader->base, mis->light[i].position_loc, &light->position, SHADER_UNIFORM_VEC3);
+        SetShaderValue(mis->shader->base, mis->light[i].direction_loc, &light->direction, SHADER_UNIFORM_VEC3);
+        SetShaderValue(mis->shader->base, mis->light[i].color_loc, light->color, SHADER_UNIFORM_VEC4);
+        SetShaderValue(mis->shader->base, mis->light[i].intensity_loc, &light->intensity, SHADER_UNIFORM_FLOAT);
+        SetShaderValue(mis->shader->base, mis->light[i].inner_cutoff_loc, &light->inner_cutoff, SHADER_UNIFORM_FLOAT);
+        SetShaderValue(mis->shader->base, mis->light[i].outer_cutoff_loc, &light->outer_cutoff, SHADER_UNIFORM_FLOAT);
     }
 
     F32 camera_pos[3] = {camera->position.x, camera->position.y, camera->position.z};

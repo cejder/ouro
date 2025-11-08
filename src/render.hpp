@@ -110,7 +110,7 @@ struct RenderModelShader {
     S32 ambient_color_loc;
 
     FogUniforms fog;
-    LightUniforms light;
+    LightUniforms light[LIGHTS_MAX];
 };
 
 struct RenderModelInstancedShader {
@@ -121,7 +121,7 @@ struct RenderModelInstancedShader {
     S32 instance_tint_loc;
 
     FogUniforms fog;
-    LightUniforms light;
+    LightUniforms light[LIGHTS_MAX];
 };
 
 struct RenderSkyboxShader {

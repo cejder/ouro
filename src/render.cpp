@@ -100,14 +100,14 @@ void render_init() {
     ms->fog.density_loc       = GetShaderLocation(ms->shader->base, "fog.density");
     ms->fog.color_loc         = GetShaderLocation(ms->shader->base, "fog.color");
     for (SZ i  = 0; i < LIGHTS_MAX; ++i) {
-        ms->light.enabled_loc      = GetShaderLocation(ms->shader->base, TS("lights[%zu].enabled", i)->c);
-        ms->light.type_loc         = GetShaderLocation(ms->shader->base, TS("lights[%zu].type", i)->c);
-        ms->light.position_loc     = GetShaderLocation(ms->shader->base, TS("lights[%zu].position", i)->c);
-        ms->light.direction_loc    = GetShaderLocation(ms->shader->base, TS("lights[%zu].direction", i)->c);
-        ms->light.color_loc        = GetShaderLocation(ms->shader->base, TS("lights[%zu].color", i)->c);
-        ms->light.intensity_loc    = GetShaderLocation(ms->shader->base, TS("lights[%zu].intensity", i)->c);
-        ms->light.inner_cutoff_loc = GetShaderLocation(ms->shader->base, TS("lights[%zu].inner_cutoff", i)->c);
-        ms->light.outer_cutoff_loc = GetShaderLocation(ms->shader->base, TS("lights[%zu].outer_cutoff", i)->c);
+        ms->light[i].enabled_loc      = GetShaderLocation(ms->shader->base, TS("lights[%zu].enabled", i)->c);
+        ms->light[i].type_loc         = GetShaderLocation(ms->shader->base, TS("lights[%zu].type", i)->c);
+        ms->light[i].position_loc     = GetShaderLocation(ms->shader->base, TS("lights[%zu].position", i)->c);
+        ms->light[i].direction_loc    = GetShaderLocation(ms->shader->base, TS("lights[%zu].direction", i)->c);
+        ms->light[i].color_loc        = GetShaderLocation(ms->shader->base, TS("lights[%zu].color", i)->c);
+        ms->light[i].intensity_loc    = GetShaderLocation(ms->shader->base, TS("lights[%zu].intensity", i)->c);
+        ms->light[i].inner_cutoff_loc = GetShaderLocation(ms->shader->base, TS("lights[%zu].inner_cutoff", i)->c);
+        ms->light[i].outer_cutoff_loc = GetShaderLocation(ms->shader->base, TS("lights[%zu].outer_cutoff", i)->c);
     }
 
     RenderModelInstancedShader *mis = &g_render.model_instanced_shader;
@@ -119,14 +119,14 @@ void render_init() {
     mis->fog.density_loc            = GetShaderLocation(mis->shader->base, "fog.density");
     mis->fog.color_loc              = GetShaderLocation(mis->shader->base, "fog.color");
     for (SZ i = 0; i < LIGHTS_MAX; ++i) {
-        mis->light.enabled_loc      = GetShaderLocation(mis->shader->base, TS("lights[%zu].enabled", i)->c);
-        mis->light.type_loc         = GetShaderLocation(mis->shader->base, TS("lights[%zu].type", i)->c);
-        mis->light.position_loc     = GetShaderLocation(mis->shader->base, TS("lights[%zu].position", i)->c);
-        mis->light.direction_loc    = GetShaderLocation(mis->shader->base, TS("lights[%zu].direction", i)->c);
-        mis->light.color_loc        = GetShaderLocation(mis->shader->base, TS("lights[%zu].color", i)->c);
-        mis->light.intensity_loc    = GetShaderLocation(mis->shader->base, TS("lights[%zu].intensity", i)->c);
-        mis->light.inner_cutoff_loc = GetShaderLocation(mis->shader->base, TS("lights[%zu].inner_cutoff", i)->c);
-        mis->light.outer_cutoff_loc = GetShaderLocation(mis->shader->base, TS("lights[%zu].outer_cutoff", i)->c);
+        mis->light[i].enabled_loc      = GetShaderLocation(mis->shader->base, TS("lights[%zu].enabled", i)->c);
+        mis->light[i].type_loc         = GetShaderLocation(mis->shader->base, TS("lights[%zu].type", i)->c);
+        mis->light[i].position_loc     = GetShaderLocation(mis->shader->base, TS("lights[%zu].position", i)->c);
+        mis->light[i].direction_loc    = GetShaderLocation(mis->shader->base, TS("lights[%zu].direction", i)->c);
+        mis->light[i].color_loc        = GetShaderLocation(mis->shader->base, TS("lights[%zu].color", i)->c);
+        mis->light[i].intensity_loc    = GetShaderLocation(mis->shader->base, TS("lights[%zu].intensity", i)->c);
+        mis->light[i].inner_cutoff_loc = GetShaderLocation(mis->shader->base, TS("lights[%zu].inner_cutoff", i)->c);
+        mis->light[i].outer_cutoff_loc = GetShaderLocation(mis->shader->base, TS("lights[%zu].outer_cutoff", i)->c);
     }
 
     render_sketch_set_major_color(RENDER_DEFAULT_MAJOR_COLOR);
