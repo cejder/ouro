@@ -987,7 +987,8 @@ AModel *asset_get_model_by_hash(U32 name_hash) {
             return asset;
         }
     }
-    return nullptr;  // Not found (hash lookup doesn't trigger loading)
+    lle("Model with hash 0x%08X not found (asset not loaded or invalid hash). Hash lookups do not support auto-loading.", name_hash);
+    return nullptr;
 }
 
 ATexture *asset_get_texture(C8 const *name) {
