@@ -27,6 +27,36 @@ MAP_DECLARE(InstanceGroupMap, C8 const *, EIDArray, MAP_HASH_CSTR, MAP_EQUAL_CST
 // Minimum number of instances to use instanced rendering (avoids overhead for single entities)
 #define MIN_INSTANCE_COUNT 2
 
+// Bone matrix cache: Cache computed bone matrices to avoid redundant matrix math
+// Key: (model_name_hash, anim_index, frame)
+// Value: Array of bone matrices for all bones in the animation
+struct IBoneMatrixCacheKey {
+    U32 model_name_hash;
+    U32 anim_index;
+    U32 frame;
+};
+struct IBoneMatrixCacheValue {
+    Matrix bone_matrices[ENTITY_MAX_BONES];
+    S32 bone_count;
+};
+U64 static inline i_bone_matrix_cache_hash(IBoneMatrixCacheKey key) {
+    U64 hash = hash_u64((U64)key.model_name_hash);
+    hash    ^= hash_u64((U64)key.anim_index);
+    hash    ^= hash_u64((U64)key.frame);
+    return hash;
+}
+BOOL static inline i_bone_matrix_cache_equal(IBoneMatrixCacheKey a, IBoneMatrixCacheKey b) {
+    return a.model_name_hash == b.model_name_hash && a.anim_index == b.anim_index && a.frame == b.frame;
+}
+#define BONE_MATRIX_CACHE_INITIAL_CAPACITY 256
+MAP_DECLARE(IBoneMatrixCache, IBoneMatrixCacheKey, IBoneMatrixCacheValue, i_bone_matrix_cache_hash, i_bone_matrix_cache_equal)
+
+struct IWorldCache {
+    IBoneMatrixCache bone_matrices;
+};
+
+IWorldCache static i_cache = {};
+
 // Helper: Find bone index by name (case-insensitive search)
 // Returns -1 if bone not found
 S32 static i_find_bone_index(AModel *model, C8 const *bone_name) {
@@ -158,6 +188,7 @@ void static i_matrix_decompose(Matrix mat, Vector3 *translation, Quaternion *rot
 // Compute bone matrices for entity based on its animation state
 // Similar to UpdateModelAnimationBones but writes to per-entity storage
 // Supports blending between animations for smooth transitions
+// Uses caching to avoid redundant matrix computation for same model/animation/frame
 void static i_compute_entity_bone_matrices(EID id) {
     AModel *model = asset_get_model(g_world->model_name[id]);
 
@@ -175,22 +206,40 @@ void static i_compute_entity_bone_matrices(EID id) {
     // Validate frame
     if (frame >= (U32)anim.frameCount) { return; }
 
-    // Compute bone matrices for current (new) animation
+    // Check cache for already-computed bone matrices
+    U32 const model_name_hash     = (U32)hash_cstr(g_world->model_name[id]);
+    IBoneMatrixCacheKey const key = {model_name_hash, anim_idx, frame};
+
     Matrix new_bone_matrices[ENTITY_MAX_BONES];
-    for (S32 bone_id = 0; bone_id < anim.boneCount && bone_id < ENTITY_MAX_BONES; bone_id++) {
-        Transform *bind_transform = &model->base.bindPose[bone_id];
-        Matrix bind_matrix        = MatrixMultiply(MatrixMultiply(
-            MatrixScale(bind_transform->scale.x, bind_transform->scale.y, bind_transform->scale.z),
-            QuaternionToMatrix(bind_transform->rotation)),
-            MatrixTranslate(bind_transform->translation.x, bind_transform->translation.y, bind_transform->translation.z));
+    S32 bone_count = anim.boneCount < ENTITY_MAX_BONES ? anim.boneCount : ENTITY_MAX_BONES;
 
-        Transform *target_transform = &anim.framePoses[frame][bone_id];
-        Matrix target_matrix        = MatrixMultiply(MatrixMultiply(
-            MatrixScale(target_transform->scale.x, target_transform->scale.y, target_transform->scale.z),
-            QuaternionToMatrix(target_transform->rotation)),
-            MatrixTranslate(target_transform->translation.x, target_transform->translation.y, target_transform->translation.z));
+    IBoneMatrixCacheValue *cached = IBoneMatrixCache_get(&i_cache.bone_matrices, key);
+    if (cached != nullptr) {
+        // Cache hit - copy pre-computed matrices
+        ou_memcpy(new_bone_matrices, cached->bone_matrices, sizeof(Matrix) * (SZ)bone_count);
+    } else {
+        // Cache miss - compute bone matrices for current (new) animation
+        for (S32 bone_id = 0; bone_id < bone_count; bone_id++) {
+            Transform *bind_transform = &model->base.bindPose[bone_id];
+            Matrix bind_matrix        = MatrixMultiply(MatrixMultiply(
+                MatrixScale(bind_transform->scale.x, bind_transform->scale.y, bind_transform->scale.z),
+                QuaternionToMatrix(bind_transform->rotation)),
+                MatrixTranslate(bind_transform->translation.x, bind_transform->translation.y, bind_transform->translation.z));
 
-        new_bone_matrices[bone_id] = MatrixMultiply(MatrixInvert(bind_matrix), target_matrix);
+            Transform *target_transform = &anim.framePoses[frame][bone_id];
+            Matrix target_matrix        = MatrixMultiply(MatrixMultiply(
+                MatrixScale(target_transform->scale.x, target_transform->scale.y, target_transform->scale.z),
+                QuaternionToMatrix(target_transform->rotation)),
+                MatrixTranslate(target_transform->translation.x, target_transform->translation.y, target_transform->translation.z));
+
+            new_bone_matrices[bone_id] = MatrixMultiply(MatrixInvert(bind_matrix), target_matrix);
+        }
+
+        // Store in cache for future use
+        IBoneMatrixCacheValue value = {};
+        ou_memcpy(value.bone_matrices, new_bone_matrices, sizeof(Matrix) * (SZ)bone_count);
+        value.bone_count = bone_count;
+        IBoneMatrixCache_insert(&i_cache.bone_matrices, key, value);
     }
 
     // If blending, interpolate between previous and new bone matrices
@@ -198,7 +247,6 @@ void static i_compute_entity_bone_matrices(EID id) {
         F32 blend_t = g_world->animation[id].blend_time / g_world->animation[id].blend_duration;
         blend_t = glm::clamp(blend_t, 0.0F, 1.0F);
 
-        S32 bone_count = anim.boneCount < ENTITY_MAX_BONES ? anim.boneCount : ENTITY_MAX_BONES;
         for (S32 bone_id = 0; bone_id < bone_count; bone_id++) {
             // Decompose both matrices into TRS components
             Vector3 prev_trans;
@@ -224,12 +272,14 @@ void static i_compute_entity_bone_matrices(EID id) {
         }
     } else {
         // No blending, just copy new matrices
-        S32 bone_count = anim.boneCount < ENTITY_MAX_BONES ? anim.boneCount : ENTITY_MAX_BONES;
         ou_memcpy(g_world->animation[id].bone_matrices, new_bone_matrices, sizeof(Matrix) * (SZ)bone_count);
     }
 }
 
 void world_init() {
+    // Initialize bone matrix cache
+    IBoneMatrixCache_init(&i_cache.bone_matrices, MEMORY_TYPE_ARENA_PERMANENT, BONE_MATRIX_CACHE_INITIAL_CAPACITY);
+
     // Reset both worlds and default on start on overworld
     g_world = &g_world_state.dungeon;
     world_reset();
