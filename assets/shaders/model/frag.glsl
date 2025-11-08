@@ -90,7 +90,7 @@ vec3 calculateLighting(vec3 normal, vec3 viewD, vec3 fragPosition) {
 
 vec4 applyFog(vec4 color, vec3 viewPos, vec3 fragPosition, Fog fog) {
     float dist = length(viewPos - fragPosition);
-    float fogFactor = 1.0 / exp((dist * fog.density) * (dist * fog.density));
+    float fogFactor = exp(-(dist * fog.density) * (dist * fog.density));
     fogFactor = clamp(fogFactor, 0.0, 1.0);
     // Calculate luminance to detect bright areas (light sources)
     float luminance = dot(color.rgb, vec3(0.299, 0.587, 0.114));
