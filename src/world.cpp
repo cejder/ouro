@@ -40,11 +40,9 @@ struct IBoneMatrixCacheValue {
     S32 bone_count;
 };
 U64 static inline i_bone_matrix_cache_hash(IBoneMatrixCacheKey key) {
-    // model_name_hash is already a hash, just combine with anim_index and frame
-    U64 hash = (U64)key.model_name_hash;
-    hash    ^= hash_u64((U64)key.anim_index);
-    hash    ^= hash_u64((U64)key.frame);
-    return hash;
+    // Pack directly into U64: no hashing needed, perfect distribution
+    // | 32 bits: model_name_hash | 16 bits: anim_index | 16 bits: frame |
+    return (U64)key.model_name_hash | ((U64)key.anim_index << 32) | ((U64)key.frame << 48);
 }
 BOOL static inline i_bone_matrix_cache_equal(IBoneMatrixCacheKey a, IBoneMatrixCacheKey b) {
     return a.model_name_hash == b.model_name_hash && a.anim_index == b.anim_index && a.frame == b.frame;
