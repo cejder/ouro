@@ -55,6 +55,8 @@ F32 math_normalize_angle_delta(F32 delta);
 BOOL math_ray_triangle_intersection(Vector3 ray_origin, Vector3 ray_direction, Vector3 v0, Vector3 v1, Vector3 v2, F32 *out_t);
 BOOL math_aabb_sphere_intersection(Vector3 aabb_min, Vector3 aabb_max, Vector3 sphere_center, F32 sphere_radius);
 BoundingBox math_transform_aabb(BoundingBox bb, Vector3 position, Vector3 scale);
+void math_matrix_decompose(Matrix mat, Vector3 *translation, Quaternion *rotation, Vector3 *scale);
+void  math_compute_entity_bone_matrices(EID id);
 
 // ===============================================================
 // =========================== INLINES ===========================

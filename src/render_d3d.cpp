@@ -11,6 +11,7 @@
 #include "string.hpp"
 #include "time.hpp"
 #include "world.hpp"
+#include "map.hpp"
 
 #include <raymath.h>
 #include <rlgl.h>

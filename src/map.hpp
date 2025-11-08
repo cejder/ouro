@@ -14,6 +14,15 @@ U64 static inline hash_u64(U64 key) {
     return key;
 }
 
+U32 static inline hash_u32(U32 key) {
+    key ^= key >> 16;
+    key *= 0x85ebca6b;
+    key ^= key >> 13;
+    key *= 0xc2b2ae35;
+    key ^= key >> 16;
+    return key;
+}
+
 U64 static inline hash_string(String const *s) {
     U64 hash = 0x9e3779b9;
     for (SZ i = 0; i < s->length; i++) {
@@ -143,9 +152,11 @@ U64 static inline hash_cstr(C8 const *s) {
     }
 
 #define MAP_HASH_U64(key) hash_u64((U64)(key))
+#define MAP_HASH_U32(key) hash_u64((U64)(key))
 #define MAP_HASH_STRING(key) hash_string((key))
 #define MAP_HASH_CSTR(key) hash_cstr((key))
 #define MAP_EQUAL_U64(a, b) ((a) == (b))
+#define MAP_EQUAL_U32(a, b) ((a) == (b))
 #define MAP_EQUAL_STRING(a, b) string_equals((a), (b))
 #define MAP_EQUAL_CSTR(a, b) (ou_strcmp((a), (b)) == 0)
 

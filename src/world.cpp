@@ -21,263 +21,7 @@
 WorldState g_world_state = {};
 World* g_world = g_world_state.current;
 
-// Instanced rendering: map from model name to array of entity IDs
-MAP_DECLARE(InstanceGroupMap, C8 const *, EIDArray, MAP_HASH_CSTR, MAP_EQUAL_CSTR);
-
-// Minimum number of instances to use instanced rendering (avoids overhead for single entities)
-#define MIN_INSTANCE_COUNT 2
-
-// Bone matrix cache: Cache computed bone matrices to avoid redundant matrix math
-// Key: (model_name_hash, anim_index, frame)
-// Value: Array of bone matrices for all bones in the animation
-struct IBoneMatrixCacheKey {
-    U32 model_name_hash;  // Hash of model name
-    U16 anim_index;       // Animation index (max 65,536 animations)
-    U16 frame;            // Frame number (max 65,536 frames)
-};
-struct IBoneMatrixCacheValue {
-    Matrix bone_matrices[ENTITY_MAX_BONES];
-    S32 bone_count;
-};
-U64 static inline i_bone_matrix_cache_hash(IBoneMatrixCacheKey key) {
-    // Pack directly into U64: no hashing needed, perfect distribution
-    // | 32 bits: model_name_hash | 16 bits: anim_index | 16 bits: frame |
-    return (U64)key.model_name_hash | ((U64)key.anim_index << 32) | ((U64)key.frame << 48);
-}
-BOOL static inline i_bone_matrix_cache_equal(IBoneMatrixCacheKey a, IBoneMatrixCacheKey b) {
-    return a.model_name_hash == b.model_name_hash && a.anim_index == b.anim_index && a.frame == b.frame;
-}
-#define BONE_MATRIX_CACHE_INITIAL_CAPACITY 256
-MAP_DECLARE(IBoneMatrixCache, IBoneMatrixCacheKey, IBoneMatrixCacheValue, i_bone_matrix_cache_hash, i_bone_matrix_cache_equal)
-
-struct IWorldCache {
-    IBoneMatrixCache bone_matrices;
-};
-
-IWorldCache static i_cache = {};
-
-// Helper: Find bone index by name (case-insensitive search)
-// Returns -1 if bone not found
-S32 static i_find_bone_index(AModel *model, C8 const *bone_name) {
-    if (!model || !model->base.bones) { return -1; }
-
-    for (S32 i = 0; i < model->base.boneCount; i++) {
-        if (ou_strcmp(model->base.bones[i].name, bone_name) == 0) {
-            return i;
-        }
-    }
-    return -1;
-}
-
-// Helper: Get world-space position of a bone from current animation state
-// Returns true if bone was found and position was calculated
-BOOL static i_get_bone_world_position(EID id, C8 const *bone_name, Vector3 *out_position) {
-    AModel *model = asset_get_model(g_world->model_name[id]);
-    if (!model || !model->has_animations) { return false; }
-
-    S32 const bone_idx = i_find_bone_index(model, bone_name);
-    if (bone_idx < 0 || bone_idx >= g_world->animation[id].bone_count) { return false; }
-
-    // Get the current bone matrix (already in model space from animation)
-    Matrix const bone_matrix = g_world->animation[id].bone_matrices[bone_idx];
-
-    // Extract translation from the bone matrix
-    Vector3 bone_local_pos = {bone_matrix.m12, bone_matrix.m13, bone_matrix.m14};
-
-    // Transform to world space using entity transform
-    F32 const rotation = g_world->rotation[id];
-    Vector3 const scale = g_world->scale[id];
-    F32 const rotation_rad = rotation * DEG2RAD;
-
-    // Apply entity rotation
-    F32 const cos_r = math_cos_f32(rotation_rad);
-    F32 const sin_r = math_sin_f32(rotation_rad);
-    Vector3 rotated = {
-        (bone_local_pos.x * cos_r) - (bone_local_pos.z * sin_r),
-        bone_local_pos.y,
-        (bone_local_pos.x * sin_r) + (bone_local_pos.z * cos_r)
-    };
-
-    // Apply entity scale and position
-    out_position->x = g_world->position[id].x + (rotated.x * scale.x);
-    out_position->y = g_world->position[id].y + (rotated.y * scale.y);
-    out_position->z = g_world->position[id].z + (rotated.z * scale.z);
-
-    return true;
-}
-
-BOOL static i_get_bone_by_name(EID id, C8 const *bone_name, Vector3 *out_position) {
-    AModel *model = asset_get_model(g_world->model_name[id]);
-    if (!model || !model->has_animations) { return false; }
-
-    S32 const bone_count = g_world->animation[id].bone_count;
-    if (bone_count <= 0) { return false; }
-
-    for (S32 bone_idx = 0; bone_idx < bone_count; bone_idx++) {
-        if (ou_strcmp(model->base.bones[bone_idx].name, bone_name)) { continue; }
-
-        // Get the current bone matrix
-        Matrix const bone_matrix = g_world->animation[id].bone_matrices[bone_idx];
-        // Extract translation from the bone matrix
-        Vector3 bone_local_pos = {bone_matrix.m12, bone_matrix.m13, bone_matrix.m14};
-        // Transform to world space
-        F32 const rotation     = g_world->rotation[id];
-        Vector3 const scale    = g_world->scale[id];
-        F32 const rotation_rad = rotation * DEG2RAD;
-
-        F32 const cos_r = math_cos_f32(rotation_rad);
-        F32 const sin_r = math_sin_f32(rotation_rad);
-        Vector3 rotated = {
-            (bone_local_pos.x * cos_r) - (bone_local_pos.z * sin_r),
-            bone_local_pos.y,
-            (bone_local_pos.x * sin_r) + (bone_local_pos.z * cos_r)
-        };
-
-        Vector3 world_pos;
-        world_pos.x = g_world->position[id].x + (rotated.x * scale.x);
-        world_pos.y = g_world->position[id].y + (rotated.y * scale.y);
-        world_pos.z = g_world->position[id].z + (rotated.z * scale.z);
-
-        *out_position = world_pos;
-        return true;
-    }
-
-    return false;
-}
-
-// Helper: Decompose a 4x4 matrix into translation, rotation (quaternion), and scale
-// Note: Assumes matrix is TRS (Translation * Rotation * Scale) with no skew
-void static i_matrix_decompose(Matrix mat, Vector3 *translation, Quaternion *rotation, Vector3 *scale) {
-    // Extract translation (last column)
-    translation->x = mat.m12;
-    translation->y = mat.m13;
-    translation->z = mat.m14;
-
-    // Extract scale (magnitude of basis vectors)
-    Vector3 scale_x = {mat.m0, mat.m1, mat.m2};
-    Vector3 scale_y = {mat.m4, mat.m5, mat.m6};
-    Vector3 scale_z = {mat.m8, mat.m9, mat.m10};
-
-    scale->x = Vector3Length(scale_x);
-    scale->y = Vector3Length(scale_y);
-    scale->z = Vector3Length(scale_z);
-
-    // Extract rotation matrix (remove scale from basis vectors)
-    Matrix rot_mat = mat;
-    if (scale->x != 0.0F) {
-        rot_mat.m0 /= scale->x;
-        rot_mat.m1 /= scale->x;
-        rot_mat.m2 /= scale->x;
-    }
-    if (scale->y != 0.0F) {
-        rot_mat.m4 /= scale->y;
-        rot_mat.m5 /= scale->y;
-        rot_mat.m6 /= scale->y;
-    }
-    if (scale->z != 0.0F) {
-        rot_mat.m8 /= scale->z;
-        rot_mat.m9 /= scale->z;
-        rot_mat.m10 /= scale->z;
-    }
-
-    // Convert rotation matrix to quaternion
-    *rotation = QuaternionFromMatrix(rot_mat);
-}
-
-// Compute bone matrices for entity based on its animation state
-// Similar to UpdateModelAnimationBones but writes to per-entity storage
-// Supports blending between animations for smooth transitions
-// Uses caching to avoid redundant matrix computation for same model/animation/frame
-void static i_compute_entity_bone_matrices(EID id) {
-    AModel *model = asset_get_model(g_world->model_name[id]);
-
-    // Skip if model has no animations or bones
-    if (!model || !model->has_animations) { return; }
-
-    U32 const anim_idx = g_world->animation[id].anim_index;
-    U32 const frame    = g_world->animation[id].anim_frame;
-
-    // Validate animation index
-    if (anim_idx >= (U32)model->animation_count) { return; }
-
-    ModelAnimation const& anim = model->animations[anim_idx];
-
-    // Validate frame
-    if (frame >= (U32)anim.frameCount) { return; }
-
-    // Check cache for already-computed bone matrices (using pre-computed hash from asset)
-    IBoneMatrixCacheKey const key = {model->header.name_hash, (U16)anim_idx, (U16)frame};
-
-    Matrix new_bone_matrices[ENTITY_MAX_BONES];
-    S32 bone_count = anim.boneCount < ENTITY_MAX_BONES ? anim.boneCount : ENTITY_MAX_BONES;
-
-    IBoneMatrixCacheValue *cached = IBoneMatrixCache_get(&i_cache.bone_matrices, key);
-    if (cached != nullptr) {
-        // Cache hit - copy pre-computed matrices
-        ou_memcpy(new_bone_matrices, cached->bone_matrices, sizeof(Matrix) * (SZ)bone_count);
-    } else {
-        // Cache miss - compute bone matrices for current (new) animation
-        for (S32 bone_id = 0; bone_id < bone_count; bone_id++) {
-            Transform *bind_transform = &model->base.bindPose[bone_id];
-            Matrix bind_matrix        = MatrixMultiply(MatrixMultiply(
-                MatrixScale(bind_transform->scale.x, bind_transform->scale.y, bind_transform->scale.z),
-                QuaternionToMatrix(bind_transform->rotation)),
-                MatrixTranslate(bind_transform->translation.x, bind_transform->translation.y, bind_transform->translation.z));
-
-            Transform *target_transform = &anim.framePoses[frame][bone_id];
-            Matrix target_matrix        = MatrixMultiply(MatrixMultiply(
-                MatrixScale(target_transform->scale.x, target_transform->scale.y, target_transform->scale.z),
-                QuaternionToMatrix(target_transform->rotation)),
-                MatrixTranslate(target_transform->translation.x, target_transform->translation.y, target_transform->translation.z));
-
-            new_bone_matrices[bone_id] = MatrixMultiply(MatrixInvert(bind_matrix), target_matrix);
-        }
-
-        // Store in cache for future use
-        IBoneMatrixCacheValue value = {};
-        ou_memcpy(value.bone_matrices, new_bone_matrices, sizeof(Matrix) * (SZ)bone_count);
-        value.bone_count = bone_count;
-        IBoneMatrixCache_insert(&i_cache.bone_matrices, key, value);
-    }
-
-    // If blending, interpolate between previous and new bone matrices
-    if (g_world->animation[id].is_blending) {
-        F32 blend_t = g_world->animation[id].blend_time / g_world->animation[id].blend_duration;
-        blend_t = glm::clamp(blend_t, 0.0F, 1.0F);
-
-        for (S32 bone_id = 0; bone_id < bone_count; bone_id++) {
-            // Decompose both matrices into TRS components
-            Vector3 prev_trans;
-            Vector3 new_trans;
-            Vector3 prev_scale;
-            Vector3 new_scale;
-            Quaternion prev_rot;
-            Quaternion new_rot;
-
-            i_matrix_decompose(g_world->animation[id].prev_bone_matrices[bone_id], &prev_trans, &prev_rot, &prev_scale);
-            i_matrix_decompose(new_bone_matrices[bone_id], &new_trans, &new_rot, &new_scale);
-
-            // Interpolate components
-            Vector3 blended_trans = Vector3Lerp(prev_trans, new_trans, blend_t);
-            Quaternion blended_rot = QuaternionSlerp(prev_rot, new_rot, blend_t);
-            Vector3 blended_scale = Vector3Lerp(prev_scale, new_scale, blend_t);
-
-            // Reconstruct blended matrix
-            g_world->animation[id].bone_matrices[bone_id] = MatrixMultiply(MatrixMultiply(
-                MatrixScale(blended_scale.x, blended_scale.y, blended_scale.z),
-                QuaternionToMatrix(blended_rot)),
-                MatrixTranslate(blended_trans.x, blended_trans.y, blended_trans.z));
-        }
-    } else {
-        // No blending, just copy new matrices
-        ou_memcpy(g_world->animation[id].bone_matrices, new_bone_matrices, sizeof(Matrix) * (SZ)bone_count);
-    }
-}
-
 void world_init() {
-    // Initialize bone matrix cache
-    IBoneMatrixCache_init(&i_cache.bone_matrices, MEMORY_TYPE_ARENA_PERMANENT, BONE_MATRIX_CACHE_INITIAL_CAPACITY);
-
     // Reset both worlds and default on start on overworld
     g_world = &g_world_state.dungeon;
     world_reset();
@@ -405,7 +149,7 @@ void world_update(F32 dt, F32 dtu) {
         }
 
         // Compute bone matrices for this entity
-        i_compute_entity_bone_matrices(id);
+        math_compute_entity_bone_matrices(id);
     }
 }
 
@@ -467,7 +211,11 @@ void world_draw_3d() {
 #define BACKPACK_OFFSET_UPWARD 1.5F
 // Scale of the backpack relative to actor scale
 #define BACKPACK_MAX_SCALE  0.2F
+// Minimum number of instances to use instanced rendering (avoids overhead for single entities)
+#define MIN_INSTANCE_COUNT 2
 
+// Instanced rendering: map from model name to array of entity IDs
+MAP_DECLARE(InstanceGroupMap, U32, EIDArray, MAP_HASH_U32, MAP_EQUAL_U32);
 void world_draw_3d_sketch() {
     F32 const bp_base_scale = BACKPACK_MAX_SCALE*0.5F;
 
@@ -493,14 +241,14 @@ void world_draw_3d_sketch() {
                 g_world->animation[i].bone_count
             );
         } else {
-            // Static entities: group by model name
-            C8 const *model_name = g_world->model_name[i];
-            EIDArray *group = InstanceGroupMap_get(&instance_groups, model_name);
+            // Static entities: group by model name hash
+            U32 const model_name_hash = asset_get_model(g_world->model_name[i])->header.name_hash;
+            EIDArray *group = InstanceGroupMap_get(&instance_groups, model_name_hash);
             if (!group) {
                 EIDArray new_group;
                 array_init(MEMORY_TYPE_ARENA_TRANSIENT, &new_group, 64);
-                InstanceGroupMap_insert(&instance_groups, model_name, new_group);
-                group = InstanceGroupMap_get(&instance_groups, model_name);
+                InstanceGroupMap_insert(&instance_groups, model_name_hash, new_group);
+                group = InstanceGroupMap_get(&instance_groups, model_name_hash);
             }
             array_push(group, i);
         }
@@ -557,15 +305,15 @@ void world_draw_3d_sketch() {
     }
 
     // Second pass: Batch render static entity groups
-    C8 const *model_name;
+    U32 model_name_hash = U32_MAX;
     EIDArray group;
-    MAP_EACH(&instance_groups, model_name, group) {
+    MAP_EACH(&instance_groups, model_name_hash, group) {
         if (group.count < MIN_INSTANCE_COUNT) {
             // Not worth instancing for single/few entities - use regular rendering
             for (SZ j = 0; j < group.count; ++j) {
                 EID const i = group.data[j];
                 d3d_model(
-                    model_name,
+                    model_name_hash,
                     g_world->position[i],
                     g_world->rotation[i],
                     g_world->scale[i],
@@ -590,7 +338,7 @@ void world_draw_3d_sketch() {
             }
 
             // Draw all instances with a single draw call!
-            d3d_model_instanced(model_name, transforms.data, tints.data, transforms.count);
+            d3d_model_instanced(model_name_hash, transforms.data, tints.data, transforms.count);
         }
     }
 }
