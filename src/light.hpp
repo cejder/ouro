@@ -40,6 +40,15 @@ struct Light {
     S32 color_loc;
     S32 inner_cutoff_loc;
     S32 outer_cutoff_loc;
+
+    S32 enabled_loc_instanced;
+    S32 type_loc_instanced;
+    S32 position_loc_instanced;
+    S32 direction_loc_instanced;
+    S32 intensity_loc_instanced;
+    S32 color_loc_instanced;
+    S32 inner_cutoff_loc_instanced;
+    S32 outer_cutoff_loc_instanced;
 };
 
 struct Lighting {
@@ -48,6 +57,10 @@ struct Lighting {
     AShader *model_shader;
     S32 model_shader_view_pos_loc;
     S32 model_shader_ambient_color_loc;
+
+    AShader *model_shader_instanced;
+    S32 model_shader_instanced_view_pos_loc;
+    S32 model_shader_instanced_ambient_color_loc;
 };
 
 Lighting extern g_lighting;

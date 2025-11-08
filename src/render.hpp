@@ -138,6 +138,8 @@ struct Render {
 
     AShader *model_shader_instanced;
     S32 model_instanced_mvp_loc;
+    S32 model_instanced_view_pos_loc;
+    S32 model_instanced_ambient_loc;
 };
 
 extern Render g_render;

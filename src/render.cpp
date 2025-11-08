@@ -93,15 +93,17 @@ void render_init() {
     g_render.model_shader                = asset_get_shader(A_MODEL_SHADER_NAME);
     g_render.model_animation_enabled_loc = GetShaderLocation(g_render.model_shader->base, "animationEnabled");
 
-    g_render.model_shader_instanced = asset_get_shader("model_instanced");
-    g_render.model_instanced_mvp_loc = GetShaderLocation(g_render.model_shader_instanced->base, "mvp");
+    g_render.model_shader_instanced           = asset_get_shader("model_instanced");
+    g_render.model_instanced_mvp_loc          = GetShaderLocation(g_render.model_shader_instanced->base, "mvp");
+    g_render.model_instanced_view_pos_loc     = GetShaderLocation(g_render.model_shader_instanced->base, "viewPos");
+    g_render.model_instanced_ambient_loc      = GetShaderLocation(g_render.model_shader_instanced->base, "ambient");
 
     render_sketch_set_major_color(RENDER_DEFAULT_MAJOR_COLOR);
     render_sketch_set_minor_color(RENDER_DEFAULT_MINOR_COLOR);
     render_set_accent_color(BLACK);
 
     lighting_init();
-    fog_init(asset_get_shader(A_MODEL_SHADER_NAME));
+    fog_init(asset_get_shader(A_MODEL_SHADER_NAME), g_render.model_shader_instanced);
     render_set_ambient_color(RENDER_DEFAULT_AMBIENT_COLOR);
 
     particles2d_init();

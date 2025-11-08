@@ -12,9 +12,13 @@ struct Fog {
     Color color;
     S32 density_loc;
     S32 color_loc;
+
+    AShader *shader_instanced;
+    S32 density_loc_instanced;
+    S32 color_loc_instanced;
 };
 
 Fog extern g_fog;
 
-void fog_init(AShader *shader);
+void fog_init(AShader *shader, AShader *shader_instanced);
 void fog_update();

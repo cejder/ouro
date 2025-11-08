@@ -17,6 +17,11 @@ void lighting_init() {
     g_lighting.model_shader = asset_get_shader(A_MODEL_SHADER_NAME);
     g_lighting.model_shader_view_pos_loc = GetShaderLocation(g_lighting.model_shader->base, "viewPos");
     g_lighting.model_shader_ambient_color_loc = GetShaderLocation(g_lighting.model_shader->base, "ambient");
+
+    g_lighting.model_shader_instanced = g_render.model_shader_instanced;
+    g_lighting.model_shader_instanced_view_pos_loc = g_render.model_instanced_view_pos_loc;
+    g_lighting.model_shader_instanced_ambient_color_loc = g_render.model_instanced_ambient_loc;
+
     lighting_default_lights_setup();
 
     g_lighting.initialized = true;
@@ -28,7 +33,7 @@ void lighting_disable_all_lights() {
     }
 }
 
-void static i_get_shader_locations(SZ idx, Light* light, AShader* shader) {
+void static i_get_shader_locations(SZ idx, Light* light, AShader* shader, AShader* shader_instanced) {
     light->enabled_loc      = GetShaderLocation(shader->base, TS("lights[%zu].enabled", idx)->c);
     light->type_loc         = GetShaderLocation(shader->base, TS("lights[%zu].type", idx)->c);
     light->position_loc     = GetShaderLocation(shader->base, TS("lights[%zu].position", idx)->c);
@@ -37,11 +42,19 @@ void static i_get_shader_locations(SZ idx, Light* light, AShader* shader) {
     light->intensity_loc    = GetShaderLocation(shader->base, TS("lights[%zu].intensity", idx)->c);
     light->inner_cutoff_loc = GetShaderLocation(shader->base, TS("lights[%zu].inner_cutoff", idx)->c);
     light->outer_cutoff_loc = GetShaderLocation(shader->base, TS("lights[%zu].outer_cutoff", idx)->c);
+
+    light->enabled_loc_instanced      = GetShaderLocation(shader_instanced->base, TS("lights[%zu].enabled", idx)->c);
+    light->type_loc_instanced         = GetShaderLocation(shader_instanced->base, TS("lights[%zu].type", idx)->c);
+    light->position_loc_instanced     = GetShaderLocation(shader_instanced->base, TS("lights[%zu].position", idx)->c);
+    light->direction_loc_instanced    = GetShaderLocation(shader_instanced->base, TS("lights[%zu].direction", idx)->c);
+    light->color_loc_instanced        = GetShaderLocation(shader_instanced->base, TS("lights[%zu].color", idx)->c);
+    light->intensity_loc_instanced    = GetShaderLocation(shader_instanced->base, TS("lights[%zu].intensity", idx)->c);
+    light->inner_cutoff_loc_instanced = GetShaderLocation(shader_instanced->base, TS("lights[%zu].inner_cutoff", idx)->c);
+    light->outer_cutoff_loc_instanced = GetShaderLocation(shader_instanced->base, TS("lights[%zu].outer_cutoff", idx)->c);
 }
 
 void lighting_set_point_light(SZ idx, BOOL enabled, Vector3 position, Color color, F32 intensity) {
-    AShader *shader = g_lighting.model_shader;
-    Light *light    = &g_lighting.lights[idx];
+    Light *light = &g_lighting.lights[idx];
 
     light->enabled      = enabled;
     light->type         = LIGHT_TYPE_POINT;
@@ -53,12 +66,11 @@ void lighting_set_point_light(SZ idx, BOOL enabled, Vector3 position, Color colo
     light->dirty        = true;
     color_to_vec4(color, light->color);
 
-    i_get_shader_locations(idx, light, shader);
+    i_get_shader_locations(idx, light, g_lighting.model_shader, g_lighting.model_shader_instanced);
 }
 
 void lighting_set_spot_light(SZ idx, BOOL enabled, Vector3 position, Vector3 direction, Color color, F32 intensity, F32 inner_cutoff, F32 outer_cutoff) {
-    AShader *shader = g_lighting.model_shader;
-    Light *light    = &g_lighting.lights[idx];
+    Light *light = &g_lighting.lights[idx];
 
     light->enabled      = enabled;
     light->type         = LIGHT_TYPE_SPOT;
@@ -70,7 +82,7 @@ void lighting_set_spot_light(SZ idx, BOOL enabled, Vector3 position, Vector3 dir
     light->dirty        = true;
     color_to_vec4(color, light->color);
 
-    i_get_shader_locations(idx, light, shader);
+    i_get_shader_locations(idx, light, g_lighting.model_shader, g_lighting.model_shader_instanced);
 }
 
 void lighting_set_light_enabled(SZ idx, BOOL enabled) {
@@ -110,6 +122,7 @@ void lighting_default_lights_setup() {
 
 void lighting_update(Camera3D *camera) {
     AShader *shader = g_lighting.model_shader;
+    AShader *shader_instanced = g_lighting.model_shader_instanced;
 
     for (auto &light : g_lighting.lights) {
         light.in_frustum = c3d_is_point_in_frustum(light.position);
@@ -125,10 +138,20 @@ void lighting_update(Camera3D *camera) {
         SetShaderValue(shader->base, light.intensity_loc, &light.intensity, SHADER_UNIFORM_FLOAT);
         SetShaderValue(shader->base, light.inner_cutoff_loc, &light.inner_cutoff, SHADER_UNIFORM_FLOAT);
         SetShaderValue(shader->base, light.outer_cutoff_loc, &light.outer_cutoff, SHADER_UNIFORM_FLOAT);
+
+        SetShaderValue(shader_instanced->base, light.enabled_loc_instanced, &light.enabled, SHADER_UNIFORM_INT);
+        SetShaderValue(shader_instanced->base, light.type_loc_instanced, &light.type, SHADER_UNIFORM_INT);
+        SetShaderValue(shader_instanced->base, light.position_loc_instanced, &light.position, SHADER_UNIFORM_VEC3);
+        SetShaderValue(shader_instanced->base, light.direction_loc_instanced, &light.direction, SHADER_UNIFORM_VEC3);
+        SetShaderValue(shader_instanced->base, light.color_loc_instanced, light.color, SHADER_UNIFORM_VEC4);
+        SetShaderValue(shader_instanced->base, light.intensity_loc_instanced, &light.intensity, SHADER_UNIFORM_FLOAT);
+        SetShaderValue(shader_instanced->base, light.inner_cutoff_loc_instanced, &light.inner_cutoff, SHADER_UNIFORM_FLOAT);
+        SetShaderValue(shader_instanced->base, light.outer_cutoff_loc_instanced, &light.outer_cutoff, SHADER_UNIFORM_FLOAT);
     }
 
     F32 camera_pos[3] = {camera->position.x, camera->position.y, camera->position.z};
     SetShaderValue(shader->base, g_lighting.model_shader_view_pos_loc, camera_pos, SHADER_UNIFORM_VEC3);
+    SetShaderValue(shader_instanced->base, g_lighting.model_shader_instanced_view_pos_loc, camera_pos, SHADER_UNIFORM_VEC3);
 }
 
 ATexture static *i_get_icon(LightType type) {
