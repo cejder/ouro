@@ -196,7 +196,7 @@ void static i_compute_entity_bone_matrices(EID id) {
     // If blending, interpolate between previous and new bone matrices
     if (g_world->animation[id].is_blending) {
         F32 blend_t = g_world->animation[id].blend_time / g_world->animation[id].blend_duration;
-        blend_t = Clamp(blend_t, 0.0F, 1.0F);
+        blend_t = glm::clamp(blend_t, 0.0F, 1.0F);
 
         S32 bone_count = anim.boneCount < ENTITY_MAX_BONES ? anim.boneCount : ENTITY_MAX_BONES;
         for (S32 bone_id = 0; bone_id < bone_count; bone_id++) {
