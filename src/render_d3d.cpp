@@ -160,51 +160,9 @@ void d3d_model_instanced(C8 const *model_name, Matrix *transforms, SZ instance_c
 
     AModel *model = asset_get_model(model_name);
 
-    // Use the instanced shader
-    AShader *original_shader = g_render.model_shader;
-    g_render.model_shader = g_render.model_shader_instanced;
-
     // Set view-projection matrix uniform
     Matrix mat_view_proj = g_render.cameras.c3d.mat_view_proj;
     SetShaderValueMatrix(g_render.model_shader_instanced->base, g_render.model_instanced_mvp_loc, mat_view_proj);
-
-    // Copy lighting uniforms from main shader to instanced shader
-    Camera3D *camera = c3d_get_ptr();
-    F32 camera_pos[3] = {camera->position.x, camera->position.y, camera->position.z};
-    S32 view_pos_loc = GetShaderLocation(g_render.model_shader_instanced->base, "viewPos");
-    S32 ambient_loc = GetShaderLocation(g_render.model_shader_instanced->base, "ambient");
-    SetShaderValue(g_render.model_shader_instanced->base, view_pos_loc, camera_pos, SHADER_UNIFORM_VEC3);
-    SetShaderValue(g_render.model_shader_instanced->base, ambient_loc, g_render.ambient_color, SHADER_UNIFORM_VEC4);
-
-    // Copy fog uniforms
-    S32 fog_density_loc = GetShaderLocation(g_render.model_shader_instanced->base, "fog.density");
-    S32 fog_color_loc = GetShaderLocation(g_render.model_shader_instanced->base, "fog.color");
-    F32 fog_color_f32[4];
-    color_to_vec4(g_fog.color, fog_color_f32);
-    SetShaderValue(g_render.model_shader_instanced->base, fog_density_loc, &g_fog.density, SHADER_UNIFORM_FLOAT);
-    SetShaderValue(g_render.model_shader_instanced->base, fog_color_loc, fog_color_f32, SHADER_UNIFORM_VEC4);
-
-    // Copy all light uniforms
-    for (SZ idx = 0; idx < LIGHTS_MAX; ++idx) {
-        Light *light = &g_lighting.lights[idx];
-        S32 enabled_loc = GetShaderLocation(g_render.model_shader_instanced->base, TS("lights[%zu].enabled", idx)->c);
-        S32 type_loc = GetShaderLocation(g_render.model_shader_instanced->base, TS("lights[%zu].type", idx)->c);
-        S32 position_loc = GetShaderLocation(g_render.model_shader_instanced->base, TS("lights[%zu].position", idx)->c);
-        S32 direction_loc = GetShaderLocation(g_render.model_shader_instanced->base, TS("lights[%zu].direction", idx)->c);
-        S32 color_loc = GetShaderLocation(g_render.model_shader_instanced->base, TS("lights[%zu].color", idx)->c);
-        S32 intensity_loc = GetShaderLocation(g_render.model_shader_instanced->base, TS("lights[%zu].intensity", idx)->c);
-        S32 inner_cutoff_loc = GetShaderLocation(g_render.model_shader_instanced->base, TS("lights[%zu].inner_cutoff", idx)->c);
-        S32 outer_cutoff_loc = GetShaderLocation(g_render.model_shader_instanced->base, TS("lights[%zu].outer_cutoff", idx)->c);
-
-        SetShaderValue(g_render.model_shader_instanced->base, enabled_loc, &light->enabled, SHADER_UNIFORM_INT);
-        SetShaderValue(g_render.model_shader_instanced->base, type_loc, &light->type, SHADER_UNIFORM_INT);
-        SetShaderValue(g_render.model_shader_instanced->base, position_loc, &light->position, SHADER_UNIFORM_VEC3);
-        SetShaderValue(g_render.model_shader_instanced->base, direction_loc, &light->direction, SHADER_UNIFORM_VEC3);
-        SetShaderValue(g_render.model_shader_instanced->base, color_loc, light->color, SHADER_UNIFORM_VEC4);
-        SetShaderValue(g_render.model_shader_instanced->base, intensity_loc, &light->intensity, SHADER_UNIFORM_FLOAT);
-        SetShaderValue(g_render.model_shader_instanced->base, inner_cutoff_loc, &light->inner_cutoff, SHADER_UNIFORM_FLOAT);
-        SetShaderValue(g_render.model_shader_instanced->base, outer_cutoff_loc, &light->outer_cutoff, SHADER_UNIFORM_FLOAT);
-    }
 
     // Draw each mesh with instancing
     for (S32 i = 0; i < model->base.meshCount; i++) {
@@ -213,7 +171,7 @@ void d3d_model_instanced(C8 const *model_name, Matrix *transforms, SZ instance_c
 
         // Apply tint to material color
         Color original_color = material->maps[MATERIAL_MAP_DIFFUSE].color;
-        auto tinted_color = WHITE;
+        Color tinted_color = WHITE;
         tinted_color.r = (U8)(((S32)original_color.r * (S32)tint.r) / 255);
         tinted_color.g = (U8)(((S32)original_color.g * (S32)tint.g) / 255);
         tinted_color.b = (U8)(((S32)original_color.b * (S32)tint.b) / 255);
@@ -231,9 +189,6 @@ void d3d_model_instanced(C8 const *model_name, Matrix *transforms, SZ instance_c
         material->shader = original_material_shader;
         material->maps[MATERIAL_MAP_DIFFUSE].color = original_color;
     }
-
-    // Restore original shader
-    g_render.model_shader = original_shader;
 }
 
 void d3d_mesh_rl(Mesh *mesh, Material *material, Matrix *transform) {
