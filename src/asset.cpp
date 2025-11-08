@@ -1010,6 +1010,18 @@ ATexture *asset_get_texture(C8 const *name) {
     return asset_get_texture(name);
 }
 
+ATexture *asset_get_texture_by_hash(U32 name_hash) {
+    for (SZ i = 0; i < g_assets.texture_count; ++i) {
+        ATexture *asset = &g_assets.textures[i];
+        if (asset->header.name_hash == name_hash) {
+            asset->header.last_access = time(nullptr);
+            return asset;
+        }
+    }
+    lle("Texture with hash 0x%08X not found (asset not loaded or invalid hash). Hash lookups do not support auto-loading.", name_hash);
+    return nullptr;
+}
+
 ASound *asset_get_sound(C8 const *name) {
     for (SZ i = 0; i < g_assets.sound_count; ++i) {
         ASound *asset = &g_assets.sounds[i];
@@ -1027,6 +1039,18 @@ ASound *asset_get_sound(C8 const *name) {
     }
 
     return asset_get_sound(name);
+}
+
+ASound *asset_get_sound_by_hash(U32 name_hash) {
+    for (SZ i = 0; i < g_assets.sound_count; ++i) {
+        ASound *asset = &g_assets.sounds[i];
+        if (asset->header.name_hash == name_hash) {
+            asset->header.last_access = time(nullptr);
+            return asset;
+        }
+    }
+    lle("Sound with hash 0x%08X not found (asset not loaded or invalid hash). Hash lookups do not support auto-loading.", name_hash);
+    return nullptr;
 }
 
 AShader *asset_get_shader(C8 const *name) {
@@ -1048,6 +1072,18 @@ AShader *asset_get_shader(C8 const *name) {
     return asset_get_shader(name);
 }
 
+AShader *asset_get_shader_by_hash(U32 name_hash) {
+    for (SZ i = 0; i < g_assets.shader_count; ++i) {
+        AShader *asset = &g_assets.shaders[i];
+        if (asset->header.name_hash == name_hash) {
+            asset->header.last_access = time(nullptr);
+            return asset;
+        }
+    }
+    lle("Shader with hash 0x%08X not found (asset not loaded or invalid hash). Hash lookups do not support auto-loading.", name_hash);
+    return nullptr;
+}
+
 AComputeShader *asset_get_compute_shader(C8 const *name) {
     for (SZ i = 0; i < g_assets.compute_shader_count; ++i) {
         AComputeShader *asset = &g_assets.compute_shaders[i];
@@ -1065,6 +1101,18 @@ AComputeShader *asset_get_compute_shader(C8 const *name) {
     }
 
     return asset_get_compute_shader(name);
+}
+
+AComputeShader *asset_get_compute_shader_by_hash(U32 name_hash) {
+    for (SZ i = 0; i < g_assets.compute_shader_count; ++i) {
+        AComputeShader *asset = &g_assets.compute_shaders[i];
+        if (asset->header.name_hash == name_hash) {
+            asset->header.last_access = time(nullptr);
+            return asset;
+        }
+    }
+    lle("Compute shader with hash 0x%08X not found (asset not loaded or invalid hash). Hash lookups do not support auto-loading.", name_hash);
+    return nullptr;
 }
 
 AFont *asset_get_font(C8 const *name, S32 font_size) {
@@ -1105,6 +1153,28 @@ AFont *asset_get_font(C8 const *name, S32 font_size) {
     return asset_get_font(name, font_size);
 }
 
+AFont *asset_get_font_by_hash(U32 name_hash, S32 font_size) {
+    if (font_size < 1) {
+        llw("Font size is smaller than 1 (font size: %d), returning default font %s (font size: %d)", font_size, A_DEFAULT_FONT, A_DEFAULT_FONT_SIZE);
+        return asset_get_font(A_DEFAULT_FONT, A_DEFAULT_FONT_SIZE);
+    }
+
+    if (!g_assets.fonts_prepared) {
+        i_prepare_fonts();
+        g_assets.fonts_prepared = true;
+    }
+
+    for (SZ i = 0; i < g_assets.font_count; ++i) {
+        AFont *asset = &g_assets.fonts[i];
+        if (asset->header.name_hash == name_hash && asset->font_size == font_size) {
+            asset->header.last_access = time(nullptr);
+            return asset;
+        }
+    }
+    lle("Font with hash 0x%08X and size %d not found (asset not loaded or invalid hash). Hash lookups do not support auto-loading.", name_hash, font_size);
+    return nullptr;
+}
+
 ASkybox *asset_get_skybox(C8 const *name) {
     for (SZ i = 0; i < g_assets.skybox_count; ++i) {
         ASkybox *asset = &g_assets.skyboxes[i];
@@ -1122,6 +1192,18 @@ ASkybox *asset_get_skybox(C8 const *name) {
     }
 
     return asset_get_skybox(name);
+}
+
+ASkybox *asset_get_skybox_by_hash(U32 name_hash) {
+    for (SZ i = 0; i < g_assets.skybox_count; ++i) {
+        ASkybox *asset = &g_assets.skyboxes[i];
+        if (asset->header.name_hash == name_hash) {
+            asset->header.last_access = time(nullptr);
+            return asset;
+        }
+    }
+    lle("Skybox with hash 0x%08X not found (asset not loaded or invalid hash). Hash lookups do not support auto-loading.", name_hash);
+    return nullptr;
 }
 
 ATerrain *asset_get_terrain(C8 const *name, Vector3 dimensions) {
@@ -1143,6 +1225,21 @@ ATerrain *asset_get_terrain(C8 const *name, Vector3 dimensions) {
     }
 
     return asset_get_terrain(name, dimensions);
+}
+
+ATerrain *asset_get_terrain_by_hash(U32 name_hash, Vector3 dimensions) {
+    for (SZ i = 0; i < g_assets.terrain_count; ++i) {
+        ATerrain *asset            = &g_assets.terrains[i];
+        BOOL const same_hash       = asset->header.name_hash == name_hash;
+        BOOL const same_dimensions = Vector3Equals(asset->dimensions, dimensions);
+        if (same_hash && same_dimensions) {
+            asset->header.last_access = time(nullptr);
+            return asset;
+        }
+    }
+    lle("Terrain with hash 0x%08X and dimensions (%.2f, %.2f, %.2f) not found (asset not loaded or invalid hash). Hash lookups do not support auto-loading.",
+        name_hash, dimensions.x, dimensions.y, dimensions.z);
+    return nullptr;
 }
 
 void asset_set_model_shader(AModel *model, Shader shader) {
