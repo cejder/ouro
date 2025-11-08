@@ -51,7 +51,7 @@ struct IBoneMatrixCacheKey {
     U16 frame;            // Frame number    (max 65,536 frames)
 };
 struct IBoneMatrixCacheValue {
-    Matrix bone_matrices[ENTITY_MAX_BONES];
+    Matrix *bone_matrices;  // Pointer to allocated array (not inline, to keep slots small)
     S32 bone_count;
 };
 U64 static inline i_bone_matrix_cache_hash(IBoneMatrixCacheKey key) {
@@ -778,9 +778,12 @@ void  math_compute_entity_bone_matrices(EID id) {
             new_bone_matrices[bone_id] = MatrixMultiply(MatrixInvert(bind_matrix), target_matrix);
         }
 
-        // Store in cache for future use
+        // Store in cache for future use (allocate from permanent arena)
+        Matrix *allocated_matrices = mc(Matrix *, bone_count, sizeof(Matrix), MEMORY_TYPE_ARENA_PERMANENT);
+        ou_memcpy(allocated_matrices, new_bone_matrices, sizeof(Matrix) * (SZ)bone_count);
+
         IBoneMatrixCacheValue value = {};
-        ou_memcpy(value.bone_matrices, new_bone_matrices, sizeof(Matrix) * (SZ)bone_count);
+        value.bone_matrices = allocated_matrices;
         value.bone_count = bone_count;
         IBoneMatrixCache_insert(&i_cache.bone_matrices, key, value);
     }
