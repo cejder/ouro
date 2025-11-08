@@ -312,7 +312,7 @@ void world_draw_3d_sketch() {
             // Not worth instancing for single/few entities - use regular rendering
             for (SZ j = 0; j < group.count; ++j) {
                 EID const i = group.data[j];
-                d3d_model(
+                d3d_model_by_hash(
                     model_name_hash,
                     g_world->position[i],
                     g_world->rotation[i],
@@ -338,7 +338,7 @@ void world_draw_3d_sketch() {
             }
 
             // Draw all instances with a single draw call!
-            d3d_model_instanced(model_name_hash, transforms.data, tints.data, transforms.count);
+            d3d_model_instanced_by_hash(model_name_hash, transforms.data, tints.data, transforms.count);
         }
     }
 }
