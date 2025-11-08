@@ -5,6 +5,7 @@
 #include "cvar.hpp"
 #include "edit.hpp"
 #include "log.hpp"
+#include "map.hpp"
 #include "message.hpp"
 #include "particles_3d.hpp"
 #include "render.hpp"
@@ -19,6 +20,12 @@
 
 WorldState g_world_state = {};
 World* g_world = g_world_state.current;
+
+// Instanced rendering: map from model name to array of entity IDs
+MAP_DECLARE(InstanceGroupMap, C8 const *, EIDArray, MAP_HASH_CSTR, MAP_EQUAL_CSTR);
+
+// Minimum number of instances to use instanced rendering (avoids overhead for single entities)
+#define MIN_INSTANCE_COUNT 2
 
 // Helper: Find bone index by name (case-insensitive search)
 // Returns -1 if bone not found
@@ -416,13 +423,18 @@ void world_draw_3d() {
 void world_draw_3d_sketch() {
     F32 const bp_base_scale = BACKPACK_MAX_SCALE*0.5F;
 
+    // Group static entities by model name for instanced rendering
+    InstanceGroupMap instance_groups;
+    InstanceGroupMap_init(&instance_groups, MEMORY_TYPE_ARENA_TRANSIENT, 32);
 
+    // First pass: Group static entities, draw animated entities immediately
     for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
         EID const i = g_world->active_entities[idx];
         if (!ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM)) { continue; }
 
         // Check if entity has active animation
         if (g_world->animation[i].has_animations) {
+            // Animated entities: draw immediately (no instancing for now)
             d3d_model_animated(
                 g_world->model_name[i],
                 g_world->position[i],
@@ -433,12 +445,16 @@ void world_draw_3d_sketch() {
                 g_world->animation[i].bone_count
             );
         } else {
-            d3d_model(
-                g_world->model_name[i],
-                g_world->position[i],
-                g_world->rotation[i],
-                g_world->scale[i],
-                g_world->tint[i]);
+            // Static entities: group by model name
+            C8 const *model_name = g_world->model_name[i];
+            EIDArray *group = InstanceGroupMap_get(&instance_groups, model_name);
+            if (!group) {
+                EIDArray new_group;
+                array_init(MEMORY_TYPE_ARENA_TRANSIENT, &new_group, 64);
+                InstanceGroupMap_insert(&instance_groups, model_name, new_group);
+                group = InstanceGroupMap_get(&instance_groups, model_name);
+            }
+            array_push(group, i);
         }
 
         // Draw carried resources on actor's back
@@ -489,6 +505,42 @@ void world_draw_3d_sketch() {
 
                 d3d_model("wood.glb", backpack_pos, rotation, backpack_scale, wood_color);
             }
+        }
+    }
+
+    // Second pass: Batch render static entity groups
+    C8 const *model_name;
+    EIDArray *group;
+    MAP_EACH_PTR(&instance_groups, &model_name, &group) {
+        if (group->count < MIN_INSTANCE_COUNT) {
+            // Not worth instancing for single/few entities - use regular rendering
+            for (SZ j = 0; j < group->count; ++j) {
+                EID const i = group->data[j];
+                d3d_model(
+                    model_name,
+                    g_world->position[i],
+                    g_world->rotation[i],
+                    g_world->scale[i],
+                    g_world->tint[i]
+                );
+            }
+        } else {
+            // Build transform matrices for all instances in this group
+            MatrixArray transforms;
+            array_init(MEMORY_TYPE_ARENA_TRANSIENT, &transforms, group->count);
+
+            for (SZ j = 0; j < group->count; ++j) {
+                EID const i = group->data[j];
+                Matrix mat_scale = MatrixScale(g_world->scale[i].x, g_world->scale[i].y, g_world->scale[i].z);
+                Matrix mat_rot = MatrixRotate((Vector3){0, 1, 0}, g_world->rotation[i] * DEG2RAD);
+                Matrix mat_trans = MatrixTranslate(g_world->position[i].x, g_world->position[i].y, g_world->position[i].z);
+                Matrix transform = MatrixMultiply(MatrixMultiply(mat_scale, mat_rot), mat_trans);
+                array_push(&transforms, transform);
+            }
+
+            // Draw all instances with a single draw call!
+            // NOTE: Using WHITE tint for now - per-instance tinting would require more work
+            d3d_model_instanced(model_name, transforms.data, transforms.count, WHITE);
         }
     }
 }

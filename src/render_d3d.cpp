@@ -152,6 +152,49 @@ void d3d_model_animated(C8 const *model_name, Vector3 position, F32 rotation, Ve
     }
 }
 
+void d3d_model_instanced(C8 const *model_name, Matrix *transforms, SZ instance_count, Color tint) {
+    INCREMENT_DRAW_CALL;
+
+    AModel *model = asset_get_model(model_name);
+
+    // Use the instanced shader
+    AShader *original_shader = g_render.model_shader;
+    g_render.model_shader = g_render.model_shader_instanced;
+
+    // Set view-projection matrix uniform
+    Matrix mat_view_proj = g_render.cameras.c3d.mat_view_proj;
+    SetShaderValue(g_render.model_shader_instanced->base, g_render.model_instanced_mvp_loc, &mat_view_proj, SHADER_UNIFORM_MAT4);
+
+    // Draw each mesh with instancing
+    for (S32 i = 0; i < model->base.meshCount; i++) {
+        Mesh *mesh = &model->base.meshes[i];
+        Material *material = &model->base.materials[model->base.meshMaterial[i]];
+
+        // Apply tint to material color
+        Color original_color = material->maps[MATERIAL_MAP_DIFFUSE].color;
+        auto tinted_color = WHITE;
+        tinted_color.r = (U8)(((S32)original_color.r * (S32)tint.r) / 255);
+        tinted_color.g = (U8)(((S32)original_color.g * (S32)tint.g) / 255);
+        tinted_color.b = (U8)(((S32)original_color.b * (S32)tint.b) / 255);
+        tinted_color.a = (U8)(((S32)original_color.a * (S32)tint.a) / 255);
+        material->maps[MATERIAL_MAP_DIFFUSE].color = tinted_color;
+
+        // Temporarily assign instanced shader to material
+        Shader original_material_shader = material->shader;
+        material->shader = g_render.model_shader_instanced->base;
+
+        // Draw instanced mesh
+        DrawMeshInstanced(*mesh, *material, transforms, (S32)instance_count);
+
+        // Restore original shader and color
+        material->shader = original_material_shader;
+        material->maps[MATERIAL_MAP_DIFFUSE].color = original_color;
+    }
+
+    // Restore original shader
+    g_render.model_shader = original_shader;
+}
+
 void d3d_mesh_rl(Mesh *mesh, Material *material, Matrix *transform) {
     INCREMENT_DRAW_CALL;
 

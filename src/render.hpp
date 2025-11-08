@@ -135,6 +135,9 @@ struct Render {
 
     AShader *model_shader;
     S32 model_animation_enabled_loc;
+
+    AShader *model_shader_instanced;
+    S32 model_instanced_mvp_loc;
 };
 
 extern Render g_render;
@@ -239,6 +242,7 @@ void d3d_model_ex(AModel *model, Vector3 position, F32 rotation, Vector3 scale, 
 void d3d_model_transform_rl(Model *model, Matrix *transform, Color tint);
 void d3d_model(C8 const *model_name, Vector3 position, F32 rotation, Vector3 scale, Color tint);
 void d3d_model_animated(C8 const *model_name, Vector3 position, F32 rotation, Vector3 scale, Color tint, Matrix *bone_matrices, S32 bone_count);
+void d3d_model_instanced(C8 const *model_name, Matrix *transforms, SZ instance_count, Color tint);
 void d3d_mesh_rl(Mesh *mesh, Material *material, Matrix *transform);
 void d3d_mesh_rl_instanced(Mesh *mesh, Material *material, Matrix *transforms, SZ instances);
 void d3d_bounding_box(BoundingBox bb, Color color);
