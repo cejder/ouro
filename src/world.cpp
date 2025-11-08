@@ -31,9 +31,9 @@ MAP_DECLARE(InstanceGroupMap, C8 const *, EIDArray, MAP_HASH_CSTR, MAP_EQUAL_CST
 // Key: (model_name_hash, anim_index, frame)
 // Value: Array of bone matrices for all bones in the animation
 struct IBoneMatrixCacheKey {
-    U32 model_name_hash;
-    U32 anim_index;
-    U32 frame;
+    U32 model_name_hash;  // Hash of model name
+    U16 anim_index;       // Animation index (max 65,536 animations)
+    U16 frame;            // Frame number (max 65,536 frames)
 };
 struct IBoneMatrixCacheValue {
     Matrix bone_matrices[ENTITY_MAX_BONES];
