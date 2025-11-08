@@ -165,7 +165,7 @@ void d3d_model_instanced(C8 const *model_name, Matrix *transforms, Color *tints,
     SetShaderValueMatrix(g_render.model_shader_instanced->base, g_render.model_instanced_mvp_loc, mat_view_proj);
 
     // Convert colors to float array for GPU
-    F32 *instance_colors = (F32 *)RL_MALLOC((S32)instance_count * 4 * sizeof(F32));
+    F32 *instance_colors = mmta(F32 *, instance_count * 4 * sizeof(F32));
     for (SZ j = 0; j < instance_count; ++j) {
         instance_colors[j * 4 + 0] = (F32)tints[j].r / 255.0F;
         instance_colors[j * 4 + 1] = (F32)tints[j].g / 255.0F;
@@ -189,21 +189,20 @@ void d3d_model_instanced(C8 const *model_name, Matrix *transforms, Color *tints,
         rlEnableVertexArray(mesh->vaoId);
 
         // Set up instance color buffer
-        U32 instance_color_buffer = rlLoadVertexBuffer(instance_colors, (S32)instance_count * 4 * sizeof(F32), false);
-        S32 color_attrib_loc = rlGetLocationAttrib(material->shader.id, "instanceColor");
-        if (color_attrib_loc >= 0) {
+        U32 instance_color_buffer = rlLoadVertexBuffer(instance_colors, (S32)(instance_count * 4U) * (S32)sizeof(F32), false);
+        if (g_render.model_instanced_instance_color_loc >= 0) {
             rlEnableVertexBuffer(instance_color_buffer);
-            rlSetVertexAttribute((U32)color_attrib_loc, 4, RL_FLOAT, false, 0, 0);
-            rlSetVertexAttributeDivisor((U32)color_attrib_loc, 1);  // 1 = per-instance
-            rlEnableVertexAttribute((U32)color_attrib_loc);
+            rlSetVertexAttribute((U32)g_render.model_instanced_instance_color_loc, 4, RL_FLOAT, false, 0, 0);
+            rlSetVertexAttributeDivisor((U32)g_render.model_instanced_instance_color_loc, 1);  // 1 = per-instance
+            rlEnableVertexAttribute((U32)g_render.model_instanced_instance_color_loc);
         }
 
         // Draw with instancing (using Raylib's built-in transform instancing)
         DrawMeshInstanced(*mesh, *material, transforms, (S32)instance_count);
 
         // Cleanup
-        if (color_attrib_loc >= 0) {
-            rlDisableVertexAttribute((U32)color_attrib_loc);
+        if (g_render.model_instanced_instance_color_loc >= 0) {
+            rlDisableVertexAttribute((U32)g_render.model_instanced_instance_color_loc);
             rlDisableVertexBuffer();
         }
         rlDisableVertexArray();
@@ -212,8 +211,6 @@ void d3d_model_instanced(C8 const *model_name, Matrix *transforms, Color *tints,
         // Restore original shader
         material->shader = original_material_shader;
     }
-
-    RL_FREE(instance_colors);
 }
 
 void d3d_mesh_rl(Mesh *mesh, Material *material, Matrix *transform) {

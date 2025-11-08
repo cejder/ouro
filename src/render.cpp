@@ -97,6 +97,7 @@ void render_init() {
     g_render.model_instanced_mvp_loc          = GetShaderLocation(g_render.model_shader_instanced->base, "mvp");
     g_render.model_instanced_view_pos_loc     = GetShaderLocation(g_render.model_shader_instanced->base, "viewPos");
     g_render.model_instanced_ambient_loc      = GetShaderLocation(g_render.model_shader_instanced->base, "ambient");
+    g_render.model_instanced_instance_color_loc = GetShaderLocationAttrib(g_render.model_shader_instanced->base, "instanceColor");
 
     render_sketch_set_major_color(RENDER_DEFAULT_MAJOR_COLOR);
     render_sketch_set_minor_color(RENDER_DEFAULT_MINOR_COLOR);

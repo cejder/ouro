@@ -140,6 +140,7 @@ struct Render {
     S32 model_instanced_mvp_loc;
     S32 model_instanced_view_pos_loc;
     S32 model_instanced_ambient_loc;
+    S32 model_instanced_instance_color_loc;
 };
 
 extern Render g_render;
