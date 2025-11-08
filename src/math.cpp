@@ -779,7 +779,7 @@ void  math_compute_entity_bone_matrices(EID id) {
         }
 
         // Store in cache for future use (allocate from permanent arena)
-        Matrix *allocated_matrices = mcpa(Matrix *, bone_count, sizeof(Matrix));
+        Matrix *allocated_matrices = mcpa(Matrix *, (SZ)bone_count, sizeof(Matrix));
         ou_memcpy(allocated_matrices, new_bone_matrices, sizeof(Matrix) * (SZ)bone_count);
 
         IBoneMatrixCacheValue value = {};
