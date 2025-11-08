@@ -155,7 +155,7 @@ void d3d_model_animated(C8 const *model_name, Vector3 position, F32 rotation, Ve
     }
 }
 
-void d3d_model_instanced(C8 const *model_name, Matrix *transforms, SZ instance_count, Color tint) {
+void d3d_model_instanced(C8 const *model_name, Matrix *transforms, Color *tints, SZ instance_count) {
     INCREMENT_DRAW_CALL;
 
     AModel *model = asset_get_model(model_name);
@@ -164,31 +164,56 @@ void d3d_model_instanced(C8 const *model_name, Matrix *transforms, SZ instance_c
     Matrix mat_view_proj = g_render.cameras.c3d.mat_view_proj;
     SetShaderValueMatrix(g_render.model_shader_instanced->base, g_render.model_instanced_mvp_loc, mat_view_proj);
 
+    // Convert colors to float array for GPU
+    F32 *instance_colors = (F32 *)RL_MALLOC((S32)instance_count * 4 * sizeof(F32));
+    for (SZ j = 0; j < instance_count; ++j) {
+        instance_colors[j * 4 + 0] = (F32)tints[j].r / 255.0F;
+        instance_colors[j * 4 + 1] = (F32)tints[j].g / 255.0F;
+        instance_colors[j * 4 + 2] = (F32)tints[j].b / 255.0F;
+        instance_colors[j * 4 + 3] = (F32)tints[j].a / 255.0F;
+    }
+
     // Draw each mesh with instancing
     for (S32 i = 0; i < model->base.meshCount; i++) {
         Mesh *mesh = &model->base.meshes[i];
         Material *material = &model->base.materials[model->base.meshMaterial[i]];
 
-        // Apply tint to material color
-        Color original_color = material->maps[MATERIAL_MAP_DIFFUSE].color;
-        Color tinted_color = WHITE;
-        tinted_color.r = (U8)(((S32)original_color.r * (S32)tint.r) / 255);
-        tinted_color.g = (U8)(((S32)original_color.g * (S32)tint.g) / 255);
-        tinted_color.b = (U8)(((S32)original_color.b * (S32)tint.b) / 255);
-        tinted_color.a = (U8)(((S32)original_color.a * (S32)tint.a) / 255);
-        material->maps[MATERIAL_MAP_DIFFUSE].color = tinted_color;
-
         // Temporarily assign instanced shader to material
         Shader original_material_shader = material->shader;
         material->shader = g_render.model_shader_instanced->base;
 
-        // Draw instanced mesh
+        // Use rlgl to draw with custom instance attributes
+        rlEnableShader(material->shader.id);
+
+        // Upload transforms (standard instancing)
+        rlEnableVertexArray(mesh->vaoId);
+
+        // Set up instance color buffer
+        U32 instance_color_buffer = rlLoadVertexBuffer(instance_colors, (S32)instance_count * 4 * sizeof(F32), false);
+        S32 color_attrib_loc = rlGetLocationAttrib(material->shader.id, "instanceColor");
+        if (color_attrib_loc >= 0) {
+            rlEnableVertexBuffer(instance_color_buffer);
+            rlSetVertexAttribute((U32)color_attrib_loc, 4, RL_FLOAT, false, 0, 0);
+            rlSetVertexAttributeDivisor((U32)color_attrib_loc, 1);  // 1 = per-instance
+            rlEnableVertexAttribute((U32)color_attrib_loc);
+        }
+
+        // Draw with instancing (using Raylib's built-in transform instancing)
         DrawMeshInstanced(*mesh, *material, transforms, (S32)instance_count);
 
-        // Restore original shader and color
+        // Cleanup
+        if (color_attrib_loc >= 0) {
+            rlDisableVertexAttribute((U32)color_attrib_loc);
+            rlDisableVertexBuffer();
+        }
+        rlDisableVertexArray();
+        rlUnloadVertexBuffer(instance_color_buffer);
+
+        // Restore original shader
         material->shader = original_material_shader;
-        material->maps[MATERIAL_MAP_DIFFUSE].color = original_color;
     }
+
+    RL_FREE(instance_colors);
 }
 
 void d3d_mesh_rl(Mesh *mesh, Material *material, Matrix *transform) {

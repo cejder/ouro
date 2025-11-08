@@ -525,9 +525,11 @@ void world_draw_3d_sketch() {
                 );
             }
         } else {
-            // Build transform matrices for all instances in this group
+            // Build transform and color arrays for all instances in this group
             MatrixArray transforms;
+            ColorArray tints;
             array_init(MEMORY_TYPE_ARENA_TRANSIENT, &transforms, group.count);
+            array_init(MEMORY_TYPE_ARENA_TRANSIENT, &tints, group.count);
 
             for (SZ j = 0; j < group.count; ++j) {
                 EID const i = group.data[j];
@@ -536,11 +538,11 @@ void world_draw_3d_sketch() {
                 Matrix mat_trans = MatrixTranslate(g_world->position[i].x, g_world->position[i].y, g_world->position[i].z);
                 Matrix transform = MatrixMultiply(MatrixMultiply(mat_scale, mat_rot), mat_trans);
                 array_push(&transforms, transform);
+                array_push(&tints, g_world->tint[i]);
             }
 
             // Draw all instances with a single draw call!
-            // NOTE: Using WHITE tint for now - per-instance tinting would require more work
-            d3d_model_instanced(model_name, transforms.data, transforms.count, WHITE);
+            d3d_model_instanced(model_name, transforms.data, tints.data, transforms.count);
         }
     }
 }
