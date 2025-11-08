@@ -9,13 +9,13 @@ pan_sfx                      : 0.00000000
 pan_voice                    : 0.00000000
 pitch_ambience               : 1.00000000
 pitch_music                  : 1.00000000
-pitch_sfx                    : 1.89199996
-pitch_voice                  : 1.70299995
+pitch_sfx                    : 1.00000000
+pitch_voice                  : 1.00000000
 rolloff_scale                : 1.00000000
 volume_ambience              : 0.00000000
 volume_music                 : 0.00000000
-volume_sfx                   : 0.50000000
-volume_voice                 : 0.50000000
+volume_sfx                   : 0.00000000
+volume_voice                 : 0.00000000
 
 [console]
 enabled                      : false
@@ -37,11 +37,11 @@ grid_info                    : false
 keybindings_info             : false
 large_font                   : GoMono
 large_font_size              : 20
-light_info                   : false
+light_info                   : true
 medium_font                  : GoMono
 medium_font_size             : 18
 menu_info                    : false
-noclip                       : false
+noclip                       : true
 noclip_move_speed            : 50.00000000
 profiler_hide_trivial_tracks : true
 profiler_tracks              : true
@@ -75,10 +75,10 @@ tboy                         : true
 
 [video]
 fps_info                     : true
-fps_max                      : 60
+fps_max                      : 0
 render_resolution_height     : 2160
 render_resolution_width      : 3840
-vsync                        : true
+vsync                        : false
 window_resolution_height     : 2160
 window_resolution_width      : 3840
 

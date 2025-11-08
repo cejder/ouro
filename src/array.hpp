@@ -138,8 +138,10 @@
 ARRAY_DECLARE(Vector2Array, Vector2);
 ARRAY_DECLARE(Vector3Array, Vector3);
 ARRAY_DECLARE(MatrixArray,  Matrix);
+ARRAY_DECLARE(ColorArray,   Color);
 ARRAY_DECLARE(SZArray,      SZ);
 ARRAY_DECLARE(U32Array,     U32);
 ARRAY_DECLARE(U64Array,     U64);
 ARRAY_DECLARE(BOOLArray,    BOOL);
 ARRAY_DECLARE(CstrArray ,   C8*);
+ARRAY_DECLARE(EIDArray,     EID);

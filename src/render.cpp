@@ -81,24 +81,60 @@ RenderTexture static i_create_render_texture_with_depth(S32 width, S32 height) {
 void render_init() {
     g_render.default_material = LoadMaterialDefault();
 
-    g_render.skybox_shader            = asset_get_shader("skybox");
-    g_render.skybox_ambient_color_loc = GetShaderLocation(g_render.skybox_shader->base, "ambient");
+    RenderSkyboxShader *ss = &g_render.skybox_shader;
+    ss->shader             = asset_get_shader("skybox");;
+    ss->ambient_color_loc  = GetShaderLocation(ss->shader->base, "ambient");
 
-    g_render.sketch.shader                       = asset_get_shader("sketch");
-    g_render.sketch.resolution_uniform_location  = GetShaderLocation(g_render.sketch.shader->base, "resolution");
-    g_render.sketch.major_color_uniform_location = GetShaderLocation(g_render.sketch.shader->base, "majorColor");
-    g_render.sketch.minor_color_uniform_location = GetShaderLocation(g_render.sketch.shader->base, "minorColor");
-    g_render.sketch.time_uniform_location        = GetShaderLocation(g_render.sketch.shader->base, "time");
+    RenderSketchEffect *se = &g_render.sketch;
+    se->shader             = asset_get_shader("sketch");;
+    se->resolution_loc     = GetShaderLocation(se->shader->base, "resolution");
+    se->major_color_loc    = GetShaderLocation(se->shader->base, "majorColor");
+    se->minor_color_loc    = GetShaderLocation(se->shader->base, "minorColor");
+    se->time_loc           = GetShaderLocation(se->shader->base, "time");
 
-    g_render.model_shader                = asset_get_shader(A_MODEL_SHADER_NAME);
-    g_render.model_animation_enabled_loc = GetShaderLocation(g_render.model_shader->base, "animationEnabled");
+    RenderModelShader *ms     = &g_render.model_shader;
+    ms->shader                = asset_get_shader(A_MODEL_SHADER_NAME);
+    ms->animation_enabled_loc = GetShaderLocation(ms->shader->base, "animationEnabled");
+    ms->view_pos_loc          = GetShaderLocation(ms->shader->base, "viewPos");
+    ms->ambient_color_loc     = GetShaderLocation(ms->shader->base, "ambient");
+    ms->fog.density_loc       = GetShaderLocation(ms->shader->base, "fog.density");
+    ms->fog.color_loc         = GetShaderLocation(ms->shader->base, "fog.color");
+    for (SZ i  = 0; i < LIGHTS_MAX; ++i) {
+        ms->light[i].enabled_loc      = GetShaderLocation(ms->shader->base, TS("lights[%zu].enabled", i)->c);
+        ms->light[i].type_loc         = GetShaderLocation(ms->shader->base, TS("lights[%zu].type", i)->c);
+        ms->light[i].position_loc     = GetShaderLocation(ms->shader->base, TS("lights[%zu].position", i)->c);
+        ms->light[i].direction_loc    = GetShaderLocation(ms->shader->base, TS("lights[%zu].direction", i)->c);
+        ms->light[i].color_loc        = GetShaderLocation(ms->shader->base, TS("lights[%zu].color", i)->c);
+        ms->light[i].intensity_loc    = GetShaderLocation(ms->shader->base, TS("lights[%zu].intensity", i)->c);
+        ms->light[i].inner_cutoff_loc = GetShaderLocation(ms->shader->base, TS("lights[%zu].inner_cutoff", i)->c);
+        ms->light[i].outer_cutoff_loc = GetShaderLocation(ms->shader->base, TS("lights[%zu].outer_cutoff", i)->c);
+    }
+
+    RenderModelInstancedShader *mis = &g_render.model_instanced_shader;
+    mis->shader                     = asset_get_shader(A_MODEL_INSTANCED_SHADER_NAME);
+    mis->mvp_loc                    = GetShaderLocation(mis->shader->base, "mvp");
+    mis->view_pos_loc               = GetShaderLocation(mis->shader->base, "viewPos");
+    mis->ambient_color_loc          = GetShaderLocation(mis->shader->base, "ambient");
+    mis->instance_tint_loc          = GetShaderLocationAttrib(mis->shader->base, "instanceTint");
+    mis->fog.density_loc            = GetShaderLocation(mis->shader->base, "fog.density");
+    mis->fog.color_loc              = GetShaderLocation(mis->shader->base, "fog.color");
+    for (SZ i = 0; i < LIGHTS_MAX; ++i) {
+        mis->light[i].enabled_loc      = GetShaderLocation(mis->shader->base, TS("lights[%zu].enabled", i)->c);
+        mis->light[i].type_loc         = GetShaderLocation(mis->shader->base, TS("lights[%zu].type", i)->c);
+        mis->light[i].position_loc     = GetShaderLocation(mis->shader->base, TS("lights[%zu].position", i)->c);
+        mis->light[i].direction_loc    = GetShaderLocation(mis->shader->base, TS("lights[%zu].direction", i)->c);
+        mis->light[i].color_loc        = GetShaderLocation(mis->shader->base, TS("lights[%zu].color", i)->c);
+        mis->light[i].intensity_loc    = GetShaderLocation(mis->shader->base, TS("lights[%zu].intensity", i)->c);
+        mis->light[i].inner_cutoff_loc = GetShaderLocation(mis->shader->base, TS("lights[%zu].inner_cutoff", i)->c);
+        mis->light[i].outer_cutoff_loc = GetShaderLocation(mis->shader->base, TS("lights[%zu].outer_cutoff", i)->c);
+    }
 
     render_sketch_set_major_color(RENDER_DEFAULT_MAJOR_COLOR);
     render_sketch_set_minor_color(RENDER_DEFAULT_MINOR_COLOR);
     render_set_accent_color(BLACK);
 
     lighting_init();
-    fog_init(asset_get_shader(A_MODEL_SHADER_NAME));
+    fog_init();
     render_set_ambient_color(RENDER_DEFAULT_AMBIENT_COLOR);
 
     particles2d_init();
@@ -300,10 +336,10 @@ void render_update_render_resolution(Vector2 new_res) {
     color_to_vec4(g_render.sketch.major_color, major_color);
     color_to_vec4(g_render.sketch.minor_color, minor_color);
 
-    SetShaderValue(g_render.sketch.shader->base, g_render.sketch.time_uniform_location, &time, SHADER_UNIFORM_FLOAT);
-    SetShaderValue(g_render.sketch.shader->base, g_render.sketch.resolution_uniform_location, (F32[2]){new_res.x, new_res.y}, SHADER_UNIFORM_VEC2);
-    SetShaderValue(g_render.sketch.shader->base, g_render.sketch.major_color_uniform_location, major_color, SHADER_UNIFORM_VEC4);
-    SetShaderValue(g_render.sketch.shader->base, g_render.sketch.minor_color_uniform_location, minor_color, SHADER_UNIFORM_VEC4);
+    SetShaderValue(g_render.sketch.shader->base, g_render.sketch.time_loc, &time, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(g_render.sketch.shader->base, g_render.sketch.resolution_loc, (F32[2]){new_res.x, new_res.y}, SHADER_UNIFORM_VEC2);
+    SetShaderValue(g_render.sketch.shader->base, g_render.sketch.major_color_loc, major_color, SHADER_UNIFORM_VEC4);
+    SetShaderValue(g_render.sketch.shader->base, g_render.sketch.minor_color_loc, minor_color, SHADER_UNIFORM_VEC4);
 
     // Also recreate the default font size
     g_render.default_font = asset_get_font("GoMono", ui_font_size(RENDER_DEFAULT_FONT_PERC));
@@ -436,7 +472,7 @@ void static i_set_uniforms() {
     F32 const current_time = time_get();
 
     // SKETCH
-    SetShaderValue(g_render.sketch.shader->base, g_render.sketch.time_uniform_location, &current_time, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(g_render.sketch.shader->base, g_render.sketch.time_loc, &current_time, SHADER_UNIFORM_FLOAT);
 }
 
 void render_end() {
@@ -575,9 +611,10 @@ void render_set_accent_color(Color color) {
 }
 
 void render_set_ambient_color(Color color) {
-     color_to_vec4(color, g_render.ambient_color);
-    SetShaderValue(g_lighting.model_shader->base, g_lighting.model_shader_ambient_color_loc, g_render.ambient_color, SHADER_UNIFORM_VEC4);
-    SetShaderValue(g_render.skybox_shader->base, g_render.skybox_ambient_color_loc, g_render.ambient_color, SHADER_UNIFORM_VEC4);
+    color_to_vec4(color, g_render.ambient_color);
+    SetShaderValue(g_render.model_shader.shader->base,           g_render.model_shader.ambient_color_loc,           g_render.ambient_color, SHADER_UNIFORM_VEC4);
+    SetShaderValue(g_render.model_instanced_shader.shader->base, g_render.model_instanced_shader.ambient_color_loc, g_render.ambient_color, SHADER_UNIFORM_VEC4);
+    SetShaderValue(g_render.skybox_shader.shader->base,          g_render.skybox_shader.ambient_color_loc,          g_render.ambient_color, SHADER_UNIFORM_VEC4);
 }
 
 Color render_get_ambient_color() {
@@ -591,7 +628,7 @@ void render_sketch_set_major_color(Color color) {
 
     F32 major_color[4];
     color_to_vec4(color, major_color);
-    SetShaderValue(g_render.sketch.shader->base, g_render.sketch.major_color_uniform_location, major_color, SHADER_UNIFORM_VEC4);
+    SetShaderValue(g_render.sketch.shader->base, g_render.sketch.major_color_loc, major_color, SHADER_UNIFORM_VEC4);
 }
 
 void render_sketch_set_minor_color(Color color) {
@@ -599,7 +636,7 @@ void render_sketch_set_minor_color(Color color) {
 
     F32 minor_color[4];
     color_to_vec4(color, minor_color);
-    SetShaderValue(g_render.sketch.shader->base, g_render.sketch.minor_color_uniform_location, minor_color, SHADER_UNIFORM_VEC4);
+    SetShaderValue(g_render.sketch.shader->base, g_render.sketch.minor_color_loc, minor_color, SHADER_UNIFORM_VEC4);
 }
 
 void render_vary_sketch_colors(S32 variation) {

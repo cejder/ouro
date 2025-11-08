@@ -4,17 +4,17 @@
 
 #include <raylib.h>
 
-fwd_decl(AShader);
-
-struct Fog {
-    AShader *shader;
-    F32 density;
-    Color color;
+struct FogUniforms {
     S32 density_loc;
     S32 color_loc;
 };
 
+struct Fog {
+    F32 density;
+    Color color;
+};
+
 Fog extern g_fog;
 
-void fog_init(AShader *shader);
+void fog_init();
 void fog_update();

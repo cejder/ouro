@@ -30,6 +30,7 @@ fwd_decl(AFont);
 fwd_decl(AModel);
 fwd_decl(ATerrain);
 fwd_decl(ASkybox);
+fwd_decl(AShader);
 fwd_decl(CollisionMesh);
 
 #define RMODE_BEGIN(mode) render_begin_render_mode(mode);
@@ -96,10 +97,36 @@ struct RenderSketchEffect {
     Color major_color;
     Color minor_color;
     AShader *shader;
-    S32 resolution_uniform_location;
-    S32 major_color_uniform_location;
-    S32 minor_color_uniform_location;
-    S32 time_uniform_location;
+    S32 resolution_loc;
+    S32 major_color_loc;
+    S32 minor_color_loc;
+    S32 time_loc;
+};
+
+struct RenderModelShader {
+    AShader *shader;
+    S32 animation_enabled_loc;
+    S32 view_pos_loc;
+    S32 ambient_color_loc;
+
+    FogUniforms fog;
+    LightUniforms light[LIGHTS_MAX];
+};
+
+struct RenderModelInstancedShader {
+    AShader *shader;
+    S32 mvp_loc;
+    S32 view_pos_loc;
+    S32 ambient_color_loc;
+    S32 instance_tint_loc;
+
+    FogUniforms fog;
+    LightUniforms light[LIGHTS_MAX];
+};
+
+struct RenderSkyboxShader {
+    AShader *shader;
+    S32 ambient_color_loc;
 };
 
 struct Render {
@@ -109,11 +136,15 @@ struct Render {
     SZ request_capacity;
 
     RenderSketchEffect sketch;
+    RenderSkyboxShader skybox_shader;
+    RenderModelShader model_shader;
+    RenderModelInstancedShader model_instanced_shader;
 
     BOOL wireframe_mode;
     F32 aspect_ratio;
 
     Color accent_color;
+    F32 ambient_color[4];
 
     RenderTexture final_render_target;
     Material default_material;
@@ -128,13 +159,6 @@ struct Render {
     ATexture *default_crosshair;
     ATexture *speaker_icon_texture;
     ATexture *camera_icon_texture;
-
-    AShader *skybox_shader;
-    F32 ambient_color[4];
-    S32 skybox_ambient_color_loc;
-
-    AShader *model_shader;
-    S32 model_animation_enabled_loc;
 };
 
 extern Render g_render;
@@ -239,6 +263,7 @@ void d3d_model_ex(AModel *model, Vector3 position, F32 rotation, Vector3 scale, 
 void d3d_model_transform_rl(Model *model, Matrix *transform, Color tint);
 void d3d_model(C8 const *model_name, Vector3 position, F32 rotation, Vector3 scale, Color tint);
 void d3d_model_animated(C8 const *model_name, Vector3 position, F32 rotation, Vector3 scale, Color tint, Matrix *bone_matrices, S32 bone_count);
+void d3d_model_instanced(C8 const *model_name, Matrix *transforms, Color *tints, SZ instance_count);
 void d3d_mesh_rl(Mesh *mesh, Material *material, Matrix *transform);
 void d3d_mesh_rl_instanced(Mesh *mesh, Material *material, Matrix *transforms, SZ instances);
 void d3d_bounding_box(BoundingBox bb, Color color);

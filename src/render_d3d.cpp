@@ -2,10 +2,13 @@
 #include "asset.hpp"
 #include "color.hpp"
 #include "cvar.hpp"
+#include "fog.hpp"
+#include "light.hpp"
 #include "particles_3d.hpp"
 #include "raylib.h"
 #include "render.hpp"
 #include "std.hpp"
+#include "string.hpp"
 #include "time.hpp"
 #include "world.hpp"
 
@@ -59,7 +62,7 @@ void d3d_model_rl(Model *model, Vector3 position, F32 scale, Color tint) {
     INCREMENT_DRAW_CALL;
 
     S32 enabled = 0;
-    SetShaderValue(g_render.model_shader->base, g_render.model_animation_enabled_loc, &enabled, SHADER_UNIFORM_INT);
+    SetShaderValue(g_render.model_shader.shader->base, g_render.model_shader.animation_enabled_loc, &enabled, SHADER_UNIFORM_INT);
 
     DrawModel(*model, position, scale, tint);
 }
@@ -68,7 +71,7 @@ void d3d_model_ex(AModel *model, Vector3 position, F32 rotation, Vector3 scale, 
     INCREMENT_DRAW_CALL;
 
     S32 enabled = 0;
-    SetShaderValue(g_render.model_shader->base, g_render.model_animation_enabled_loc, &enabled, SHADER_UNIFORM_INT);
+    SetShaderValue(g_render.model_shader.shader->base, g_render.model_shader.animation_enabled_loc, &enabled, SHADER_UNIFORM_INT);
 
     // NOTE: Only the Y axis is used for rotation.
     DrawModelEx(model->base, position, (Vector3){0, 1, 0}, rotation, scale, tint);
@@ -78,7 +81,7 @@ void d3d_model_transform_rl(Model *model, Matrix *transform, Color tint) {
     INCREMENT_DRAW_CALL;
 
     S32 enabled = 0;
-    SetShaderValue(g_render.model_shader->base, g_render.model_animation_enabled_loc, &enabled, SHADER_UNIFORM_INT);
+    SetShaderValue(g_render.model_shader.shader->base, g_render.model_shader.animation_enabled_loc, &enabled, SHADER_UNIFORM_INT);
 
     // Store the material's original diffuse color.
     Color const original_color = model->materials[0].maps[MATERIAL_MAP_DIFFUSE].color;
@@ -97,7 +100,7 @@ void d3d_model(C8 const *model_name, Vector3 position, F32 rotation, Vector3 sca
     INCREMENT_DRAW_CALL;
 
     S32 enabled = 0;
-    SetShaderValue(g_render.model_shader->base, g_render.model_animation_enabled_loc, &enabled, SHADER_UNIFORM_INT);
+    SetShaderValue(g_render.model_shader.shader->base, g_render.model_shader.animation_enabled_loc, &enabled, SHADER_UNIFORM_INT);
 
     DrawModelEx(asset_get_model(model_name)->base, position, (Vector3){0, 1, 0}, rotation, scale, tint);
 };
@@ -106,7 +109,7 @@ void d3d_model_animated(C8 const *model_name, Vector3 position, F32 rotation, Ve
     INCREMENT_DRAW_CALL;
 
     S32 enabled = 1;
-    SetShaderValue(g_render.model_shader->base, g_render.model_animation_enabled_loc, &enabled, SHADER_UNIFORM_INT);
+    SetShaderValue(g_render.model_shader.shader->base, g_render.model_shader.animation_enabled_loc, &enabled, SHADER_UNIFORM_INT);
 
     AModel *model = asset_get_model(model_name);
 
@@ -149,6 +152,64 @@ void d3d_model_animated(C8 const *model_name, Vector3 position, F32 rotation, Ve
         mesh->boneMatrices = original_bone_matrices;
         mesh->boneCount    = original_bone_count;
         material->maps[MATERIAL_MAP_DIFFUSE].color = original_color;
+    }
+}
+
+void d3d_model_instanced(C8 const *model_name, Matrix *transforms, Color *tints, SZ instance_count) {
+    INCREMENT_DRAW_CALL;
+
+    AModel *model = asset_get_model(model_name);
+
+    // Set view-projection matrix uniform
+    Matrix mat_view_proj = g_render.cameras.c3d.mat_view_proj;
+    SetShaderValueMatrix(g_render.model_instanced_shader.shader->base, g_render.model_instanced_shader.mvp_loc, mat_view_proj);
+
+    // Convert colors to float array for GPU
+    F32 *instance_colors = mmta(F32 *, instance_count * 4 * sizeof(F32));
+    for (SZ j = 0; j < instance_count; ++j) {
+        instance_colors[(j * 4) + 0] = (F32)tints[j].r / 255.0F;
+        instance_colors[(j * 4) + 1] = (F32)tints[j].g / 255.0F;
+        instance_colors[(j * 4) + 2] = (F32)tints[j].b / 255.0F;
+        instance_colors[(j * 4) + 3] = (F32)tints[j].a / 255.0F;
+    }
+
+    // Draw each mesh with instancing
+    for (S32 i = 0; i < model->base.meshCount; i++) {
+        Mesh *mesh = &model->base.meshes[i];
+
+
+        Material *material = &model->base.materials[model->base.meshMaterial[i]];
+
+        // Temporarily assign instanced shader to material
+        Shader original_material_shader = material->shader;
+        material->shader = g_render.model_instanced_shader.shader->base;
+
+        // Use rlgl to draw with custom instance attributes
+        rlEnableShader(material->shader.id);
+
+        // Upload transforms (standard instancing)
+        rlEnableVertexArray(mesh->vaoId);
+
+        // Set up instance color buffer
+        U32 instance_color_buffer = rlLoadVertexBuffer(instance_colors, (S32)(instance_count * 4U) * (S32)sizeof(F32), false);
+        if (g_render.model_instanced_shader.instance_tint_loc >= 0) {
+            rlEnableVertexBuffer(instance_color_buffer);
+            rlSetVertexAttribute((U32)g_render.model_instanced_shader.instance_tint_loc, 4, RL_FLOAT, false, 0, 0);
+            rlSetVertexAttributeDivisor((U32)g_render.model_instanced_shader.instance_tint_loc, 1);  // 1 = per-instance
+            rlEnableVertexAttribute((U32)g_render.model_instanced_shader.instance_tint_loc);
+        }
+
+        // Draw with instancing (using Raylib's built-in transform instancing)
+        DrawMeshInstanced(*mesh, *material, transforms, (S32)instance_count);
+
+        // Cleanup
+        rlDisableVertexAttribute((U32)g_render.model_instanced_shader.instance_tint_loc);
+        rlDisableVertexBuffer();
+        rlDisableVertexArray();
+        rlUnloadVertexBuffer(instance_color_buffer);
+
+        // Restore original shader
+        material->shader = original_material_shader;
     }
 }
 
@@ -215,7 +276,7 @@ void d3d_terrain(ATerrain *terrain, F32 scale, Color tint) {
     INCREMENT_DRAW_CALL;
 
     S32 enabled = 0;
-    SetShaderValue(g_render.model_shader->base, g_render.model_animation_enabled_loc, &enabled, SHADER_UNIFORM_INT);
+    SetShaderValue(g_render.model_shader.shader->base, g_render.model_shader.animation_enabled_loc, &enabled, SHADER_UNIFORM_INT);
 
     DrawModel(terrain->model, {}, scale, tint);
 }
@@ -224,7 +285,7 @@ void d3d_terrain_ex(ATerrain *terrain, Vector3 rotation, Vector3 scale, Color ti
     INCREMENT_DRAW_CALL;
 
     S32 enabled = 0;
-    SetShaderValue(g_render.model_shader->base, g_render.model_animation_enabled_loc, &enabled, SHADER_UNIFORM_INT);
+    SetShaderValue(g_render.model_shader.shader->base, g_render.model_shader.animation_enabled_loc, &enabled, SHADER_UNIFORM_INT);
 
     F32 const rotationAngle = Vector3Length(rotation);
     DrawModelEx(terrain->model, {}, rotation, rotationAngle, scale, tint);
@@ -240,7 +301,7 @@ void d3d_skybox(ASkybox *skybox) {
     INCREMENT_DRAW_CALL;
 
     S32 enabled = 0;
-    SetShaderValue(g_render.model_shader->base, g_render.model_animation_enabled_loc, &enabled, SHADER_UNIFORM_INT);
+    SetShaderValue(g_render.model_shader.shader->base, g_render.model_shader.animation_enabled_loc, &enabled, SHADER_UNIFORM_INT);
 
     rlDisableBackfaceCulling();
     rlDisableDepthMask();

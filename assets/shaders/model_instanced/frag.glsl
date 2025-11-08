@@ -5,6 +5,7 @@ in vec3 fragPosition;
 in vec2 fragTexCoord;
 in vec4 fragColor;
 in vec3 fragNormal;
+in vec4 fragInstanceTint;  // Per-instance tint color
 
 // Output fragment color
 out vec4 finalColor;
@@ -118,6 +119,8 @@ void main() {
     finalColor = texelColor * vec4(lightResult, 1.0) * colDiffuse;
     // Add ambient light
     finalColor += texelColor * ambient * 0.2;
+    // Apply per-instance tint
+    finalColor *= fragInstanceTint;
     // Apply fog
     finalColor = applyFog(finalColor, viewPos, fragPosition, fog);
     // Apply dithering
