@@ -979,6 +979,17 @@ AModel *asset_get_model(C8 const *name) {
     return asset_get_model(name);
 }
 
+AModel *asset_get_model_by_hash(U32 name_hash) {
+    for (SZ i = 0; i < g_assets.model_count; ++i) {
+        AModel *asset = &g_assets.models[i];
+        if (asset->header.name_hash == name_hash) {
+            asset->header.last_access = time(nullptr);
+            return asset;
+        }
+    }
+    return nullptr;  // Not found (hash lookup doesn't trigger loading)
+}
+
 ATexture *asset_get_texture(C8 const *name) {
     for (SZ i = 0; i < g_assets.texture_count; ++i) {
         ATexture *asset = &g_assets.textures[i];

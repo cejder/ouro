@@ -191,6 +191,7 @@ void asset_start_reload_thread();
 void asset_quit();
 void asset_update();
 AModel *asset_get_model(C8 const *name);
+AModel *asset_get_model_by_hash(U32 name_hash);
 ATexture *asset_get_texture(C8 const *name);
 ASound *asset_get_sound(C8 const *name);
 AShader *asset_get_shader(C8 const *name);
