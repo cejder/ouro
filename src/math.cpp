@@ -752,16 +752,18 @@ void  math_compute_entity_bone_matrices(EID id) {
 
     // Check cache for already-computed bone matrices (using pre-computed hash from asset)
     IBoneMatrixCacheKey const key = {model->header.name_hash, (U16)anim_idx, (U16)frame};
-
-    Matrix new_bone_matrices[ENTITY_MAX_BONES];
     S32 bone_count = anim.boneCount < ENTITY_MAX_BONES ? anim.boneCount : ENTITY_MAX_BONES;
 
     IBoneMatrixCacheValue *cached = IBoneMatrixCache_get(&i_cache.bone_matrices, key);
+    Matrix *source_matrices = nullptr;
+
     if (cached != nullptr) {
-        // Cache hit - copy pre-computed matrices
-        ou_memcpy(new_bone_matrices, cached->bone_matrices, sizeof(Matrix) * (SZ)bone_count);
+        // Cache hit - use cached matrices directly
+        source_matrices = cached->bone_matrices;
     } else {
-        // Cache miss - compute bone matrices for current (new) animation
+        // Cache miss - compute and store in cache
+        Matrix *allocated_matrices = mcpa(Matrix *, (SZ)bone_count, sizeof(Matrix));
+
         for (S32 bone_id = 0; bone_id < bone_count; bone_id++) {
             Transform *bind_transform = &model->base.bindPose[bone_id];
             Matrix bind_matrix        = MatrixMultiply(MatrixMultiply(
@@ -775,17 +777,15 @@ void  math_compute_entity_bone_matrices(EID id) {
                 QuaternionToMatrix(target_transform->rotation)),
                 MatrixTranslate(target_transform->translation.x, target_transform->translation.y, target_transform->translation.z));
 
-            new_bone_matrices[bone_id] = MatrixMultiply(MatrixInvert(bind_matrix), target_matrix);
+            allocated_matrices[bone_id] = MatrixMultiply(MatrixInvert(bind_matrix), target_matrix);
         }
-
-        // Store in cache for future use (allocate from permanent arena)
-        Matrix *allocated_matrices = mcpa(Matrix *, (SZ)bone_count, sizeof(Matrix));
-        ou_memcpy(allocated_matrices, new_bone_matrices, sizeof(Matrix) * (SZ)bone_count);
 
         IBoneMatrixCacheValue value = {};
         value.bone_matrices = allocated_matrices;
         value.bone_count = bone_count;
         IBoneMatrixCache_insert(&i_cache.bone_matrices, key, value);
+
+        source_matrices = allocated_matrices;
     }
 
     // If blending, interpolate between previous and new bone matrices
@@ -803,7 +803,7 @@ void  math_compute_entity_bone_matrices(EID id) {
             Quaternion new_rot;
 
             math_matrix_decompose(g_world->animation[id].prev_bone_matrices[bone_id], &prev_trans, &prev_rot, &prev_scale);
-            math_matrix_decompose(new_bone_matrices[bone_id], &new_trans, &new_rot, &new_scale);
+            math_matrix_decompose(source_matrices[bone_id], &new_trans, &new_rot, &new_scale);
 
             // Interpolate components
             Vector3 blended_trans = Vector3Lerp(prev_trans, new_trans, blend_t);
@@ -817,7 +817,7 @@ void  math_compute_entity_bone_matrices(EID id) {
                 MatrixTranslate(blended_trans.x, blended_trans.y, blended_trans.z));
         }
     } else {
-        // No blending, just copy new matrices
-        ou_memcpy(g_world->animation[id].bone_matrices, new_bone_matrices, sizeof(Matrix) * (SZ)bone_count);
+        // No blending - single copy from cache/computed matrices to entity
+        ou_memcpy(g_world->animation[id].bone_matrices, source_matrices, sizeof(Matrix) * (SZ)bone_count);
     }
 }
