@@ -511,7 +511,7 @@ void world_draw_3d_sketch() {
     // Second pass: Batch render static entity groups
     C8 const *model_name;
     EIDArray *group;
-    MAP_EACH_PTR(&instance_groups, &model_name, &group) {
+    MAP_EACH_PTR(&instance_groups, model_name, group) {
         if (group->count < MIN_INSTANCE_COUNT) {
             // Not worth instancing for single/few entities - use regular rendering
             for (SZ j = 0; j < group->count; ++j) {

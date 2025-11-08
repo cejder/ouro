@@ -163,7 +163,7 @@ void d3d_model_instanced(C8 const *model_name, Matrix *transforms, SZ instance_c
 
     // Set view-projection matrix uniform
     Matrix mat_view_proj = g_render.cameras.c3d.mat_view_proj;
-    SetShaderValue(g_render.model_shader_instanced->base, g_render.model_instanced_mvp_loc, &mat_view_proj, SHADER_UNIFORM_MAT4);
+    SetShaderValueMatrix(g_render.model_shader_instanced->base, g_render.model_instanced_mvp_loc, mat_view_proj);
 
     // Draw each mesh with instancing
     for (S32 i = 0; i < model->base.meshCount; i++) {
