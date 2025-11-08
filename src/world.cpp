@@ -510,12 +510,12 @@ void world_draw_3d_sketch() {
 
     // Second pass: Batch render static entity groups
     C8 const *model_name;
-    EIDArray *group;
-    MAP_EACH_PTR(&instance_groups, model_name, group) {
-        if (group->count < MIN_INSTANCE_COUNT) {
+    EIDArray group;
+    MAP_EACH(&instance_groups, model_name, group) {
+        if (group.count < MIN_INSTANCE_COUNT) {
             // Not worth instancing for single/few entities - use regular rendering
-            for (SZ j = 0; j < group->count; ++j) {
-                EID const i = group->data[j];
+            for (SZ j = 0; j < group.count; ++j) {
+                EID const i = group.data[j];
                 d3d_model(
                     model_name,
                     g_world->position[i],
@@ -527,10 +527,10 @@ void world_draw_3d_sketch() {
         } else {
             // Build transform matrices for all instances in this group
             MatrixArray transforms;
-            array_init(MEMORY_TYPE_ARENA_TRANSIENT, &transforms, group->count);
+            array_init(MEMORY_TYPE_ARENA_TRANSIENT, &transforms, group.count);
 
-            for (SZ j = 0; j < group->count; ++j) {
-                EID const i = group->data[j];
+            for (SZ j = 0; j < group.count; ++j) {
+                EID const i = group.data[j];
                 Matrix mat_scale = MatrixScale(g_world->scale[i].x, g_world->scale[i].y, g_world->scale[i].z);
                 Matrix mat_rot = MatrixRotate((Vector3){0, 1, 0}, g_world->rotation[i] * DEG2RAD);
                 Matrix mat_trans = MatrixTranslate(g_world->position[i].x, g_world->position[i].y, g_world->position[i].z);
