@@ -429,7 +429,7 @@ SCENE_INIT(collision_test) {
 SCENE_ENTER(collision_test) {
     lighting_default_lights_setup();
     world_reset();
-    world_set_overworld(asset_get_terrain("terrain2", {(F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE}));
+    world_set_overworld(asset_get_terrain("basic", {(F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE}));
     entity_spawn_test_overworld_set(&s.entities);
     entity_spawn_random_vegetation_on_terrain(g_world->base_terrain, (SZ)TREE_COUNT * 2, false);
     entity_init_test_overworld_set_talkers(&s.entities, cb_trigger_gong, cb_trigger_end);
@@ -637,7 +637,7 @@ SCENE_DRAW(collision_test) {
     RMODE_BEGIN(RMODE_3D_SKETCH) {
         if (c_render__skybox) { d3d_skybox(c_render__skybox_night ? asset_get_skybox("night.hdr") : asset_get_skybox("day.hdr")); }
 
-        d3d_terrain_ex(asset_get_terrain("terrain2",{(F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE}),
+        d3d_terrain_ex(asset_get_terrain("basic",{(F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE}),
                        {}, {A_TERRAIN_DEFAULT_SCALE, A_TERRAIN_DEFAULT_SCALE, A_TERRAIN_DEFAULT_SCALE}, WHITE);
 
         world_draw_3d_sketch();
