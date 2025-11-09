@@ -41,11 +41,7 @@ void entity_spawn_random_vegetation_on_terrain(ATerrain *terrain, SZ count, BOOL
         if (!cell) { continue; }
 
         // Count existing vegetation in this cell
-        SZ vegetation_count = 0;
-        for (SZ i = 0; i < cell->entity_count; ++i) {
-            EID const entity_id = cell->entities[i];
-            if (g_world->type[entity_id] == ENTITY_TYPE_VEGETATION) { vegetation_count++; }
-        }
+        SZ const vegetation_count = cell->count_per_type[ENTITY_TYPE_VEGETATION];
 
         // Skip cells that already have too much vegetation
         if (vegetation_count >= max_vegetation_per_cell) {

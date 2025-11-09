@@ -1010,12 +1010,12 @@ void world_update_follower_cache() {
 
     for (SZ cell_idx = 0; cell_idx < (SZ)GRID_TOTAL_CELLS; ++cell_idx) {
         GridCell *cell = grid_get_cell_by_index(cell_idx);
-        if (!cell || cell->entity_count == 0) { continue; }
+        if (!cell) { continue; }
 
-        for (SZ i = 0; i < cell->entity_count; ++i) {
-            EID const entity_id = cell->entities[i];
+        SZ const count = cell->count_per_type[ENTITY_TYPE_NPC];
+        for (SZ i = 0; i < count; ++i) {
+            EID const entity_id = cell->entities_by_type[ENTITY_TYPE_NPC][i];
             if (!ENTITY_HAS_FLAG(g_world->flags[entity_id], ENTITY_FLAG_IN_USE)) { continue; }
-            if (g_world->type[entity_id] != ENTITY_TYPE_NPC) { continue; }
 
             EntityBehaviorController const *behavior = &g_world->actor[entity_id].behavior;
             if (behavior->target_id != INVALID_EID && g_world->generation[behavior->target_id] == behavior->target_gen) {
