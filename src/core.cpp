@@ -111,7 +111,7 @@ void core_init(U8 major, U8 minor, U8 patch, C8 const *build_type) {
     // Platform-specific configuration
     C8 const* platform = args_get_string("Platform");
     if (platform) {
-        if (ou_strcmp(platform, "steam-deck") == 0) {
+        if (ou_strcmp(platform, "steamdeck") == 0) {
             option_set_video_resolution({1280, 800});
             option_set_video_max_fps(0);
             option_set_video_vsync(false);
