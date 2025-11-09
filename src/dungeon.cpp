@@ -435,18 +435,6 @@ BOOL static i_is_position_on_floor(Vector3 position) {
     return false;
 }
 
-void dungeon_draw_3d_sketch() {
-    if (!g_dungeon_loaded) {
-        g_dungeon_data = i_parse_dungeon("assets/dungeons/example.dun");
-        g_dungeon_loaded = true;
-    }
-
-    // Draw the combined model (which contains multiple meshes)
-    if (g_dungeon_data.combined_model.meshCount > 0) {
-        d3d_model_rl(&g_dungeon_data.combined_model, Vector3Zero(), 1.0F, WHITE);
-    }
-}
-
 // Check if position would be too close to any wall
 BOOL static i_is_position_too_close_to_wall(Vector3 pos) {
     for (SZ i = 0; i < g_dungeon_data.collision_walls.count; i++) {
@@ -468,9 +456,7 @@ BOOL static i_is_position_too_close_to_wall(Vector3 pos) {
     return false;
 }
 
-void dungeon_update(Player *player, F32 dt) {
-    unused(dt);
-
+void dungeon_update(F32 dt) {
     Vector3 static prev_player_pos  = {0, 0, 0};
     Vector3 static initialized      = {0, 0, 0};
     F32 static accumulated_distance = 0.0F;
@@ -484,14 +470,14 @@ void dungeon_update(Player *player, F32 dt) {
 
     // Reset position tracking when coming out of noclip
     if (was_noclip) {
-        prev_player_pos      = player->cameras[g_scenes.current_scene_type].position;
+        prev_player_pos      = g_player.cameras[g_scenes.current_scene_type].position;
         was_moving           = false;
         accumulated_distance = 0.0F;
         was_noclip           = false;
         return;
     }
 
-    Vector3 const current_pos = player->cameras[g_scenes.current_scene_type].position;
+    Vector3 const current_pos = g_player.cameras[g_scenes.current_scene_type].position;
     Vector3 const player_size = {PLAYER_RADIUS * 2, PLAYER_HEIGHT_TO_EYES, PLAYER_RADIUS * 2};
 
     // Initialize previous position on first call
@@ -547,11 +533,23 @@ void dungeon_update(Player *player, F32 dt) {
 
     // Apply the final position
     Vector3 const pos_delta   = Vector3Subtract(new_position, current_pos);
-    player->cameras[g_scenes.current_scene_type].position = Vector3Add(player->cameras[g_scenes.current_scene_type].position, pos_delta);
-    player->cameras[g_scenes.current_scene_type].target   = Vector3Add(player->cameras[g_scenes.current_scene_type].target, pos_delta);
+    g_player.cameras[g_scenes.current_scene_type].position = Vector3Add(g_player.cameras[g_scenes.current_scene_type].position, pos_delta);
+    g_player.cameras[g_scenes.current_scene_type].target   = Vector3Add(g_player.cameras[g_scenes.current_scene_type].target, pos_delta);
 
     prev_player_pos = new_position;
     was_moving      = is_moving;
+}
+
+void dungeon_draw_3d_sketch() {
+    if (!g_dungeon_loaded) {
+        g_dungeon_data = i_parse_dungeon("assets/dungeons/example.dun");
+        g_dungeon_loaded = true;
+    }
+
+    // Draw the combined model (which contains multiple meshes)
+    if (g_dungeon_data.combined_model.meshCount > 0) {
+        d3d_model_rl(&g_dungeon_data.combined_model, Vector3Zero(), 1.0F, WHITE);
+    }
 }
 
 void dungeon_draw_2d_dbg() {
