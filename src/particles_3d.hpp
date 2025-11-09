@@ -23,11 +23,11 @@ enum Particle3DBillboardMode : U32 { // NOLINT(performance-enum-size)
 // Total size: 128 bytes for GPU alignment (multiple of 16)
 struct Particle3D {
     Vector3 position;      // 12 bytes
-    F32 padding0;          // 4 bytes - align to 16
+    F32 extra0;            // 4 bytes - extra data slot 0
     Vector3 velocity;      // 12 bytes
-    F32 padding1;          // 4 bytes - align to 16
+    F32 extra1;            // 4 bytes - extra data slot 1
     Vector3 acceleration;  // 12 bytes - for custom forces (wind, explosions, etc.)
-    F32 padding2;          // 4 bytes - align to 16
+    F32 extra2;            // 4 bytes - extra data slot 2
     ColorF start_color;    // 16 bytes (vec4 in shader)
     ColorF end_color;      // 16 bytes (vec4 in shader)
     F32 life;              // 4 bytes
@@ -39,9 +39,9 @@ struct Particle3D {
     F32 rotation_speed;    // 4 bytes - rotation speed in radians/sec
     F32 air_resistance;    // 4 bytes - damping factor (0.0 = no damping, 1.0 = full damping)
     U32 scene_id;          // 4 bytes - which scene this particle belongs to
-    U32 billboard_mode;    // 4 bytes - 0=camera-facing, 1=velocity-aligned, 2=Y-axis locked
+    U32 billboard_mode;    // 4 bytes - 0=camera-facing, 1=velocity-aligned, 2=Y-axis locked, 3=terrain-aligned
     F32 stretch_factor;    // 4 bytes - velocity-based stretching multiplier
-    F32 padding3;          // 4 bytes - padding to align to 128 bytes
+    F32 extra3;            // 4 bytes - extra data slot 3
 };
 
 struct Particles3D {

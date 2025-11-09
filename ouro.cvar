@@ -9,8 +9,8 @@ pan_sfx                      : 0.00000000
 pan_voice                    : 0.00000000
 pitch_ambience               : 1.00000000
 pitch_music                  : 1.00000000
-pitch_sfx                    : 1.52100003
-pitch_voice                  : 1.50300002
+pitch_sfx                    : 1.00000000
+pitch_voice                  : 1.51400006
 rolloff_scale                : 1.00000000
 volume_ambience              : 0.00000000
 volume_music                 : 0.00000000

@@ -8,11 +8,11 @@ layout(location = 1) in vec2 vertex_texcoord;  // Base quad texture coordinates
 // Total size: 128 bytes for GPU alignment (multiple of 16)
 struct Particle {
     vec3 position;         // 12 bytes
-    float padding0;        // 4 bytes - align to 16
+    float extra0;          // 4 bytes - extra data slot 0
     vec3 velocity;         // 12 bytes
-    float padding1;        // 4 bytes - align to 16
+    float extra1;          // 4 bytes - extra data slot 1
     vec3 acceleration;     // 12 bytes - for custom forces
-    float padding2;        // 4 bytes - align to 16
+    float extra2;          // 4 bytes - extra data slot 2
     vec4 start_color;      // 16 bytes
     vec4 end_color;        // 16 bytes
     float life;            // 4 bytes
@@ -24,9 +24,9 @@ struct Particle {
     float rotation_speed;  // 4 bytes - rotation speed in radians/sec
     float air_resistance;  // 4 bytes - damping factor
     uint scene_id;         // 4 bytes - which scene this particle belongs to
-    uint billboard_mode;   // 4 bytes - 0=camera-facing, 1=velocity-aligned, 2=Y-axis locked
+    uint billboard_mode;   // 4 bytes - 0=camera-facing, 1=velocity-aligned, 2=Y-axis locked, 3=terrain-aligned
     float stretch_factor;  // 4 bytes - velocity-based stretching multiplier
-    float padding3;        // 4 bytes - padding
+    float extra3;          // 4 bytes - extra data slot 3
 };
 
 // Particle buffer
@@ -79,12 +79,33 @@ void main() {
         right = normalize(cross(vec3(0.0, 1.0, 0.0), to_camera));
         up = vec3(0.0, 1.0, 0.0);
     }
-    // Billboard mode 3: Horizontal/flat on ground (lies flat in XZ plane)
+    // Billboard mode 3: Terrain-aligned (uses extra0/1/2 as terrain normal)
     else if (p.billboard_mode == 3) {
         right = vec3(1.0, 0.0, 0.0);  // World X axis
         up = vec3(0.0, 0.0, 1.0);     // World Z axis (horizontal plane)
-    }
-    // Billboard mode 0: camera-facing (default)
+        vec3 terrain_normal = vec3(p.extra0, p.extra1, p.extra2);
+        float len = length(terrain_normal);
+
+        if (len < 0.01) {
+            // Default to flat horizontal if no normal provided
+            right = vec3(1.0, 0.0, 0.0);
+            up = vec3(0.0, 0.0, 1.0);
+        } else {
+            // Orient billboard perpendicular to terrain normal (parallel to ground)
+            terrain_normal = normalize(terrain_normal);
+            up = terrain_normal;
+
+            // Calculate right vector perpendicular to normal
+            vec3 world_forward = vec3(0.0, 0.0, 1.0);
+            right = normalize(cross(world_forward, up));
+
+            // Handle case where normal is aligned with world_forward
+            if (length(right) < 0.01) {
+                world_forward = vec3(1.0, 0.0, 0.0);
+                right = normalize(cross(world_forward, up));
+            }
+        }
+    }    // Billboard mode 0: camera-facing (default)
     // Already set above
 
     // Apply rotation

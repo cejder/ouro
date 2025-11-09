@@ -8,6 +8,7 @@
 #include "scene.hpp"
 #include "std.hpp"
 #include "time.hpp"
+#include "world.hpp"
 
 #include <raymath.h>
 #include <rlgl.h>
@@ -298,6 +299,10 @@ void particles3d_add(Vector3 *positions,
         p->size           = sizes[i];
         p->life           = lives[i];
         p->scene_id       = (U32)active_scene;
+        p->extra0         = 0.0F;
+        p->extra1         = 0.0F;
+        p->extra2         = 0.0F;
+        p->extra3         = 0.0F;
 
         g_particles3d.write_index = (g_particles3d.write_index + 1) % PARTICLES_3D_MAX;
     }
@@ -1363,6 +1368,15 @@ void particles3d_add_effect_selection_indicator(Vector3 position, F32 radius, Co
     }
 
     particles3d_add(positions_arr, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, actual_count);
+
+    // Set terrain normal for all particles we just added
+    Vector3 terrain_normal = math_get_terrain_normal(g_world->base_terrain, position.x, position.z);
+    for (SZ i = 0; i < actual_count; ++i) {
+        SZ const particle_index = (g_particles3d.write_index - actual_count + i + PARTICLES_3D_MAX) % PARTICLES_3D_MAX;
+        g_particles3d.mapped_data[particle_index].extra0 = terrain_normal.x;
+        g_particles3d.mapped_data[particle_index].extra1 = terrain_normal.y;
+        g_particles3d.mapped_data[particle_index].extra2 = terrain_normal.z;
+    }
 }
 
 void particles3d_add_effect_click_indicator(Vector3 position, F32 radius, Color start_color, Color end_color, SZ count) {
@@ -1432,6 +1446,15 @@ void particles3d_add_effect_click_indicator(Vector3 position, F32 radius, Color 
     }
 
     particles3d_add(positions_arr, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, actual_count);
+
+    // Set terrain normal for all particles we just added
+    Vector3 terrain_normal = math_get_terrain_normal(g_world->base_terrain, position.x, position.z);
+    for (SZ i = 0; i < actual_count; ++i) {
+        SZ const particle_index = (g_particles3d.write_index - actual_count + i + PARTICLES_3D_MAX) % PARTICLES_3D_MAX;
+        g_particles3d.mapped_data[particle_index].extra0 = terrain_normal.x;
+        g_particles3d.mapped_data[particle_index].extra1 = terrain_normal.y;
+        g_particles3d.mapped_data[particle_index].extra2 = terrain_normal.z;
+    }
 }
 
 void particles3d_add_effect_harvest_complete(Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
