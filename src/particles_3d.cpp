@@ -1345,10 +1345,8 @@ void particles3d_add_effect_selection_indicator(Vector3 position, F32 radius, Co
         accelerations[i]   = {0.0F, 0.0F, 0.0F};
 
         // Vibrant, mystical colors
-        Color bright_start = color_saturated(start_color);
-        Color bright_end   = color_saturated(end_color);
-        start_colors[i]    = color_variation(bright_start, 15);
-        end_colors[i]      = color_variation(bright_end, 15);
+        start_colors[i]    = color_variation(start_color, 15);
+        end_colors[i]      = color_variation(end_color, 15);
 
         lives[i]           = random_f32(1.2F, 1.8F);
         sizes[i]           = radius * random_f32(2.25F, 3.0F);  // BIG particles scaled to entity size! (25% wider)
@@ -1423,10 +1421,8 @@ void particles3d_add_effect_click_indicator(Vector3 position, F32 radius, Color 
         accelerations[i]   = {0.0F, 0.0F, 0.0F};
 
         // Vibrant, mystical colors
-        Color bright_start = color_saturated(start_color);
-        Color bright_end   = color_saturated(end_color);
-        start_colors[i]    = color_variation(bright_start, 15);
-        end_colors[i]      = color_variation(bright_end, 15);
+        start_colors[i]    = color_variation(start_color, 15);
+        end_colors[i]      = color_variation(end_color, 15);
 
         lives[i]           = random_f32(0.8F, 1.2F);  // Shorter lived than selection indicator
         sizes[i]           = radius * random_f32(2.5F, 3.75F);  // BIG particles scaled to radius! (25% wider)

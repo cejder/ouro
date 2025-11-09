@@ -35,11 +35,11 @@ uniform float time;
 #define DITHER_INFLUENCE 0.5
 
 // Bloom parameters
-#define BLOOM_INTENSITY 0.5
+#define BLOOM_INTENSITY 0.2
 #define BLOOM_SAMPLE_COUNT 8
-#define BLOOM_SAMPLE_RADIUS 0.004
+#define BLOOM_SAMPLE_RADIUS 0.002
 #define BLOOM_COLOR_TINT vec3(0.75, 0.85, 1.05)
-#define BLOOM_WEIGHT_SCALE 0.06
+#define BLOOM_WEIGHT_SCALE 0.03
 
 // Utility functions
 float calculateLuma(vec3 color) {

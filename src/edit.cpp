@@ -167,9 +167,7 @@ void edit_update(F32 dt, F32 dtu) {
 
         // Spawn indicator particles at click location (only if no entity is selected, otherwise handled in command section)
         if (g_world->selected_id == INVALID_EID) {
-            Color const major_color = g_render.sketch.major_color;
-            Color const minor_color = g_render.sketch.minor_color;
-            particles3d_add_effect_click_indicator(collision.point, 0.5F, major_color, minor_color, 2);
+            particles3d_add_effect_click_indicator(collision.point, 0.5F, GOLD, YELLOW, 5);
         }
     }
 
@@ -196,11 +194,8 @@ void edit_update(F32 dt, F32 dtu) {
 
     // Right click commands on selected entity
     if (mouse_right_pressed && g_world->selected_id != INVALID_EID && collision.hit) {
-        Color const major_color = g_render.sketch.major_color;
-        Color const minor_color = g_render.sketch.minor_color;
-
         // Spawn particles at the click location
-        particles3d_add_effect_click_indicator(collision.point, 0.5F, major_color, minor_color, 2);
+        particles3d_add_effect_click_indicator(collision.point, 0.5F, GOLD, YELLOW, 5);
 
         if (ctrl_down) {
             entity_actor_start_looking_for_target(g_world->selected_id, ENTITY_TYPE_VEGETATION);
@@ -236,7 +231,7 @@ void edit_update(F32 dt, F32 dtu) {
         F32 const spawn_interval = 1.0F / EDIT_SELECTION_INDICATOR_PARTICLES_PER_SECOND;
         i_state.selection_indicator_timer += dt;
         while (i_state.selection_indicator_timer >= spawn_interval) {
-            particles3d_add_effect_selection_indicator(position, radius, GOLD, ORANGE, EDIT_SELECTION_INDICATOR_PARTICLE_COUNT);
+            particles3d_add_effect_selection_indicator(position, radius, GREEN, LIME, EDIT_SELECTION_INDICATOR_PARTICLE_COUNT);
             i_state.selection_indicator_timer -= spawn_interval;
         }
     } else {
