@@ -81,8 +81,6 @@ void main() {
     }
     // Billboard mode 3: Terrain-aligned (uses extra0/1/2 as terrain normal)
     else if (p.billboard_mode == 3) {
-        right = vec3(1.0, 0.0, 0.0);  // World X axis
-        up = vec3(0.0, 0.0, 1.0);     // World Z axis (horizontal plane)
         vec3 terrain_normal = vec3(p.extra0, p.extra1, p.extra2);
         float len = length(terrain_normal);
 
@@ -91,19 +89,21 @@ void main() {
             right = vec3(1.0, 0.0, 0.0);
             up = vec3(0.0, 0.0, 1.0);
         } else {
-            // Orient billboard perpendicular to terrain normal (parallel to ground)
+            // Orient billboard tangent to terrain (flat on the surface)
             terrain_normal = normalize(terrain_normal);
-            up = terrain_normal;
 
-            // Calculate right vector perpendicular to normal
-            vec3 world_forward = vec3(0.0, 0.0, 1.0);
-            right = normalize(cross(world_forward, up));
+            // Create tangent vectors perpendicular to terrain normal
+            vec3 world_up = vec3(0.0, 1.0, 0.0);
+            right = cross(world_up, terrain_normal);
 
-            // Handle case where normal is aligned with world_forward
+            // Handle case where normal is aligned with world up
             if (length(right) < 0.01) {
-                world_forward = vec3(1.0, 0.0, 0.0);
-                right = normalize(cross(world_forward, up));
+                world_up = vec3(1.0, 0.0, 0.0);
+                right = cross(world_up, terrain_normal);
             }
+
+            right = normalize(right);
+            up = normalize(cross(terrain_normal, right));
         }
     }    // Billboard mode 0: camera-facing (default)
     // Already set above
