@@ -45,10 +45,10 @@ void entity_building_update(EID id, F32 dt) {
 
         // Smoke particle configuration (easy to tweak)
         F32 constexpr particle_spawn_rate_multiplier = 1.50F; // Higher = more particles per wood count
-        F32 constexpr particle_scale_base            = 0.10F; // Base particle scale
+        F32 constexpr particle_scale_base            = 5.0F; // Base particle scale
         F32 constexpr particle_scale_growth          = 0.25F; // How much scale grows with wood count
-        Color constexpr smoke_color_start            = EVABLUE;
-        Color constexpr smoke_color_end              = EVAGREEN;
+        Color constexpr smoke_color_start            = YELLOW;
+        Color constexpr smoke_color_end              = MAROON;
 
         // Calculate particle spawn rate (frame-rate independent)
         // Uses sqrt curve: wood=0 -> 0 particles/sec, wood=100 -> ~0.5 particles/sec

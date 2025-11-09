@@ -5,8 +5,9 @@
 #include <raylib.h>
 
 // Selection indicator spawning rate (particles per second)
-#define EDIT_SELECTION_INDICATOR_PARTICLES_PER_SECOND 60.0F
-#define EDIT_SELECTION_INDICATOR_PARTICLE_COUNT 12
+// Lower rate for large stationary spinning circles
+#define EDIT_SELECTION_INDICATOR_PARTICLES_PER_SECOND 2.0F
+#define EDIT_SELECTION_INDICATOR_PARTICLE_COUNT 2
 
 struct EditState {
     Vector3 mouse_click_location;

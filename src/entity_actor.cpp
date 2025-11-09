@@ -5,6 +5,7 @@
 #include "color.hpp"
 #include "common.hpp"
 #include "cvar.hpp"
+#include "dungeon.hpp"
 #include "entity.hpp"
 #include "entity_spawn.hpp"
 #include "log.hpp"
@@ -673,6 +674,12 @@ void entity_actor_update(EID id, F32 dt) {
                 Vector3 const repulsion_velocity = Vector3Scale(separation, idle_repulsion_strength);
                 Vector3 new_position = Vector3Add(g_world->position[id], Vector3Scale(repulsion_velocity, dt));
                 new_position.y = math_get_terrain_height(g_world->base_terrain, new_position.x, new_position.z);
+
+                // Resolve dungeon wall collision with sliding if in dungeon scene
+                if (g_scenes.current_scene_type == SCENE_DUNGEON) {
+                    new_position = dungeon_resolve_wall_collision(id, new_position);
+                }
+
                 entity_set_position(id, new_position);
             }
 
@@ -758,6 +765,12 @@ void entity_actor_update(EID id, F32 dt) {
             // Apply movement
             Vector3 new_position = Vector3Add(g_world->position[id], Vector3Scale(desired_velocity, dt));
             new_position.y       = math_get_terrain_height(g_world->base_terrain, new_position.x, new_position.z);
+
+            // Resolve dungeon wall collision with sliding if in dungeon scene
+            if (g_scenes.current_scene_type == SCENE_DUNGEON) {
+                new_position = dungeon_resolve_wall_collision(id, new_position);
+            }
+
             entity_set_position(id, new_position);
 
             movement->velocity = desired_velocity;

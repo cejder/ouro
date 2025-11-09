@@ -5,6 +5,7 @@
 #include "asset.hpp"
 #include "common.hpp"
 #include "cvar.hpp"
+#include "math.hpp"
 #include "memory.hpp"
 #include "raymath.h"
 #include "render.hpp"
@@ -88,7 +89,7 @@ struct IDungeonData {
     Model combined_model;
     OrientedBoundingBox *mesh_bounding_boxes;  // One per mesh for frustum culling
     SZ mesh_bbox_count;
-    U8 *wall_grid;      // 2D grid for fast wall lookups (1 = wall, 0 = no wall)
+    S32 *wall_grid;     // 2D grid for fast wall lookups (wall index or -1 for no wall)
     S32 grid_min_x;
     S32 grid_min_z;
     S32 grid_max_x;
@@ -172,9 +173,11 @@ IDungeonData static i_parse_dungeon(C8 const* filepath) {
         data.grid_max_x = S32_MIN;
         data.grid_max_z = S32_MIN;
 
+        F32 const half_tile = tile_size * 0.5F;
         for (SZ i = 0; i < tile_count; i++) {
-            S32 const grid_x = (S32)(data.tiles.data[i].position.x / tile_size);
-            S32 const grid_z = (S32)(data.tiles.data[i].position.z / tile_size);
+            // Tiles are centered, offset by half to get grid-aligned coordinates
+            S32 const grid_x = (S32)math_floor_f32((data.tiles.data[i].position.x + half_tile) / tile_size);
+            S32 const grid_z = (S32)math_floor_f32((data.tiles.data[i].position.z + half_tile) / tile_size);
             data.grid_min_x = glm::min(data.grid_min_x, grid_x);
             data.grid_min_z = glm::min(data.grid_min_z, grid_z);
             data.grid_max_x = glm::max(data.grid_max_x, grid_x);
@@ -184,30 +187,28 @@ IDungeonData static i_parse_dungeon(C8 const* filepath) {
         data.grid_width  = data.grid_max_x - data.grid_min_x + 1;
         data.grid_height = data.grid_max_z - data.grid_min_z + 1;
 
-        // Allocate and zero the grid
-        SZ const grid_size = (SZ)(data.grid_width * data.grid_height);
-        data.wall_grid = mmpa(U8*, grid_size * sizeof(U8));
+        // Allocate and initialize the grid with -1 (no wall)
+        SZ const grid_size = (SZ)data.grid_width * (SZ)data.grid_height;
+        data.wall_grid = mmpa(S32*, grid_size * sizeof(S32));
         for (SZ i = 0; i < grid_size; i++) {
-            data.wall_grid[i] = 0;
+            data.wall_grid[i] = -1;
         }
 
-        // Mark wall cells
+        // Mark wall cells with their index
         for (SZ i = 0; i < data.collision_walls.count; i++) {
             IDungeonCollisionWall const *wall = &data.collision_walls.data[i];
-            S32 const grid_x = (S32)(wall->position.x / tile_size);
-            S32 const grid_z = (S32)(wall->position.z / tile_size);
+            // Walls are centered, offset by half to get grid-aligned coordinates
+            S32 const grid_x = (S32)math_floor_f32((wall->position.x + half_tile) / tile_size);
+            S32 const grid_z = (S32)math_floor_f32((wall->position.z + half_tile) / tile_size);
             S32 const local_x = grid_x - data.grid_min_x;
             S32 const local_z = grid_z - data.grid_min_z;
 
             if (local_x >= 0 && local_x < data.grid_width && local_z >= 0 && local_z < data.grid_height) {
-                data.wall_grid[local_z * data.grid_width + local_x] = 1;
+                data.wall_grid[(local_z * data.grid_width) + local_x] = (S32)i;
             }
         }
-    }
 
-    // Generate combined model with multiple meshes from all tiles
-
-    if (tile_count > 0) {
+        // Generate combined model with multiple meshes from all tiles
         SZ const MAX_TILES_PER_MESH = 300; // Smaller chunks for better frustum culling (face culling fixed for boundaries)
 
         // Sort tiles by spatial location to keep adjacent tiles in same mesh
@@ -642,15 +643,23 @@ BOOL dungeon_is_entity_occluded(EID entity_id) {
     Vector3 const camera_pos = cam->position;
     Vector3 const entity_pos = g_world->position[entity_id];
 
+    // Get entity size for tolerance (use largest horizontal extent)
+    F32 const entity_radius = glm::max(g_world->obb[entity_id].extents.x, g_world->obb[entity_id].extents.z);
+
+    // Create ray from camera to entity
+    Vector3 const ray_dir = Vector3Subtract(entity_pos, camera_pos);
+    F32 const ray_length = Vector3Length(ray_dir);
+    Vector3 const ray_direction = Vector3Scale(ray_dir, 1.0F / ray_length);
+
     F32 const tile_size = DUNGEON_TILE_SIZE;
+    F32 const half_tile = tile_size * 0.5F;
 
-    // Convert to grid coordinates
-    S32 const x0 = (S32)(camera_pos.x / tile_size);
-    S32 const z0 = (S32)(camera_pos.z / tile_size);
-    S32 const x1 = (S32)(entity_pos.x / tile_size);
-    S32 const z1 = (S32)(entity_pos.z / tile_size);
+    // Use Bresenham to traverse grid and only check walls near the ray path
+    S32 const x0 = (S32)math_floor_f32((camera_pos.x + half_tile) / tile_size);
+    S32 const z0 = (S32)math_floor_f32((camera_pos.z + half_tile) / tile_size);
+    S32 const x1 = (S32)math_floor_f32((entity_pos.x + half_tile) / tile_size);
+    S32 const z1 = (S32)math_floor_f32((entity_pos.z + half_tile) / tile_size);
 
-    // Bresenham's line algorithm to traverse grid
     S32 dx = math_abs_s32(x1 - x0);
     S32 dz = math_abs_s32(z1 - z0);
     S32 sx = (x0 < x1) ? 1 : -1;
@@ -660,21 +669,59 @@ BOOL dungeon_is_entity_occluded(EID entity_id) {
     S32 x = x0;
     S32 z = z0;
 
+    // Precompute inverse direction for ray-box tests
+    Vector3 const inv_dir = {
+        math_abs_f32(ray_direction.x) > 0.0001F ? 1.0F / ray_direction.x : 1e6F,
+        math_abs_f32(ray_direction.y) > 0.0001F ? 1.0F / ray_direction.y : 1e6F,
+        math_abs_f32(ray_direction.z) > 0.0001F ? 1.0F / ray_direction.z : 1e6F
+    };
+
     while (true) {
         // Reached the entity's tile
         if (x == x1 && z == z1) { break; }
 
         // Skip the starting tile (camera position)
-        if (!(x == x0 && z == z0)) {
-            // Fast grid lookup - O(1) instead of O(N)
+        if (x != x0 || z != z0) {
+            // Fast grid lookup
             S32 const local_x = x - g_dungeon_data.grid_min_x;
             S32 const local_z = z - g_dungeon_data.grid_min_z;
 
-            // Check bounds and wall presence
+            // Check if this grid cell has a wall
             if (local_x >= 0 && local_x < g_dungeon_data.grid_width &&
                 local_z >= 0 && local_z < g_dungeon_data.grid_height) {
-                if (g_dungeon_data.wall_grid[local_z * g_dungeon_data.grid_width + local_x]) {
-                    return true; // Entity is occluded by wall
+                S32 const wall_idx = g_dungeon_data.wall_grid[(local_z * g_dungeon_data.grid_width) + local_x];
+
+                if (wall_idx >= 0) {
+                    // Direct O(1) lookup of the wall
+                    IDungeonCollisionWall const *wall = &g_dungeon_data.collision_walls.data[wall_idx];
+
+                    // Expand wall AABB by entity radius for tolerance
+                    Vector3 const wall_min = {
+                        wall->position.x - (wall->size.x * 0.5F) - entity_radius,
+                        wall->position.y,
+                        wall->position.z - (wall->size.z * 0.5F) - entity_radius
+                    };
+                    Vector3 const wall_max = {
+                        wall->position.x + (wall->size.x * 0.5F) + entity_radius,
+                        wall->position.y + wall->size.y,
+                        wall->position.z + (wall->size.z * 0.5F) + entity_radius
+                    };
+
+                    // Ray-AABB intersection test
+                    F32 const t1 = (wall_min.x - camera_pos.x) * inv_dir.x;
+                    F32 const t2 = (wall_max.x - camera_pos.x) * inv_dir.x;
+                    F32 const t3 = (wall_min.y - camera_pos.y) * inv_dir.y;
+                    F32 const t4 = (wall_max.y - camera_pos.y) * inv_dir.y;
+                    F32 const t5 = (wall_min.z - camera_pos.z) * inv_dir.z;
+                    F32 const t6 = (wall_max.z - camera_pos.z) * inv_dir.z;
+
+                    F32 const tmin = glm::max(glm::max(glm::min(t1, t2), glm::min(t3, t4)), glm::min(t5, t6));
+                    F32 const tmax = glm::min(glm::min(glm::max(t1, t2), glm::max(t3, t4)), glm::max(t5, t6));
+
+                    // Ray intersects box if tmax >= tmin and tmin < ray_length
+                    if (tmax >= tmin && tmin >= 0.0F && tmin < ray_length) {
+                        return true; // Wall blocks line of sight
+                    }
                 }
             }
         }
@@ -692,6 +739,59 @@ BOOL dungeon_is_entity_occluded(EID entity_id) {
     }
 
     return false; // No walls blocking line of sight
+}
+
+BOOL static i_check_position_collision(Vector3 pos, F32 radius) {
+    for (SZ i = 0; i < g_dungeon_data.collision_walls.count; i++) {
+        IDungeonCollisionWall *wall = &g_dungeon_data.collision_walls.data[i];
+
+        // Calculate distance from position to wall center
+        F32 const dist_x = math_abs_f32(pos.x - wall->position.x);
+        F32 const dist_z = math_abs_f32(pos.z - wall->position.z);
+
+        // Check if we're too close (wall half-size + entity radius)
+        F32 const wall_half_size = DUNGEON_TILE_SIZE * 0.5F;
+        F32 const min_dist_x     = wall_half_size + radius;
+        F32 const min_dist_z     = wall_half_size + radius;
+
+        if (dist_x < min_dist_x && dist_z < min_dist_z) {
+            return true; // Colliding with wall
+        }
+    }
+    return false;
+}
+
+Vector3 dungeon_resolve_wall_collision(EID entity_id, Vector3 desired_pos) {
+    if (!g_dungeon_loaded) { return desired_pos; }
+
+    Vector3 const current_pos = g_world->position[entity_id];
+    F32 const radius = glm::max(g_world->obb[entity_id].extents.x, g_world->obb[entity_id].extents.z);
+
+    // If desired position doesn't collide, use it
+    if (!i_check_position_collision(desired_pos, radius)) {
+        return desired_pos;
+    }
+
+    // Collision detected - try sliding along X or Z axis
+    Vector3 slide_x = {desired_pos.x, desired_pos.y, current_pos.z}; // Slide along X only
+    Vector3 slide_z = {current_pos.x, desired_pos.y, desired_pos.z}; // Slide along Z only
+
+    BOOL const x_valid = !i_check_position_collision(slide_x, radius);
+    BOOL const z_valid = !i_check_position_collision(slide_z, radius);
+
+    // Return the valid slide direction, prefer whichever moved us further
+    if (x_valid && z_valid) {
+        // Both valid - pick the one with more movement
+        F32 const x_dist = math_abs_f32(desired_pos.x - current_pos.x);
+        F32 const z_dist = math_abs_f32(desired_pos.z - current_pos.z);
+        return (x_dist > z_dist) ? slide_x : slide_z;
+    }
+
+    if (x_valid) { return slide_x; }
+    if (z_valid) { return slide_z; }
+
+    // Neither slide works - stay in place
+    return current_pos;
 }
 
 void dungeon_draw_3d_sketch() {

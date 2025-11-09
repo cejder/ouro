@@ -16,6 +16,7 @@ enum Particle3DBillboardMode : U32 { // NOLINT(performance-enum-size)
     PARTICLE3D_BILLBOARD_CAMERA_FACING    = 0,
     PARTICLE3D_BILLBOARD_VELOCITY_ALIGNED = 1,
     PARTICLE3D_BILLBOARD_Y_AXIS_LOCKED    = 2,
+    PARTICLE3D_BILLBOARD_HORIZONTAL       = 3,  // Flat on ground (XZ plane)
 };
 
 // GPU-aligned particle structure (must match compute shader)
@@ -120,6 +121,7 @@ void particles3d_add_effect_harvest_impact      (Vector3 center, Color start_col
 void particles3d_add_effect_harvest_active      (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count);
 void particles3d_add_effect_harvest_complete    (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count);
 void particles3d_add_effect_selection_indicator (Vector3 position, F32 radius, Color start_color, Color end_color, SZ count);
+void particles3d_add_effect_click_indicator     (Vector3 position, F32 radius, Color start_color, Color end_color, SZ count);
 void particles3d_add_effect_blood_hit           (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count);
 void particles3d_add_effect_blood_death         (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count);
 void particles3d_add_effect_spawn               (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count);

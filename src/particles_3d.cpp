@@ -177,8 +177,10 @@ void particles3d_draw() {
     Camera3D* camera = g_render.cameras.c3d.active_cam;
 
     glDisable(GL_CULL_FACE); // Disable face culling so particles are visible from both sides
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_COLOR); // Screen blend - softer merging
+    // glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA); // Soft additive
     // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    // glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     glDepthMask(GL_FALSE); // Disable depth writes so particles can overlap
     glDepthFunc(GL_LEQUAL); // Less-or-equal depth test (matches what scene geometry uses)
 
@@ -1295,16 +1297,11 @@ void particles3d_add_effect_harvest_active(Vector3 center, Color start_color, Co
 }
 
 void particles3d_add_effect_selection_indicator(Vector3 position, F32 radius, Color start_color, Color end_color, SZ count) {
-    // Epic RTS-style selection: particles shooting up from the ground around the entity
+    // Large spinning magic circles: 2-4 big stationary particles rotating in place beneath the entity
     C8 const* selection_texture_names[] = {
-        "particle_spark_01.png",
-        "particle_spark_03.png",
-        "particle_spark_05.png",
-        "particle_star_01.png",
-        "particle_star_03.png",
-        "particle_star_05.png",
-        "particle_magic_01.png",
-        "particle_magic_03.png"
+        "particle_magic_03.png",
+        "particle_magic_02.png",
+        "particle_magic_04.png"
     };
     SZ const texture_count = sizeof(selection_texture_names) / sizeof(selection_texture_names[0]);
 
@@ -1313,64 +1310,128 @@ void particles3d_add_effect_selection_indicator(Vector3 position, F32 radius, Co
         textures[i] = asset_get_texture(selection_texture_names[i]);
     }
 
-    auto *positions_arr     = mcta(Vector3*, count, sizeof(Vector3));
-    auto *velocities        = mcta(Vector3*, count, sizeof(Vector3));
-    auto *accelerations     = mcta(Vector3*, count, sizeof(Vector3));
-    auto *start_colors      = mcta(Color*,   count, sizeof(Color));
-    auto *end_colors        = mcta(Color*,   count, sizeof(Color));
-    F32* lives              = mcta(F32*,     count, sizeof(F32));
-    F32* sizes              = mcta(F32*,     count, sizeof(F32));
-    U32* texture_indices    = mcta(U32*,     count, sizeof(U32));
-    F32* gravities          = mcta(F32*,     count, sizeof(F32));
-    F32* rotation_speeds    = mcta(F32*,     count, sizeof(F32));
-    F32* air_resistances    = mcta(F32*,     count, sizeof(F32));
-    U32* billboard_modes    = mcta(U32*,     count, sizeof(U32));
-    F32* stretch_factors    = mcta(F32*,     count, sizeof(F32));
+    // Force count to be 2-4 particles max for big spinning circles
+    SZ const actual_count = glm::min(count, (SZ)4);
 
-    F32 const pi = glm::pi<F32>();
-    F32 const spawn_radius = radius * 1.2F;  // Slightly larger than model radius
+    auto *positions_arr     = mcta(Vector3*, actual_count, sizeof(Vector3));
+    auto *velocities        = mcta(Vector3*, actual_count, sizeof(Vector3));
+    auto *accelerations     = mcta(Vector3*, actual_count, sizeof(Vector3));
+    auto *start_colors      = mcta(Color*,   actual_count, sizeof(Color));
+    auto *end_colors        = mcta(Color*,   actual_count, sizeof(Color));
+    F32* lives              = mcta(F32*,     actual_count, sizeof(F32));
+    F32* sizes              = mcta(F32*,     actual_count, sizeof(F32));
+    U32* texture_indices    = mcta(U32*,     actual_count, sizeof(U32));
+    F32* gravities          = mcta(F32*,     actual_count, sizeof(F32));
+    F32* rotation_speeds    = mcta(F32*,     actual_count, sizeof(F32));
+    F32* air_resistances    = mcta(F32*,     actual_count, sizeof(F32));
+    U32* billboard_modes    = mcta(U32*,     actual_count, sizeof(U32));
+    F32* stretch_factors    = mcta(F32*,     actual_count, sizeof(F32));
 
-    for (SZ i = 0; i < count; ++i) {
-        // Spawn particles in a circle around the entity at ground level
-        F32 const angle = random_f32(0.0F, 2.0F * pi);
-        F32 const dist  = random_f32(spawn_radius * 0.8F, spawn_radius);
-
+    for (SZ i = 0; i < actual_count; ++i) {
+        // All particles at the same position - centered beneath the entity
         positions_arr[i] = {
-            position.x + (math_cos_f32(angle) * dist),
-            position.y + random_f32(0.0F, 0.2F),  // Start at ground level
-            position.z + (math_sin_f32(angle) * dist)
+            position.x,
+            position.y + 0.2F,  // Raised higher to prevent clipping into ground
+            position.z
         };
 
-        // Shoot upward with slight outward angle
-        F32 const upward_speed  = random_f32(1.0F, 2.0F);
-        F32 const outward_speed = random_f32(0.1F, 0.25F);
-        velocities[i] = {
-            math_cos_f32(angle) * outward_speed,
-            upward_speed,
-            math_sin_f32(angle) * outward_speed
-        };
+        // NO velocity - particles stay stationary, only rotate in place
+        velocities[i]      = {0.0F, 0.0F, 0.0F};
+        accelerations[i]   = {0.0F, 0.0F, 0.0F};
 
-        accelerations[i] = {0.0F, 0.0F, 0.0F};
-
-        // Vibrant saturated colors
+        // Vibrant, mystical colors
         Color bright_start = color_saturated(start_color);
         Color bright_end   = color_saturated(end_color);
         start_colors[i]    = color_variation(bright_start, 15);
         end_colors[i]      = color_variation(bright_end, 15);
 
-        lives[i]           = random_f32(1.2F, 1.8F);  // Short-lived, continuously spawning
-        sizes[i]           = random_f32(0.45F, 0.65F);
-        gravities[i]       = 0.0F;
-        rotation_speeds[i] = random_f32(-10.0F, 10.0F);
-        air_resistances[i] = random_f32(0.5F, 1.5F);  // Slow down as they rise
-        billboard_modes[i] = PARTICLE3D_BILLBOARD_CAMERA_FACING;
+        lives[i]           = random_f32(1.2F, 1.8F);
+        sizes[i]           = radius * random_f32(2.25F, 3.0F);  // BIG particles scaled to entity size! (25% wider)
+        gravities[i]       = 0.0F;  // No gravity
+
+        // Alternate rotation direction for counter-rotating effect
+        F32 const rotation_direction = (i % 2 == 0) ? 1.0F : -1.0F;
+        rotation_speeds[i] = random_f32(3.0F, 6.0F) * rotation_direction;  // Spin in place (CW/CCW)
+
+        air_resistances[i] = 0.0F;  // No air resistance
+        billboard_modes[i] = PARTICLE3D_BILLBOARD_HORIZONTAL;  // Flat on ground!
         stretch_factors[i] = 1.0F;
 
-        ATexture* texture = textures[random_s32(0, texture_count - 1)];
+        // Use different textures for each particle
+        ATexture* texture = textures[i % texture_count];
         texture_indices[i] = particles3d_register_texture(texture);
     }
 
-    particles3d_add(positions_arr, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, count);
+    particles3d_add(positions_arr, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, actual_count);
+}
+
+void particles3d_add_effect_click_indicator(Vector3 position, F32 radius, Color start_color, Color end_color, SZ count) {
+    // Large spinning light circles for ground click indicators
+    C8 const* click_texture_names[] = {
+        "particle_light_03.png",
+        "particle_light_02.png",
+        "particle_magic_02.png"
+    };
+    SZ const texture_count = sizeof(click_texture_names) / sizeof(click_texture_names[0]);
+
+    auto *textures = mcta(ATexture**, texture_count, sizeof(ATexture*));
+    for (SZ i = 0; i < texture_count; ++i) {
+        textures[i] = asset_get_texture(click_texture_names[i]);
+    }
+
+    // Force count to be 2-4 particles max for big spinning circles
+    SZ const actual_count = glm::min(count, (SZ)4);
+
+    auto *positions_arr     = mcta(Vector3*, actual_count, sizeof(Vector3));
+    auto *velocities        = mcta(Vector3*, actual_count, sizeof(Vector3));
+    auto *accelerations     = mcta(Vector3*, actual_count, sizeof(Vector3));
+    auto *start_colors      = mcta(Color*,   actual_count, sizeof(Color));
+    auto *end_colors        = mcta(Color*,   actual_count, sizeof(Color));
+    F32* lives              = mcta(F32*,     actual_count, sizeof(F32));
+    F32* sizes              = mcta(F32*,     actual_count, sizeof(F32));
+    U32* texture_indices    = mcta(U32*,     actual_count, sizeof(U32));
+    F32* gravities          = mcta(F32*,     actual_count, sizeof(F32));
+    F32* rotation_speeds    = mcta(F32*,     actual_count, sizeof(F32));
+    F32* air_resistances    = mcta(F32*,     actual_count, sizeof(F32));
+    U32* billboard_modes    = mcta(U32*,     actual_count, sizeof(U32));
+    F32* stretch_factors    = mcta(F32*,     actual_count, sizeof(F32));
+
+    for (SZ i = 0; i < actual_count; ++i) {
+        // All particles at the same position - centered at click location
+        positions_arr[i] = {
+            position.x,
+            position.y + 0.2F,  // Raised higher to prevent clipping into ground
+            position.z
+        };
+
+        // NO velocity - particles stay stationary, only rotate in place
+        velocities[i]      = {0.0F, 0.0F, 0.0F};
+        accelerations[i]   = {0.0F, 0.0F, 0.0F};
+
+        // Vibrant, mystical colors
+        Color bright_start = color_saturated(start_color);
+        Color bright_end   = color_saturated(end_color);
+        start_colors[i]    = color_variation(bright_start, 15);
+        end_colors[i]      = color_variation(bright_end, 15);
+
+        lives[i]           = random_f32(0.8F, 1.2F);  // Shorter lived than selection indicator
+        sizes[i]           = radius * random_f32(2.5F, 3.75F);  // BIG particles scaled to radius! (25% wider)
+        gravities[i]       = 0.0F;  // No gravity
+
+        // Alternate rotation direction for counter-rotating effect
+        F32 const rotation_direction = (i % 2 == 0) ? 1.0F : -1.0F;
+        rotation_speeds[i] = random_f32(4.0F, 7.0F) * rotation_direction;  // Slightly faster spin for clicks
+
+        air_resistances[i] = 0.0F;  // No air resistance
+        billboard_modes[i] = PARTICLE3D_BILLBOARD_HORIZONTAL;  // Flat on ground!
+        stretch_factors[i] = 1.0F;
+
+        // Use different textures for each particle
+        ATexture* texture = textures[i % texture_count];
+        texture_indices[i] = particles3d_register_texture(texture);
+    }
+
+    particles3d_add(positions_arr, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, actual_count);
 }
 
 void particles3d_add_effect_harvest_complete(Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
@@ -1678,6 +1739,7 @@ void particles3d_add_effect_harvest_impact      (Vector3 center, Color start_col
 void particles3d_add_effect_harvest_active      (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
 void particles3d_add_effect_harvest_complete    (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
 void particles3d_add_effect_selection_indicator (Vector3 position, F32 radius, Color start_color, Color end_color, SZ count) {}
+void particles3d_add_effect_click_indicator     (Vector3 position, F32 radius, Color start_color, Color end_color, SZ count) {}
 void particles3d_add_effect_blood_hit           (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
 void particles3d_add_effect_blood_death         (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
 void particles3d_add_effect_spawn               (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}

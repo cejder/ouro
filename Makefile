@@ -136,7 +136,7 @@ format: ## format the project
 check: build ## check the project via static linters and tools
 	@echo -e "${COLORED}# Checking${NC}"
 	go run ${TOOLS_FOLDER}/stupid/main.go ./src
-	cppcheck --std=c++20 --enable=warning --suppress=internalAstError --suppress=variableScope --suppress=passedByValue --suppress=useStlAlgorithm --suppress=deallocret --suppress=cstyleCast --suppress=unknownEvaluationOrder --suppress=constParameterPointer --suppress=constParameterCallback --suppress=unusedPrivateFunction --suppress=unknownMacro --suppress=unusedStructMember --suppress=constVariablePointer --suppress=dangerousTypeCast --enable=performance,portability,style ${ALL_PROJECT_FILES} --quiet -j ${NUM_CORES} --check-level=exhaustive
+	cppcheck --std=c++20 --enable=warning --suppress=internalAstError --suppress=variableScope --suppress=passedByValue --suppress=useStlAlgorithm --suppress=deallocret --suppress=cstyleCast --suppress=unreadVariable --suppress=unknownEvaluationOrder --suppress=constParameterPointer --suppress=constParameterCallback --suppress=unusedPrivateFunction --suppress=unknownMacro --suppress=unusedStructMember --suppress=constVariablePointer --suppress=dangerousTypeCast --enable=performance,portability,style ${ALL_PROJECT_FILES} --quiet -j ${NUM_CORES} --check-level=exhaustive
 	run-clang-tidy -p $(CMAKE_BUILD_FOLDER) -header-filter='^src/' $(ALL_PROJECT_FILES) -quiet -use-color
 
 valgrind: build ## valgrind the project

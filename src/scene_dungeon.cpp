@@ -17,6 +17,7 @@
 #include "math.hpp"
 #include "menu.hpp"
 #include "message.hpp"
+#include "particles_3d.hpp"
 #include "player.hpp"
 #include "profiler.hpp"
 #include "render.hpp"
@@ -73,8 +74,8 @@ SCENE_INIT(dungeon) {
 
     world_set_dungeon(g_world->base_terrain = asset_get_terrain("flat", {(F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE}));
 
-    entity_create(ENTITY_TYPE_PROP, "TORCH_LEFT", {502.50F, 5.5F, 776.20F}, 0.0F, {10.0F, 10.0F, 10.0F}, WHITE, "torch.glb");
-    entity_create(ENTITY_TYPE_PROP, "TORCH_RIGHT", {517.50F, 5.5F, 776.20F}, 0.0F, {10.0F, 10.0F, 10.0F}, WHITE, "torch.glb");
+    entity_create(ENTITY_TYPE_PROP, "TORCH_LEFT", {502.50F, 5.5F, 776.20F}, 0.0F, {10.0F, 10.0F, 10.0F}, GOLD, "torch.glb");
+    entity_create(ENTITY_TYPE_PROP, "TORCH_RIGHT", {517.50F, 5.5F, 776.20F}, 0.0F, {10.0F, 10.0F, 10.0F}, GOLD, "torch.glb");
 
     for (SZ i = 0; i < 32; ++i) {
         for (SZ j = 0; j < 32; ++j) {
@@ -169,6 +170,25 @@ SKIP_OTHER_INPUT:
 
     lighting_set_point_light(1, true, {502.50F, 6.5F, 780.00F}, color_sync_blinking_kinda_fast(ORANGE, PERSIMMON), 75.0F);
     lighting_set_point_light(2, true, {517.50F, 6.5F, 780.00F}, color_sync_blinking_kinda_fast(TANGERINE, TUSCAN), 75.0F);
+
+    // Spawn fire and smoke particles for the torches (frame-rate independent)
+    F32 static particle_timer = 0.0F;
+    particle_timer += dt;
+
+    F32 const particles_per_second = 50.0F;
+    F32 const spawn_interval = 1.0F / particles_per_second;
+    if (particle_timer >= spawn_interval) {
+        particle_timer -= spawn_interval;
+
+        Vector3 const torch_left_pos  = {502.50F, 8.5F, 776.80F};
+        Vector3 const torch_right_pos = {517.50F, 8.5F, 776.80F};
+
+        particles3d_add_effect_fire(torch_left_pos, 0.3F, YELLOW, RED, 0.3F, 1);
+        particles3d_add_effect_smoke(torch_left_pos, 0.2F, ORANGE, RED, 0.25F, 1);
+
+        particles3d_add_effect_fire(torch_right_pos, 0.3F, YELLOW, RED, 0.3F, 1);
+        particles3d_add_effect_smoke(torch_right_pos, 0.2F, ORANGE, RED, 0.25F, 1);
+    }
 }
 
 SCENE_DRAW(dungeon) {
@@ -200,6 +220,7 @@ SCENE_DRAW(dungeon) {
 
         dungeon_draw_3d_sketch();
         world_draw_3d_sketch();
+        particles3d_draw();
     }
     RMODE_END;
 

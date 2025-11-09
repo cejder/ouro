@@ -79,6 +79,11 @@ void main() {
         right = normalize(cross(vec3(0.0, 1.0, 0.0), to_camera));
         up = vec3(0.0, 1.0, 0.0);
     }
+    // Billboard mode 3: Horizontal/flat on ground (lies flat in XZ plane)
+    else if (p.billboard_mode == 3) {
+        right = vec3(1.0, 0.0, 0.0);  // World X axis
+        up = vec3(0.0, 0.0, 1.0);     // World Z axis (horizontal plane)
+    }
     // Billboard mode 0: camera-facing (default)
     // Already set above
 
