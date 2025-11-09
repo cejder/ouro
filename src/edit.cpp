@@ -167,7 +167,7 @@ void edit_update(F32 dt, F32 dtu) {
 
         // Spawn indicator particles at click location (only if no entity is selected, otherwise handled in command section)
         if (g_world->selected_id == INVALID_EID) {
-            particles3d_add_effect_click_indicator(collision.point, 0.5F, GOLD, YELLOW, 5);
+            particles3d_add_effect_click_indicator(collision.point, 0.5F, PINK, PURPLE, 5);
         }
     }
 
@@ -195,7 +195,7 @@ void edit_update(F32 dt, F32 dtu) {
     // Right click commands on selected entity
     if (mouse_right_pressed && g_world->selected_id != INVALID_EID && collision.hit) {
         // Spawn particles at the click location
-        particles3d_add_effect_click_indicator(collision.point, 0.5F, GOLD, YELLOW, 5);
+        particles3d_add_effect_click_indicator(collision.point, 0.5F, PINK, PURPLE, 5);
 
         if (ctrl_down) {
             entity_actor_start_looking_for_target(g_world->selected_id, ENTITY_TYPE_VEGETATION);

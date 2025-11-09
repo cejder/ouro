@@ -1336,7 +1336,7 @@ void particles3d_add_effect_selection_indicator(Vector3 position, F32 radius, Co
         // All particles at the same position - centered beneath the entity
         positions_arr[i] = {
             position.x,
-            position.y + 0.2F,  // Raised higher to prevent clipping into ground
+            position.y + 0.05F,  // Raised higher to prevent clipping into ground
             position.z
         };
 
@@ -1412,7 +1412,7 @@ void particles3d_add_effect_click_indicator(Vector3 position, F32 radius, Color 
         // All particles at the same position - centered at click location
         positions_arr[i] = {
             position.x,
-            position.y + 0.2F,  // Raised higher to prevent clipping into ground
+            position.y + 0.05F,  // Raised higher to prevent clipping into ground
             position.z
         };
 
