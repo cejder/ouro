@@ -153,7 +153,7 @@ profile-gui: build ## Profile with perf and view in Hotspot
 
 deps: ## redownload third party libraries
 	@echo -e "${COLORED}# Re-populating third party${NC}"
-	$(TOOLS_FOLDER)/setup-deps.sh --force ${THIRD_PARTY_FOLDER}
+	$(TOOLS_FOLDER)/setup_deps.sh --force ${THIRD_PARTY_FOLDER}
 
 help: ## print this help
 	@grep -E -h '\s##\s' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'

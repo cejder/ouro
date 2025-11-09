@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Script to setup and download dependencies
-# Usage: ./setup-deps.sh [--force] /path/to/third_party_folder
+# Usage: ./setup_deps.sh [--force] /path/to/third_party_folder
 
 FORCE=false
 if [ "$1" = "--force" ]; then
