@@ -73,7 +73,7 @@ SZ static inline i_next_power_of_two(SZ n) {
     };                                                                                                                                                     \
                                                                                                                                                            \
     void static inline name##_init(name *map, MemoryType type, SZ initial_capacity) {                                                                      \
-        SZ const cap = i_next_power_of_two(initial_capacity == 0 ? 16 : initial_capacity);                                                                   \
+        SZ const cap = i_next_power_of_two(initial_capacity == 0 ? 16 : initial_capacity);                                                                 \
         map->count = 0;                                                                                                                                    \
         map->tombstone_count = 0;                                                                                                                          \
         map->capacity = cap;                                                                                                                               \
@@ -106,7 +106,7 @@ SZ static inline i_next_power_of_two(SZ n) {
         SZ index = hash & capacity_mask;                                                                                                                   \
         SZ first_tombstone = SZ_MAX;                                                                                                                       \
         while (slots[index].occupied || slots[index].tombstone) {                                                                                          \
-            if (slots[index].occupied && slots[index].hash == hash && equal_fn(slots[index].key, key)) {                                                  \
+            if (slots[index].occupied && slots[index].hash == hash && equal_fn(slots[index].key, key)) {                                                   \
                 slots[index].value = value;                                                                                                                \
                 return;                                                                                                                                    \
             }                                                                                                                                              \
@@ -133,7 +133,7 @@ SZ static inline i_next_power_of_two(SZ n) {
         do {                                                                                                                                               \
             name##Slot const *slot = &slots[index];                                                                                                        \
             if (slot->occupied) {                                                                                                                          \
-                if (slot->hash == hash && equal_fn(slot->key, key)) { return &map->slots[index].value; }                                                  \
+                if (slot->hash == hash && equal_fn(slot->key, key)) { return &map->slots[index].value; }                                                   \
             } else if (!slot->tombstone) {                                                                                                                 \
                 return NULL;                                                                                                                               \
             }                                                                                                                                              \
@@ -154,7 +154,7 @@ SZ static inline i_next_power_of_two(SZ n) {
         SZ index = hash & capacity_mask;                                                                                                                   \
         SZ const start_index = index;                                                                                                                      \
         do {                                                                                                                                               \
-            if (slots[index].occupied && slots[index].hash == hash && equal_fn(slots[index].key, key)) {                                                  \
+            if (slots[index].occupied && slots[index].hash == hash && equal_fn(slots[index].key, key)) {                                                   \
                 slots[index].occupied = false;                                                                                                             \
                 slots[index].tombstone = true;                                                                                                             \
                 map->count--;                                                                                                                              \
