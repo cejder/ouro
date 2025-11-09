@@ -821,3 +821,111 @@ void  math_compute_entity_bone_matrices(EID id) {
         ou_memcpy(g_world->animation[id].bone_matrices, source_matrices, sizeof(Matrix) * (SZ)bone_count);
     }
 }
+
+BOOL math_get_bone_world_position_by_index(EID id, S32 bone_index, Vector3 *out_position) {
+    AModel *model = asset_get_model(g_world->model_name[id]);
+
+    U32 const anim_idx = g_world->animation[id].anim_index;
+    U32 const frame    = g_world->animation[id].anim_frame;
+
+    if (anim_idx >= (U32)model->animation_count) { return false; }
+
+    ModelAnimation const& anim = model->animations[anim_idx];
+    if (frame >= (U32)anim.frameCount) { return false; }
+
+    S32 const bone_count = g_world->animation[id].bone_count;
+    if (bone_index < 0 || bone_index >= bone_count) { return false; }
+
+    // Build entity world transform matrix (same as d3d_model_animated)
+    Vector3 const position = g_world->position[id];
+    Vector3 const scale    = g_world->scale[id];
+    F32 const rotation     = g_world->rotation[id];
+
+    Matrix mat_scale    = MatrixScale(scale.x, scale.y, scale.z);
+    Matrix mat_rotation = MatrixRotate((Vector3){0, 1, 0}, rotation * DEG2RAD);
+    Matrix mat_position = MatrixTranslate(position.x, position.y, position.z);
+    Matrix entity_transform = MatrixMultiply(MatrixMultiply(mat_scale, mat_rotation), mat_position);
+
+    // Get bone transforms
+    Transform *bone_transform = &anim.framePoses[frame][bone_index];
+    Quaternion inRotation = model->base.bindPose[bone_index].rotation;
+    Quaternion outRotation = bone_transform->rotation;
+
+    // Calculate socket rotation (angle between bone in initial pose and current frame)
+    Quaternion rotate = QuaternionMultiply(outRotation, QuaternionInvert(inRotation));
+    Matrix matrixTransform = QuaternionToMatrix(rotate);
+
+    // Translate socket to its position in the current animation
+    matrixTransform = MatrixMultiply(matrixTransform,
+                      MatrixTranslate(bone_transform->translation.x,
+                                     bone_transform->translation.y,
+                                     bone_transform->translation.z));
+
+    // Transform using the entity's world transform
+    matrixTransform = MatrixMultiply(matrixTransform, entity_transform);
+
+    // Extract world position
+    Vector3 bone_pos = (Vector3){matrixTransform.m12, matrixTransform.m13, matrixTransform.m14};
+
+    // If blending, compute previous animation's bone position using raylib socket method
+    if (g_world->animation[id].is_blending) {
+        U32 const prev_anim_idx = g_world->animation[id].prev_anim_index;
+        if (prev_anim_idx < (U32)model->animation_count) {
+            ModelAnimation const& prev_anim = model->animations[prev_anim_idx];
+
+            // Use last frame of previous animation (or current frame if available)
+            U32 const prev_frame = glm::min((U32)prev_anim.frameCount - 1, frame);
+
+            // Get previous bone transforms using raylib socket method
+            Transform *prev_bone_transform = &prev_anim.framePoses[prev_frame][bone_index];
+            Quaternion prev_inRotation = model->base.bindPose[bone_index].rotation;
+            Quaternion prev_outRotation = prev_bone_transform->rotation;
+
+            // Calculate socket rotation for previous frame
+            Quaternion prev_rotate = QuaternionMultiply(prev_outRotation, QuaternionInvert(prev_inRotation));
+            Matrix prev_matrixTransform = QuaternionToMatrix(prev_rotate);
+
+            // Translate socket to its position in the previous animation
+            prev_matrixTransform = MatrixMultiply(prev_matrixTransform,
+                                  MatrixTranslate(prev_bone_transform->translation.x,
+                                                 prev_bone_transform->translation.y,
+                                                 prev_bone_transform->translation.z));
+
+            // Transform using the entity's world transform
+            prev_matrixTransform = MatrixMultiply(prev_matrixTransform, entity_transform);
+
+            // Extract previous world position
+            Vector3 prev_bone_pos = (Vector3){prev_matrixTransform.m12, prev_matrixTransform.m13, prev_matrixTransform.m14};
+
+            // Interpolate between previous and current position
+            F32 blend_t = g_world->animation[id].blend_time / g_world->animation[id].blend_duration;
+            blend_t = glm::clamp(blend_t, 0.0F, 1.0F);
+            bone_pos = Vector3Lerp(prev_bone_pos, bone_pos, blend_t);
+        }
+    }
+
+    *out_position = bone_pos;
+
+    return true;
+}
+
+BOOL math_get_bone_world_position_by_name(EID id, C8 const *bone_name, Vector3 *out_position) {
+    AModel *model = asset_get_model(g_world->model_name[id]);
+    S32 const bone_count = g_world->animation[id].bone_count;
+
+    // Find bone index by name
+    S32 bone_index = -1;
+    for (S32 i = 0; i < bone_count; i++) {
+        if (ou_strcmp(model->base.bones[i].name, bone_name) == 0) {
+            bone_index = i;
+            break;
+        }
+    }
+
+    if (bone_index < 0) {
+        llw("Bone '%s' not found in model '%s'", bone_name, g_world->model_name[id]);
+        return false;
+    }
+
+    return math_get_bone_world_position_by_index(id, bone_index, out_position);
+}

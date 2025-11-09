@@ -206,9 +206,9 @@ void world_draw_3d() {
 
 // Backpack positioning constants
 // How far behind the actor (negative forward direction)
-#define BACKPACK_OFFSET_BACKWARD 0.65F
+#define BACKPACK_OFFSET_BACKWARD 1.00F
 // How far above the actor's base position
-#define BACKPACK_OFFSET_UPWARD 1.5F
+#define BACKPACK_OFFSET_UPWARD -0.3F
 // Scale of the backpack relative to actor scale
 #define BACKPACK_MAX_SCALE  0.2F
 // Minimum number of instances to use instanced rendering (avoids overhead for single entities)
@@ -222,6 +222,12 @@ void world_draw_3d_sketch() {
     // Group static entities by model name for instanced rendering
     InstanceGroupMap instance_groups;
     InstanceGroupMap_init(&instance_groups, MEMORY_TYPE_ARENA_TRANSIENT, 32);
+
+    // Collect backpack instances for batch rendering
+    MatrixArray backpack_transforms;
+    ColorArray backpack_tints;
+    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &backpack_transforms, 1024);
+    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &backpack_tints, 1024);
 
     // First pass: Group static entities, draw animated entities immediately
     for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
@@ -246,7 +252,7 @@ void world_draw_3d_sketch() {
             EIDArray *group = InstanceGroupMap_get(&instance_groups, model_name_hash);
             if (!group) {
                 EIDArray new_group;
-                array_init(MEMORY_TYPE_ARENA_TRANSIENT, &new_group, 64);
+                array_init(MEMORY_TYPE_ARENA_TRANSIENT, &new_group, 1024);
                 InstanceGroupMap_insert(&instance_groups, model_name_hash, new_group);
                 group = InstanceGroupMap_get(&instance_groups, model_name_hash);
             }
@@ -261,19 +267,20 @@ void world_draw_3d_sketch() {
                 Vector3 scale = g_world->scale[i];
                 Vector3 backpack_pos;
 
-                // TODO: Actually what we want:
-                // C8 const *bone_name = "socket_hat";
-                // if (!i_get_bone_by_name(i, bone_name, &backpack_pos)) {
-                //     llw("bone '%s' not found!", bone_name);
-                // }
+                // Attach to bone - skip if bone not found
+                C8 const *bone_name = "socket_hat";
+                if (!math_get_bone_world_position_by_name(i, bone_name, &backpack_pos)) {
+                    llw("Could not find bone to attach backpack");
+                    continue;  // Skip this backpack if we can't find the bone
+                }
 
-                // What works for now:
-                F32 const rotation_rad  = rotation * DEG2RAD;
-                Vector3 forward         = {math_sin_f32(rotation_rad), 0.0F, math_cos_f32(rotation_rad)};
-                Vector3 up              = {0.0F, 1.0F, 0.0F};
+                // Offset backpack backwards and down
+                F32 const rotation_rad = rotation * DEG2RAD;
+                Vector3 forward = {math_sin_f32(rotation_rad), 0.0F, math_cos_f32(rotation_rad)};
+                Vector3 up = {0.0F, 1.0F, 0.0F};
                 Vector3 backpack_offset = Vector3Scale(forward, -BACKPACK_OFFSET_BACKWARD * scale.z);  // Behind
-                backpack_offset         = Vector3Add(backpack_offset, Vector3Scale(up, BACKPACK_OFFSET_UPWARD * scale.y));  // Up
-                backpack_pos            = Vector3Add(g_world->position[i], backpack_offset);
+                backpack_offset = Vector3Add(backpack_offset, Vector3Scale(up, BACKPACK_OFFSET_UPWARD * scale.y));  // Up (inverted to go down)
+                backpack_pos = Vector3Add(backpack_pos, backpack_offset);
 
                 // Calculate backpack scale with delivery animation
                 F32 backpack_scale_multiplier = bp_base_scale + (bp_base_scale * ((F32)wood_count / (F32)ACTOR_WOOD_COLLECTED_MAX));
@@ -292,14 +299,24 @@ void world_draw_3d_sketch() {
                     backpack_scale_multiplier *= glm::clamp(scale_factor, 0.0F, 1.0F);
                 }
 
-                // TODO: Right now we usually scaled by entity scale but we wont for now.
-                scale.x = 1.0F;
-                scale.y = 1.0F;
-                scale.z = 1.0F;
+                // Scale backpack with entity scale
                 Vector3 backpack_scale = Vector3Scale(scale, backpack_scale_multiplier);
                 Color wood_color       = {139, 90, 43, 255};
 
-                d3d_model("wood.glb", backpack_pos, rotation, backpack_scale, wood_color);
+                // Build transform matrix for this backpack instance with tilt
+                Matrix mat_scale = MatrixScale(backpack_scale.x, backpack_scale.y, backpack_scale.z);
+
+                // Tilt backpack diagonally towards the head (pitch forward)
+                F32 const tilt_angle = 5.0F; // Degrees to tilt towards head
+                Matrix mat_tilt = MatrixRotate((Vector3){1, 0, 0}, tilt_angle * DEG2RAD); // Pitch
+                Matrix mat_rot_y = MatrixRotate((Vector3){0, 1, 0}, rotation * DEG2RAD); // Yaw
+                Matrix mat_rot = MatrixMultiply(mat_tilt, mat_rot_y);
+
+                Matrix mat_trans = MatrixTranslate(backpack_pos.x, backpack_pos.y, backpack_pos.z);
+                Matrix transform = MatrixMultiply(MatrixMultiply(mat_scale, mat_rot), mat_trans);
+
+                array_push(&backpack_transforms, transform);
+                array_push(&backpack_tints, wood_color);
             }
         }
     }
@@ -340,6 +357,11 @@ void world_draw_3d_sketch() {
             // Draw all instances with a single draw call!
             d3d_model_instanced_by_hash(model_name_hash, transforms.data, tints.data, transforms.count);
         }
+    }
+
+    // Third pass: Batch render all backpacks
+    if (backpack_transforms.count > 0) {
+        d3d_model_instanced("wood.glb", backpack_transforms.data, backpack_tints.data, backpack_transforms.count);
     }
 }
 

@@ -569,41 +569,12 @@ void d2d_bone_gizmo(EID id) {
     S32 const bone_count = g_world->animation[id].bone_count;
     AFont *font          = asset_get_font(c_debug__medium_font.cstr, c_debug__bone_label_font_size);
 
-    // Build entity transform matrix (same as d3d_model_animated)
-    Vector3 const position = g_world->position[id];
-    Vector3 const scale    = g_world->scale[id];
-    F32 const rotation     = g_world->rotation[id];
-
-    Matrix mat_scale    = MatrixScale(scale.x, scale.y, scale.z);
-    Matrix mat_rotation = MatrixRotate((Vector3){0, 1, 0}, rotation * DEG2RAD);
-    Matrix mat_position = MatrixTranslate(position.x, position.y, position.z);
-    Matrix entity_transform = MatrixMultiply(MatrixMultiply(mat_scale, mat_rotation), mat_position);
-
-    // Compute world-space bone matrices by accumulating through hierarchy
-    Matrix bone_world_matrices[ENTITY_MAX_BONES];
+    // Draw text labels for each bone using the canonical bone position function
     for (S32 bone_idx = 0; bone_idx < bone_count; bone_idx++) {
-        Transform *bone_transform = &anim.framePoses[frame][bone_idx];
-
-        // Build local bone matrix
-        Matrix local_matrix = MatrixMultiply(MatrixMultiply(
-            MatrixScale(bone_transform->scale.x, bone_transform->scale.y, bone_transform->scale.z),
-            QuaternionToMatrix(bone_transform->rotation)),
-            MatrixTranslate(bone_transform->translation.x, bone_transform->translation.y, bone_transform->translation.z));
-
-        // Accumulate parent transforms (parent * local for proper hierarchy)
-        S32 parent_idx = model->base.bones[bone_idx].parent;
-        if (parent_idx >= 0) {
-            bone_world_matrices[bone_idx] = MatrixMultiply(bone_world_matrices[parent_idx], local_matrix);
-        } else {
-            bone_world_matrices[bone_idx] = local_matrix;
+        Vector3 world_pos;
+        if (!math_get_bone_world_position_by_index(id, bone_idx, &world_pos)) {
+            continue;  // Skip if we can't get the bone position
         }
-    }
-
-    // Draw text labels for each bone
-    for (S32 bone_idx = 0; bone_idx < bone_count; bone_idx++) {
-        // Transform bone position to world space using entity transform
-        Matrix final_bone_matrix = MatrixMultiply(bone_world_matrices[bone_idx], entity_transform);
-        Vector3 world_pos = {final_bone_matrix.m12, final_bone_matrix.m13, final_bone_matrix.m14};
 
         // Project to screen
         Vector2 screen_pos = GetWorldToScreen(world_pos, *c3d_get_ptr());

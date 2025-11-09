@@ -57,6 +57,8 @@ BOOL math_aabb_sphere_intersection(Vector3 aabb_min, Vector3 aabb_max, Vector3 s
 BoundingBox math_transform_aabb(BoundingBox bb, Vector3 position, Vector3 scale);
 void math_matrix_decompose(Matrix mat, Vector3 *translation, Quaternion *rotation, Vector3 *scale);
 void  math_compute_entity_bone_matrices(EID id);
+BOOL math_get_bone_world_position_by_name(EID id, C8 const *bone_name, Vector3 *out_position);
+BOOL math_get_bone_world_position_by_index(EID id, S32 bone_index, Vector3 *out_position);
 
 // ===============================================================
 // =========================== INLINES ===========================
