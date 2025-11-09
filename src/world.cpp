@@ -72,6 +72,7 @@ void world_update(F32 dt, F32 dtu) {
     world_recorder_update();  // WARN: This needs to happen before anything that changes the world.
     grid_populate();
     edit_update(dt, dtu);
+    c3d_update_frustum();
 
     for (U32 &count : g_world->entity_type_counts) { count = 0; }
 

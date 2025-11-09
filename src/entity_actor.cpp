@@ -113,6 +113,10 @@ EID static inline i_find_target(EID searcher_id, EntityType target_type) {
                     EID const entity_id = cell->entities_by_type[target_type][i];
                     if (entity_id == searcher_id) { continue; }
 
+                    // Validate entity is still valid and has correct type (grid may have stale entries)
+                    if (!entity_is_valid(entity_id)) { continue; }
+                    if (g_world->type[entity_id] != target_type) { continue; }
+
                     if (target_type == ENTITY_TYPE_VEGETATION) {
                         S32 const followers = (S32)g_world->follower_cache.follower_counts[entity_id];
                         if (followers >= HARVEST_TARGET_MAX_FOLLOWERS) { continue; }
@@ -623,7 +627,7 @@ void static inline i_evaluate_behavior_transitions(EID id) {
                     audio_play_3d_at_position(ACG_SFX, "hit.ogg", g_world->position[behavior->target_id]);
                     behavior->action_timer = asset_get_animation_duration(g_world->model_name[id], 3, g_world->animation[id].anim_fps, CESIUM_ANIMATION_SPEED);
 
-                    BOOL const is_dead = entity_damage(behavior->target_id, ATTACK_DAMAGE);
+                    BOOL const is_dead =  entity_damage(behavior->target_id, ATTACK_DAMAGE);
 
                     if (c_world__verbose_actors) {
                         lln("\\ouc{#ffff00ff}[%04d] ATTACK HIT on target %04d %s(%s)", id, behavior->target_id,

@@ -325,6 +325,7 @@ void c3d_cb_reset(void *data);
 void c3d_cb_toggle(void *data);
 void c3d_copy_from_other(Camera3D *dst, Camera3D *src);
 void c3d_pull_default_to_other(Camera3D *src);
+void c3d_update_frustum();
 BOOL c3d_is_point_in_frustum(Vector3 point);
 BOOL c3d_is_obb_in_frustum(OrientedBoundingBox bbox);
 Vector2 c3d_world_to_screen(Vector3 position);

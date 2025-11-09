@@ -98,6 +98,78 @@ void c3d_pull_default_to_other(Camera3D *src) {
     default_camera->target   = src->target;
 }
 
+void static i_calculate_frustum_planes(Vector4 frustum_planes[RENDER_FRUSTUM_PLANE_COUNT]) {
+    // Extract frustum planes
+    // Left plane
+    frustum_planes[0] = Vector4{
+        g_render.cameras.c3d.mat_view_proj.m3 + g_render.cameras.c3d.mat_view_proj.m0,
+        g_render.cameras.c3d.mat_view_proj.m7 + g_render.cameras.c3d.mat_view_proj.m4,
+        g_render.cameras.c3d.mat_view_proj.m11 + g_render.cameras.c3d.mat_view_proj.m8,
+        g_render.cameras.c3d.mat_view_proj.m15 + g_render.cameras.c3d.mat_view_proj.m12,
+    };
+    // Right plane
+    frustum_planes[1] = Vector4{
+        g_render.cameras.c3d.mat_view_proj.m3 - g_render.cameras.c3d.mat_view_proj.m0,
+        g_render.cameras.c3d.mat_view_proj.m7 - g_render.cameras.c3d.mat_view_proj.m4,
+        g_render.cameras.c3d.mat_view_proj.m11 - g_render.cameras.c3d.mat_view_proj.m8,
+        g_render.cameras.c3d.mat_view_proj.m15 - g_render.cameras.c3d.mat_view_proj.m12,
+    };
+    // Top plane
+    frustum_planes[2] = Vector4{
+        g_render.cameras.c3d.mat_view_proj.m3 - g_render.cameras.c3d.mat_view_proj.m1,
+        g_render.cameras.c3d.mat_view_proj.m7 - g_render.cameras.c3d.mat_view_proj.m5,
+        g_render.cameras.c3d.mat_view_proj.m11 - g_render.cameras.c3d.mat_view_proj.m9,
+        g_render.cameras.c3d.mat_view_proj.m15 - g_render.cameras.c3d.mat_view_proj.m13,
+    };
+    // Bottom plane
+    frustum_planes[3] = Vector4{
+        g_render.cameras.c3d.mat_view_proj.m3 + g_render.cameras.c3d.mat_view_proj.m1,
+        g_render.cameras.c3d.mat_view_proj.m7 + g_render.cameras.c3d.mat_view_proj.m5,
+        g_render.cameras.c3d.mat_view_proj.m11 + g_render.cameras.c3d.mat_view_proj.m9,
+        g_render.cameras.c3d.mat_view_proj.m15 + g_render.cameras.c3d.mat_view_proj.m13,
+    };
+    // Near plane
+    frustum_planes[4] = Vector4{
+        g_render.cameras.c3d.mat_view_proj.m2,
+        g_render.cameras.c3d.mat_view_proj.m6,
+        g_render.cameras.c3d.mat_view_proj.m10,
+        g_render.cameras.c3d.mat_view_proj.m14,
+    };
+    // Far plane
+    frustum_planes[5] = Vector4{
+        g_render.cameras.c3d.mat_view_proj.m3 - g_render.cameras.c3d.mat_view_proj.m2,
+        g_render.cameras.c3d.mat_view_proj.m7 - g_render.cameras.c3d.mat_view_proj.m6,
+        g_render.cameras.c3d.mat_view_proj.m11 - g_render.cameras.c3d.mat_view_proj.m10,
+        g_render.cameras.c3d.mat_view_proj.m15 - g_render.cameras.c3d.mat_view_proj.m14,
+    };
+
+    // Normalize the planes
+    for (SZ i = 0; i < RENDER_FRUSTUM_PLANE_COUNT; ++i) {
+        F32 const length = math_sqrt_f32(
+            (frustum_planes[i].x * frustum_planes[i].x) +
+            (frustum_planes[i].y * frustum_planes[i].y) +
+            (frustum_planes[i].z * frustum_planes[i].z));
+        frustum_planes[i] = Vector4{frustum_planes[i].x / length, frustum_planes[i].y / length, frustum_planes[i].z / length, frustum_planes[i].w / length};
+    }
+}
+
+void c3d_update_frustum() {
+    Camera3D *cam                      = g_render.cameras.c3d.active_cam;
+    g_render.cameras.c3d.fov_radians   = cam->fovy * DEG2RAD;
+    g_render.cameras.c3d.mat_view      = MatrixLookAt(cam->position, cam->target, cam->up);
+    g_render.cameras.c3d.mat_proj      = MatrixPerspective(g_render.cameras.c3d.fov_radians, g_render.aspect_ratio, RENDER_NEAR_PLANE, RENDER_FAR_PLANE);
+    g_render.cameras.c3d.mat_view_proj = MatrixMultiply(g_render.cameras.c3d.mat_view, g_render.cameras.c3d.mat_proj);
+    i_calculate_frustum_planes(g_render.cameras.c3d.frustum_planes);
+
+    for (SZ i = 0; i < RENDER_FRUSTUM_PLANE_COUNT; ++i) {
+        g_render.cameras.c3d.normals[i] = {
+            g_render.cameras.c3d.frustum_planes[i].x,
+            g_render.cameras.c3d.frustum_planes[i].y,
+            g_render.cameras.c3d.frustum_planes[i].z,
+        };
+    }
+}
+
 BOOL c3d_is_point_in_frustum(Vector3 point) {
     // Check if point is inside all planes
     for (auto plane : g_render.cameras.c3d.frustum_planes) {
