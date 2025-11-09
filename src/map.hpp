@@ -42,6 +42,19 @@ U64 static inline hash_cstr(C8 const *s) {
     return hash;
 }
 
+SZ static inline i_next_power_of_two(SZ n) {
+    if (n == 0) { return 1; }
+    n--;
+    n |= n >> 1;
+    n |= n >> 2;
+    n |= n >> 4;
+    n |= n >> 8;
+    n |= n >> 16;
+    n |= n >> 32;
+    n++;
+    return n;
+}
+
 #define MAP_DECLARE(name, key_type, value_type, hash_fn, equal_fn)                                                                                         \
     struct name##Slot {                                                                                                                                    \
         key_type key;                                                                                                                                      \
@@ -60,7 +73,7 @@ U64 static inline hash_cstr(C8 const *s) {
     };                                                                                                                                                     \
                                                                                                                                                            \
     void static inline name##_init(name *map, MemoryType type, SZ initial_capacity) {                                                                      \
-        SZ const cap = initial_capacity == 0 ? 16 : initial_capacity;                                                                                      \
+        SZ const cap = i_next_power_of_two(initial_capacity == 0 ? 16 : initial_capacity);                                                                   \
         map->count = 0;                                                                                                                                    \
         map->tombstone_count = 0;                                                                                                                          \
         map->capacity = cap;                                                                                                                               \
@@ -79,39 +92,52 @@ U64 static inline hash_cstr(C8 const *s) {
             map->slots = mc(name##Slot *, new_capacity, sizeof(name##Slot), map->memory_type);                                                             \
             ou_memset(map->slots, 0, new_capacity * sizeof(name##Slot));                                                                                   \
             for (SZ i = 0; i < old_map.capacity; i++) {                                                                                                    \
-                if (old_map.slots[i].occupied) { name##_insert(map, old_map.slots[i].key, old_map.slots[i].value); }                                       \
+                if (old_map.slots[i].occupied) {                                                                                                           \
+                    SZ index = old_map.slots[i].hash & (map->capacity - 1);                                                                                \
+                    while (map->slots[index].occupied) { index = (index + 1) & (map->capacity - 1); }                                                      \
+                    map->slots[index] = old_map.slots[i];                                                                                                  \
+                    map->count++;                                                                                                                          \
+                }                                                                                                                                          \
             }                                                                                                                                              \
         }                                                                                                                                                  \
+        SZ const capacity_mask = map->capacity - 1;                                                                                                        \
+        name##Slot *slots = map->slots;                                                                                                                    \
         U64 const hash = hash_fn(key);                                                                                                                     \
-        SZ index = hash % map->capacity;                                                                                                                   \
+        SZ index = hash & capacity_mask;                                                                                                                   \
         SZ first_tombstone = SZ_MAX;                                                                                                                       \
-        while (map->slots[index].occupied || map->slots[index].tombstone) {                                                                                \
-            if (map->slots[index].occupied && map->slots[index].hash == hash && equal_fn(map->slots[index].key, key)) {                                    \
-                map->slots[index].value = value;                                                                                                           \
+        while (slots[index].occupied || slots[index].tombstone) {                                                                                          \
+            if (slots[index].occupied && slots[index].hash == hash && equal_fn(slots[index].key, key)) {                                                  \
+                slots[index].value = value;                                                                                                                \
                 return;                                                                                                                                    \
             }                                                                                                                                              \
-            if (map->slots[index].tombstone && first_tombstone == SZ_MAX) { first_tombstone = index; }                                                     \
-            index = (index + 1) % map->capacity;                                                                                                           \
+            if (slots[index].tombstone && first_tombstone == SZ_MAX) { first_tombstone = index; }                                                          \
+            index = (index + 1) & capacity_mask;                                                                                                           \
         }                                                                                                                                                  \
         SZ const target = (first_tombstone != SZ_MAX) ? first_tombstone : index;                                                                           \
-        if (map->slots[target].tombstone) { map->tombstone_count--; }                                                                                      \
-        map->slots[target].key = key;                                                                                                                      \
-        map->slots[target].value = value;                                                                                                                  \
-        map->slots[target].occupied = true;                                                                                                                \
-        map->slots[target].tombstone = false;                                                                                                              \
-        map->slots[target].hash = hash;                                                                                                                    \
+        if (slots[target].tombstone) { map->tombstone_count--; }                                                                                           \
+        slots[target].key = key;                                                                                                                           \
+        slots[target].value = value;                                                                                                                       \
+        slots[target].occupied = true;                                                                                                                     \
+        slots[target].tombstone = false;                                                                                                                   \
+        slots[target].hash = hash;                                                                                                                         \
         map->count++;                                                                                                                                      \
     }                                                                                                                                                      \
                                                                                                                                                            \
     value_type static inline *name##_get(name *map, key_type key) {                                                                                        \
         if (map->capacity == 0) { return NULL; }                                                                                                           \
+        SZ const capacity_mask = map->capacity - 1;                                                                                                        \
+        name##Slot const *slots = map->slots;                                                                                                              \
         U64 const hash = hash_fn(key);                                                                                                                     \
-        SZ index = hash % map->capacity;                                                                                                                   \
+        SZ index = hash & capacity_mask;                                                                                                                   \
         SZ const start_index = index;                                                                                                                      \
         do {                                                                                                                                               \
-            if (map->slots[index].occupied && map->slots[index].hash == hash && equal_fn(map->slots[index].key, key)) { return &map->slots[index].value; } \
-            if (!map->slots[index].occupied && !map->slots[index].tombstone) { return NULL; }                                                              \
-            index = (index + 1) % map->capacity;                                                                                                           \
+            name##Slot const *slot = &slots[index];                                                                                                        \
+            if (slot->occupied) {                                                                                                                          \
+                if (slot->hash == hash && equal_fn(slot->key, key)) { return &map->slots[index].value; }                                                  \
+            } else if (!slot->tombstone) {                                                                                                                 \
+                return NULL;                                                                                                                               \
+            }                                                                                                                                              \
+            index = (index + 1) & capacity_mask;                                                                                                           \
         } while (index != start_index);                                                                                                                    \
         return NULL;                                                                                                                                       \
     }                                                                                                                                                      \
@@ -122,19 +148,21 @@ U64 static inline hash_cstr(C8 const *s) {
                                                                                                                                                            \
     void static inline name##_remove(name *map, key_type key) {                                                                                            \
         if (map->capacity == 0) { return; }                                                                                                                \
+        SZ const capacity_mask = map->capacity - 1;                                                                                                        \
+        name##Slot *slots = map->slots;                                                                                                                    \
         U64 const hash = hash_fn(key);                                                                                                                     \
-        SZ index = hash % map->capacity;                                                                                                                   \
+        SZ index = hash & capacity_mask;                                                                                                                   \
         SZ const start_index = index;                                                                                                                      \
         do {                                                                                                                                               \
-            if (map->slots[index].occupied && map->slots[index].hash == hash && equal_fn(map->slots[index].key, key)) {                                    \
-                map->slots[index].occupied = false;                                                                                                        \
-                map->slots[index].tombstone = true;                                                                                                        \
+            if (slots[index].occupied && slots[index].hash == hash && equal_fn(slots[index].key, key)) {                                                  \
+                slots[index].occupied = false;                                                                                                             \
+                slots[index].tombstone = true;                                                                                                             \
                 map->count--;                                                                                                                              \
                 map->tombstone_count++;                                                                                                                    \
                 return;                                                                                                                                    \
             }                                                                                                                                              \
-            if (!map->slots[index].occupied && !map->slots[index].tombstone) { return; }                                                                   \
-            index = (index + 1) % map->capacity;                                                                                                           \
+            if (!slots[index].occupied && !slots[index].tombstone) { return; }                                                                             \
+            index = (index + 1) & capacity_mask;                                                                                                           \
         } while (index != start_index);                                                                                                                    \
     }                                                                                                                                                      \
                                                                                                                                                            \

@@ -153,10 +153,10 @@ SZ math_levenshtein_distance(C8 const *a, C8 const *b) {
     for (SZ i = 0; i <= len_b; i++) { matrix[i] = i; }
     for (SZ i = 1; i <= len_a; i++) {
         for (SZ j = 1; j <= len_b; j++) {
-            SZ const cost = a[i - 1] == b[j - 1] ? 0 : 1;
-            SZ const deletion = matrix[((i - 1) * (len_b + 1)) + j] + 1;
-            SZ const insertion = matrix[(i * (len_b + 1)) + j - 1] + 1;
-            SZ const substitution = matrix[((i - 1) * (len_b + 1)) + j - 1] + cost;
+            SZ const cost                 = a[i - 1] == b[j - 1] ? 0 : 1;
+            SZ const deletion             = matrix[((i - 1) * (len_b + 1)) + j] + 1;
+            SZ const insertion            = matrix[(i * (len_b + 1)) + j - 1] + 1;
+            SZ const substitution         = matrix[((i - 1) * (len_b + 1)) + j - 1] + cost;
             matrix[(i * (len_b + 1)) + j] = glm::min(deletion, glm::min(insertion, substitution));
         }
     }
@@ -752,10 +752,10 @@ void  math_compute_entity_bone_matrices(EID id) {
 
     // Check cache for already-computed bone matrices (using pre-computed hash from asset)
     IBoneMatrixCacheKey const key = {model->header.name_hash, (U16)anim_idx, (U16)frame};
-    S32 bone_count = anim.boneCount < ENTITY_MAX_BONES ? anim.boneCount : ENTITY_MAX_BONES;
+    S32 bone_count                = anim.boneCount < ENTITY_MAX_BONES ? anim.boneCount : ENTITY_MAX_BONES;
 
     IBoneMatrixCacheValue *cached = IBoneMatrixCache_get(&i_cache.bone_matrices, key);
-    Matrix *source_matrices = nullptr;
+    Matrix *source_matrices       = nullptr;
 
     if (cached != nullptr) {
         // Cache hit - use cached matrices directly
@@ -781,8 +781,8 @@ void  math_compute_entity_bone_matrices(EID id) {
         }
 
         IBoneMatrixCacheValue value = {};
-        value.bone_matrices = allocated_matrices;
-        value.bone_count = bone_count;
+        value.bone_matrices         = allocated_matrices;
+        value.bone_count            = bone_count;
         IBoneMatrixCache_insert(&i_cache.bone_matrices, key, value);
 
         source_matrices = allocated_matrices;
@@ -806,9 +806,9 @@ void  math_compute_entity_bone_matrices(EID id) {
             math_matrix_decompose(source_matrices[bone_id], &new_trans, &new_rot, &new_scale);
 
             // Interpolate components
-            Vector3 blended_trans = Vector3Lerp(prev_trans, new_trans, blend_t);
+            Vector3 blended_trans  = Vector3Lerp(prev_trans, new_trans, blend_t);
             Quaternion blended_rot = QuaternionSlerp(prev_rot, new_rot, blend_t);
-            Vector3 blended_scale = Vector3Lerp(prev_scale, new_scale, blend_t);
+            Vector3 blended_scale  = Vector3Lerp(prev_scale, new_scale, blend_t);
 
             // Reconstruct blended matrix
             g_world->animation[id].bone_matrices[bone_id] = MatrixMultiply(MatrixMultiply(
