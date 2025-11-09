@@ -470,6 +470,7 @@ SCENE_RESUME(overworld) {
 
 SCENE_EXIT(overworld) {
     dbg_remove_cb(DBG_WID_CUSTOM_0, {i_dbg_ui_cb_0, nullptr});
+    dbg_remove_cb(DBG_WID_CUSTOM_1, {i_dbg_ui_cb_1, nullptr});
     audio_reset_all();
 }
 
