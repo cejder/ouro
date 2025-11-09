@@ -13,6 +13,10 @@
 
 #include <raymath.h>
 
+// ===============================================================
+// ===================== TEXT MEASURE CACHE ======================
+// ===============================================================
+
 // Text Cache
 struct ITextCacheKey {
     U32 name_hash;
@@ -34,8 +38,37 @@ BOOL static inline i_text_cache_equal(ITextCacheKey a, ITextCacheKey b) {
 #define TEXT_CACHE_INITIAL_CAPACITY 1024
 MAP_DECLARE(ITextCache, ITextCacheKey, ITextCacheValue, i_text_cache_hash, i_text_cache_equal)
 
+// ===============================================================
+// ====================== BONE MATRIX CACHE ======================
+// ===============================================================
+
+// Bone matrix cache: Cache computed bone matrices to avoid redundant matrix math
+// Key: (model_name_hash, anim_index, frame)
+// Value: Array of bone matrices for all bones in the animation
+struct IBoneMatrixCacheKey {
+    U32 model_name_hash;  // Hash of model name
+    U16 anim_index;       // Animation index (max 65,536 animations)
+    U16 frame;            // Frame number    (max 65,536 frames)
+};
+struct IBoneMatrixCacheValue {
+    Matrix *bone_matrices;  // Pointer to allocated array (not inline, to keep slots small)
+    S32 bone_count;
+};
+U64 static inline i_bone_matrix_cache_hash(IBoneMatrixCacheKey key) {
+    // | 32 bits: model_name_hash | 16 bits: anim_index | 16 bits: frame |
+    return (U64)key.model_name_hash | ((U64)key.anim_index << 32) | ((U64)key.frame << 48);
+}
+BOOL static inline i_bone_matrix_cache_equal(IBoneMatrixCacheKey a, IBoneMatrixCacheKey b) {
+    return a.model_name_hash == b.model_name_hash && a.anim_index == b.anim_index && a.frame == b.frame;
+}
+#define BONE_MATRIX_CACHE_INITIAL_CAPACITY 256
+MAP_DECLARE(IBoneMatrixCache, IBoneMatrixCacheKey, IBoneMatrixCacheValue, i_bone_matrix_cache_hash, i_bone_matrix_cache_equal)
+
+// ===============================================================
+
 struct IMathCache {
     ITextCache text;
+    IBoneMatrixCache bone_matrices;
 };
 
 IMathCache static i_cache = {};
@@ -43,6 +76,7 @@ IMathCache static i_cache = {};
 void math_init() {
     random_seed(RANDOM_SEED);
     ITextCache_init(&i_cache.text, MEMORY_TYPE_ARENA_MATH, TEXT_CACHE_INITIAL_CAPACITY);
+    IBoneMatrixCache_init(&i_cache.bone_matrices, MEMORY_TYPE_ARENA_PERMANENT, BONE_MATRIX_CACHE_INITIAL_CAPACITY);
 }
 
 void math_update() {
@@ -119,10 +153,10 @@ SZ math_levenshtein_distance(C8 const *a, C8 const *b) {
     for (SZ i = 0; i <= len_b; i++) { matrix[i] = i; }
     for (SZ i = 1; i <= len_a; i++) {
         for (SZ j = 1; j <= len_b; j++) {
-            SZ const cost = a[i - 1] == b[j - 1] ? 0 : 1;
-            SZ const deletion = matrix[((i - 1) * (len_b + 1)) + j] + 1;
-            SZ const insertion = matrix[(i * (len_b + 1)) + j - 1] + 1;
-            SZ const substitution = matrix[((i - 1) * (len_b + 1)) + j - 1] + cost;
+            SZ const cost                 = a[i - 1] == b[j - 1] ? 0 : 1;
+            SZ const deletion             = matrix[((i - 1) * (len_b + 1)) + j] + 1;
+            SZ const insertion            = matrix[(i * (len_b + 1)) + j - 1] + 1;
+            SZ const substitution         = matrix[((i - 1) * (len_b + 1)) + j - 1] + cost;
             matrix[(i * (len_b + 1)) + j] = glm::min(deletion, glm::min(insertion, substitution));
         }
     }
@@ -654,4 +688,136 @@ BoundingBox math_transform_aabb(BoundingBox bb, Vector3 position, Vector3 scale)
     result.max = Vector3Add(world_center, scaled_extents);
 
     return result;
+}
+
+// Decompose a 4x4 matrix into translation, rotation (quaternion), and scale
+// NOTE: Assumes matrix is TRS (Translation * Rotation * Scale) with no skew
+void math_matrix_decompose(Matrix mat, Vector3 *translation, Quaternion *rotation, Vector3 *scale) {
+    // Extract translation (last column)
+    translation->x = mat.m12;
+    translation->y = mat.m13;
+    translation->z = mat.m14;
+
+    // Extract scale (magnitude of basis vectors)
+    Vector3 scale_x = {mat.m0, mat.m1, mat.m2};
+    Vector3 scale_y = {mat.m4, mat.m5, mat.m6};
+    Vector3 scale_z = {mat.m8, mat.m9, mat.m10};
+
+    scale->x = Vector3Length(scale_x);
+    scale->y = Vector3Length(scale_y);
+    scale->z = Vector3Length(scale_z);
+
+    // Extract rotation matrix (remove scale from basis vectors)
+    Matrix rot_mat = mat;
+    if (scale->x != 0.0F) {
+        rot_mat.m0 /= scale->x;
+        rot_mat.m1 /= scale->x;
+        rot_mat.m2 /= scale->x;
+    }
+    if (scale->y != 0.0F) {
+        rot_mat.m4 /= scale->y;
+        rot_mat.m5 /= scale->y;
+        rot_mat.m6 /= scale->y;
+    }
+    if (scale->z != 0.0F) {
+        rot_mat.m8 /= scale->z;
+        rot_mat.m9 /= scale->z;
+        rot_mat.m10 /= scale->z;
+    }
+
+    // Convert rotation matrix to quaternion
+    *rotation = QuaternionFromMatrix(rot_mat);
+}
+
+// Compute bone matrices for entity based on its animation state
+// Similar to UpdateModelAnimationBones but writes to per-entity storage
+// Supports blending between animations for smooth transitions
+// Uses caching to avoid redundant matrix computation for same model/animation/frame
+void  math_compute_entity_bone_matrices(EID id) {
+    AModel *model = asset_get_model(g_world->model_name[id]);
+
+    // Skip if model has no animations or bones
+    if (!model || !model->has_animations) { return; }
+
+    U32 const anim_idx = g_world->animation[id].anim_index;
+    U32 const frame    = g_world->animation[id].anim_frame;
+
+    // Validate animation index
+    if (anim_idx >= (U32)model->animation_count) { return; }
+
+    ModelAnimation const& anim = model->animations[anim_idx];
+
+    // Validate frame
+    if (frame >= (U32)anim.frameCount) { return; }
+
+    // Check cache for already-computed bone matrices (using pre-computed hash from asset)
+    IBoneMatrixCacheKey const key = {model->header.name_hash, (U16)anim_idx, (U16)frame};
+    S32 bone_count                = anim.boneCount < ENTITY_MAX_BONES ? anim.boneCount : ENTITY_MAX_BONES;
+
+    IBoneMatrixCacheValue *cached = IBoneMatrixCache_get(&i_cache.bone_matrices, key);
+    Matrix *source_matrices       = nullptr;
+
+    if (cached != nullptr) {
+        // Cache hit - use cached matrices directly
+        source_matrices = cached->bone_matrices;
+    } else {
+        // Cache miss - compute and store in cache
+        Matrix *allocated_matrices = mcpa(Matrix *, (SZ)bone_count, sizeof(Matrix));
+
+        for (S32 bone_id = 0; bone_id < bone_count; bone_id++) {
+            Transform *bind_transform = &model->base.bindPose[bone_id];
+            Matrix bind_matrix        = MatrixMultiply(MatrixMultiply(
+                MatrixScale(bind_transform->scale.x, bind_transform->scale.y, bind_transform->scale.z),
+                QuaternionToMatrix(bind_transform->rotation)),
+                MatrixTranslate(bind_transform->translation.x, bind_transform->translation.y, bind_transform->translation.z));
+
+            Transform *target_transform = &anim.framePoses[frame][bone_id];
+            Matrix target_matrix        = MatrixMultiply(MatrixMultiply(
+                MatrixScale(target_transform->scale.x, target_transform->scale.y, target_transform->scale.z),
+                QuaternionToMatrix(target_transform->rotation)),
+                MatrixTranslate(target_transform->translation.x, target_transform->translation.y, target_transform->translation.z));
+
+            allocated_matrices[bone_id] = MatrixMultiply(MatrixInvert(bind_matrix), target_matrix);
+        }
+
+        IBoneMatrixCacheValue value = {};
+        value.bone_matrices         = allocated_matrices;
+        value.bone_count            = bone_count;
+        IBoneMatrixCache_insert(&i_cache.bone_matrices, key, value);
+
+        source_matrices = allocated_matrices;
+    }
+
+    // If blending, interpolate between previous and new bone matrices
+    if (g_world->animation[id].is_blending) {
+        F32 blend_t = g_world->animation[id].blend_time / g_world->animation[id].blend_duration;
+        blend_t = glm::clamp(blend_t, 0.0F, 1.0F);
+
+        for (S32 bone_id = 0; bone_id < bone_count; bone_id++) {
+            // Decompose both matrices into TRS components
+            Vector3 prev_trans;
+            Vector3 new_trans;
+            Vector3 prev_scale;
+            Vector3 new_scale;
+            Quaternion prev_rot;
+            Quaternion new_rot;
+
+            math_matrix_decompose(g_world->animation[id].prev_bone_matrices[bone_id], &prev_trans, &prev_rot, &prev_scale);
+            math_matrix_decompose(source_matrices[bone_id], &new_trans, &new_rot, &new_scale);
+
+            // Interpolate components
+            Vector3 blended_trans  = Vector3Lerp(prev_trans, new_trans, blend_t);
+            Quaternion blended_rot = QuaternionSlerp(prev_rot, new_rot, blend_t);
+            Vector3 blended_scale  = Vector3Lerp(prev_scale, new_scale, blend_t);
+
+            // Reconstruct blended matrix
+            g_world->animation[id].bone_matrices[bone_id] = MatrixMultiply(MatrixMultiply(
+                MatrixScale(blended_scale.x, blended_scale.y, blended_scale.z),
+                QuaternionToMatrix(blended_rot)),
+                MatrixTranslate(blended_trans.x, blended_trans.y, blended_trans.z));
+        }
+    } else {
+        // No blending - single copy from cache/computed matrices to entity
+        ou_memcpy(g_world->animation[id].bone_matrices, source_matrices, sizeof(Matrix) * (SZ)bone_count);
+    }
 }

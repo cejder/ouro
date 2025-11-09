@@ -82,31 +82,36 @@ EID static inline i_find_target(EID searcher_id, EntityType target_type) {
     S32 const searcher_y          = (S32)searcher_coords.y;
 
     while (attempts < max_attempts && search_radius <= 500 * 2.0F) {
-        S32 const cell_radius      = (S32)(search_radius / g_grid.cell_size) + 1;
+        S32 const cell_radius      = (S32)(search_radius * g_grid.inv_cell_size) + 1;
         S32 const cell_radius_sq   = cell_radius * cell_radius;
         F32 const search_radius_sq = search_radius * search_radius;
 
-        for (S32 dy = -cell_radius; dy <= cell_radius; ++dy) {
-            S32 const cell_y = searcher_y + dy;
-            if (cell_y < 0 || cell_y >= GRID_CELLS_PER_ROW) { continue; }
+        // Clamp dy range to valid grid bounds
+        S32 const dy_min = glm::max(-cell_radius, -searcher_y);
+        S32 const dy_max = glm::min(cell_radius, GRID_CELLS_PER_ROW - 1 - searcher_y);
 
+        for (S32 dy = dy_min; dy <= dy_max; ++dy) {
+            S32 const cell_y = searcher_y + dy;
             S32 const dy_sq = dy * dy;
 
-            for (S32 dx = -cell_radius; dx <= cell_radius; ++dx) {
+            // Clamp dx range to valid grid bounds
+            S32 const dx_min = glm::max(-cell_radius, -searcher_x);
+            S32 const dx_max = glm::min(cell_radius, GRID_CELLS_PER_ROW - 1 - searcher_x);
+
+            for (S32 dx = dx_min; dx <= dx_max; ++dx) {
                 if ((dx * dx) + dy_sq > cell_radius_sq) { continue; }
 
                 S32 const cell_x = searcher_x + dx;
-                if (cell_x < 0 || cell_x >= GRID_CELLS_PER_ROW) { continue; }
 
                 SZ const cell_index = grid_get_cell_index_xy(cell_x, cell_y);
                 GridCell *cell      = &g_grid.cells[cell_index];
 
-                if (cell->count_per_type[target_type] == 0) { continue; }
+                SZ const count = cell->count_per_type[target_type];
+                if (count == 0) { continue; }
 
-                for (SZ i = 0; i < cell->entity_count; ++i) {
-                    EID const entity_id = cell->entities[i];
-                    if (entity_id == searcher_id)                { continue; }
-                    if (g_world->type[entity_id] != target_type) { continue; }
+                for (SZ i = 0; i < count; ++i) {
+                    EID const entity_id = cell->entities_by_type[target_type][i];
+                    if (entity_id == searcher_id) { continue; }
 
                     if (target_type == ENTITY_TYPE_VEGETATION) {
                         S32 const followers = (S32)g_world->follower_cache.follower_counts[entity_id];
@@ -168,56 +173,54 @@ Vector3 static inline i_calculate_separation_force(EID id) {
     // Precomputed constants
     F32 const min_sqr = 0.01F;  // 0.1^2
 
-    // Process 3x3 neighborhood
-    for (S32 dy = -1; dy <= 1; ++dy) {
-        S32 const cell_y = center_y + dy;
-        if (cell_y < 0 || cell_y >= GRID_CELLS_PER_ROW) { continue; }
+    // Clamp bounds once instead of checking in loop
+    S32 const min_y = glm::max(center_y - 1, 0);
+    S32 const max_y = glm::min(center_y + 1, GRID_CELLS_PER_ROW - 1);
+    S32 const min_x = glm::max(center_x - 1, 0);
+    S32 const max_x = glm::min(center_x + 1, GRID_CELLS_PER_ROW - 1);
 
-        for (S32 dx = -1; dx <= 1; ++dx) {
-            S32 const cell_x = center_x + dx;
-            if (cell_x < 0 || cell_x >= GRID_CELLS_PER_ROW) { continue; }
+    EntityType static constexpr relevant_types[] = {
+        ENTITY_TYPE_NPC,
+        ENTITY_TYPE_BUILDING_LUMBERYARD,
+        ENTITY_TYPE_VEGETATION,
+    };
+
+    // Process 3x3 neighborhood
+    for (S32 cell_y = min_y; cell_y <= max_y; ++cell_y) {
+        for (S32 cell_x = min_x; cell_x <= max_x; ++cell_x) {
 
             SZ const cell_index = grid_get_cell_index_xy(cell_x, cell_y);
             GridCell *cell = &g_grid.cells[cell_index];
 
-            // Check if cell has any entities we should avoid
-            SZ const relevant_count = cell->count_per_type[ENTITY_TYPE_NPC] +
-                                      cell->count_per_type[ENTITY_TYPE_BUILDING_LUMBERYARD] +
-                                      cell->count_per_type[ENTITY_TYPE_VEGETATION];
-            if (relevant_count == 0) { continue; }
+            // Process relevant entity types directly
+            for (EntityType other_type : relevant_types) {
+                SZ const count = cell->count_per_type[other_type];
+                if (count == 0) { continue; }
 
-            for (SZ i = 0; i < cell->entity_count; ++i) {
-                EID const other_id = cell->entities[i];
+                for (SZ i = 0; i < count; ++i) {
+                    EID const other_id = cell->entities_by_type[other_type][i];
+                    if (other_id == id) { continue; }
 
-                // Skip checks
-                if (other_id == id) { continue; }
+                    // Calculate separation distance based on both entities' actual sizes
+                    F32 const separation_distance   = current_radius + g_world->radius[other_id];
+                    F32 const separation_radius_sqr = separation_distance * separation_distance;
 
-                EntityType const other_type = g_world->type[other_id];
-                if (other_type != ENTITY_TYPE_NPC &&
-                    other_type != ENTITY_TYPE_BUILDING_LUMBERYARD &&
-                    other_type != ENTITY_TYPE_VEGETATION) {
-                    continue;
-                }
+                    // Calculate full 3D difference
+                    F32 const diff_x = current_x - g_world->position[other_id].x;
+                    F32 const diff_z = current_z - g_world->position[other_id].z;
 
-                // Calculate separation distance based on both entities' actual sizes
-                F32 const separation_distance   = current_radius + g_world->radius[other_id];
-                F32 const separation_radius_sqr = separation_distance * separation_distance;
+                    // Calculate squared length of modified vector
+                    F32 const distance_sqr = (diff_x * diff_x) + (diff_z * diff_z);
 
-                // Calculate full 3D difference
-                F32 const diff_x = current_x - g_world->position[other_id].x;
-                F32 const diff_z = current_z - g_world->position[other_id].z;
+                    if (distance_sqr > min_sqr && distance_sqr < separation_radius_sqr) {
+                        F32 const inv_separation_radius_sqr = 1.0F / separation_radius_sqr;
+                        F32 const strength_sqr              = (separation_radius_sqr - distance_sqr) * inv_separation_radius_sqr;
 
-                // Calculate squared length of modified vector
-                F32 const distance_sqr = (diff_x * diff_x) + (diff_z * diff_z);
-
-                if (distance_sqr > min_sqr && distance_sqr < separation_radius_sqr) {
-                    F32 const inv_separation_radius_sqr = 1.0F / separation_radius_sqr;
-                    F32 const strength_sqr              = (separation_radius_sqr - distance_sqr) * inv_separation_radius_sqr;
-
-                    // Full 3D normalization (with y=0)
-                    F32 const inv_distance = 1.0F / math_sqrt_f32(distance_sqr);
-                    separation.x += diff_x * inv_distance * strength_sqr;
-                    separation.z += diff_z * inv_distance * strength_sqr;
+                        // Square root for normalization
+                        F32 const inv_distance = glm::inversesqrt(distance_sqr);
+                        separation.x += diff_x * inv_distance * strength_sqr;
+                        separation.z += diff_z * inv_distance * strength_sqr;
+                    }
                 }
             }
         }
@@ -245,24 +248,30 @@ Vector3 static inline i_calculate_separation_force(EID id) {
         F32 const inv_player_separation_radius_sqr = 1.0F / player_separation_radius_sqr;
         F32 const player_strength_sqr = (player_separation_radius_sqr - player_distance_sqr) * inv_player_separation_radius_sqr;
 
-        // Full 3D normalization (with y=0)
-        F32 const inv_player_distance = 1.0F / math_sqrt_f32(player_distance_sqr);
+        // Square root for normalization
+        F32 const inv_player_distance = glm::inversesqrt(player_distance_sqr);
         separation.x += player_diff_x * inv_player_distance * player_strength_sqr;
         separation.z += player_diff_z * inv_player_distance * player_strength_sqr;
 
-        // Every n time, play sound
-        F32 static last_time      = time_get();
-        F32 const every_n_seconds = 5.0F;
-        F32 const this_time       = time_get();
-        if (this_time-last_time >= every_n_seconds) {
-            if (random_s32(0, 1)) {
-                audio_set_pitch(ACG_SFX, random_f32(1.5F, 2.0F));
-                audio_play_3d_at_position(ACG_SFX, TS("agree_%d.ogg", random_s32(0, 7))->c, current_pos);
-            } else {
-                audio_play_3d_at_position(ACG_SFX, TS("cute_%d.ogg", random_s32(0, 6))->c, current_pos);
-            }
+        // Occasional audio feedback - check time only once per second at most
+        static F32 last_time = 0.0F;
+        static U32 frame_counter = 0;
 
-            last_time = this_time;
+        // Only check time every 60 frames (~1 second at 60fps) to avoid expensive time_get() calls
+        if (++frame_counter >= 60) {
+            frame_counter = 0;
+            F32 const this_time = time_get();
+
+            if (this_time - last_time >= 5.0F) {
+                if (random_s32(0, 1)) {
+                    audio_set_pitch(ACG_SFX, random_f32(1.5F, 2.0F));
+                    audio_play_3d_at_position(ACG_SFX, TS("agree_%d.ogg", random_s32(0, 7))->c, current_pos);
+                } else {
+                    audio_play_3d_at_position(ACG_SFX, TS("cute_%d.ogg", random_s32(0, 6))->c, current_pos);
+                }
+
+                last_time = this_time;
+            }
         }
     }
 
@@ -310,11 +319,11 @@ U32 static inline i_count_harvesters_for_target(EID target_id, F32 *lowest_timer
             SZ const cell_index = grid_get_cell_index_xy(cell_x, cell_y);
             GridCell *cell      = &g_grid.cells[cell_index];
 
-            for (SZ i = 0; i < cell->entity_count; ++i) {
-                EID const entity_id = cell->entities[i];
+            SZ const count = cell->count_per_type[ENTITY_TYPE_NPC];
+            for (SZ i = 0; i < count; ++i) {
+                EID const entity_id = cell->entities_by_type[ENTITY_TYPE_NPC][i];
 
                 if (!ENTITY_HAS_FLAG(g_world->flags[entity_id], ENTITY_FLAG_IN_USE)) { continue; }
-                if (g_world->type[entity_id] != ENTITY_TYPE_NPC) { continue; }
 
                 EntityBehaviorController const *other_behavior = &g_world->actor[entity_id].behavior;
                 if (other_behavior->state == ENTITY_BEHAVIOR_STATE_HARVESTING_TARGET &&

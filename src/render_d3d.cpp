@@ -11,6 +11,7 @@
 #include "string.hpp"
 #include "time.hpp"
 #include "world.hpp"
+#include "map.hpp"
 
 #include <raymath.h>
 #include <rlgl.h>
@@ -96,14 +97,25 @@ void d3d_model_transform_rl(Model *model, Matrix *transform, Color tint) {
     model->materials[0].maps[MATERIAL_MAP_DIFFUSE].color = original_color;
 }
 
-void d3d_model(C8 const *model_name, Vector3 position, F32 rotation, Vector3 scale, Color tint) {
+void static inline i_d3d_model_impl(AModel *model, Vector3 position, F32 rotation, Vector3 scale, Color tint) {
     INCREMENT_DRAW_CALL;
 
     S32 enabled = 0;
     SetShaderValue(g_render.model_shader.shader->base, g_render.model_shader.animation_enabled_loc, &enabled, SHADER_UNIFORM_INT);
 
-    DrawModelEx(asset_get_model(model_name)->base, position, (Vector3){0, 1, 0}, rotation, scale, tint);
-};
+    DrawModelEx(model->base, position, (Vector3){0, 1, 0}, rotation, scale, tint);
+}
+
+void d3d_model(C8 const *model_name, Vector3 position, F32 rotation, Vector3 scale, Color tint) {
+    AModel *model = asset_get_model(model_name);
+    i_d3d_model_impl(model, position, rotation, scale, tint);
+}
+
+void d3d_model_by_hash(U32 model_name_hash, Vector3 position, F32 rotation, Vector3 scale, Color tint) {
+    AModel *model = asset_get_model_by_hash(model_name_hash);
+    if (!model) return;
+    i_d3d_model_impl(model, position, rotation, scale, tint);
+}
 
 void d3d_model_animated(C8 const *model_name, Vector3 position, F32 rotation, Vector3 scale, Color tint, Matrix *bone_matrices, S32 bone_count) {
     INCREMENT_DRAW_CALL;
@@ -155,10 +167,8 @@ void d3d_model_animated(C8 const *model_name, Vector3 position, F32 rotation, Ve
     }
 }
 
-void d3d_model_instanced(C8 const *model_name, Matrix *transforms, Color *tints, SZ instance_count) {
+void static inline i_d3d_model_instanced_impl(AModel *model, Matrix *transforms, Color *tints, SZ instance_count) {
     INCREMENT_DRAW_CALL;
-
-    AModel *model = asset_get_model(model_name);
 
     // Set view-projection matrix uniform
     Matrix mat_view_proj = g_render.cameras.c3d.mat_view_proj;
@@ -211,6 +221,17 @@ void d3d_model_instanced(C8 const *model_name, Matrix *transforms, Color *tints,
         // Restore original shader
         material->shader = original_material_shader;
     }
+}
+
+void d3d_model_instanced(C8 const *model_name, Matrix *transforms, Color *tints, SZ instance_count) {
+    AModel *model = asset_get_model(model_name);
+    i_d3d_model_instanced_impl(model, transforms, tints, instance_count);
+}
+
+void d3d_model_instanced_by_hash(U32 model_name_hash, Matrix *transforms, Color *tints, SZ instance_count) {
+    AModel *model = asset_get_model_by_hash(model_name_hash);
+    if (!model) return;
+    i_d3d_model_instanced_impl(model, transforms, tints, instance_count);
 }
 
 void d3d_mesh_rl(Mesh *mesh, Material *material, Matrix *transform) {
