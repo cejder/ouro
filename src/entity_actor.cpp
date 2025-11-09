@@ -179,6 +179,12 @@ Vector3 static inline i_calculate_separation_force(EID id) {
     S32 const min_x = glm::max(center_x - 1, 0);
     S32 const max_x = glm::min(center_x + 1, GRID_CELLS_PER_ROW - 1);
 
+    EntityType static constexpr relevant_types[] = {
+        ENTITY_TYPE_NPC,
+        ENTITY_TYPE_BUILDING_LUMBERYARD,
+        ENTITY_TYPE_VEGETATION,
+    };
+
     // Process 3x3 neighborhood
     for (S32 cell_y = min_y; cell_y <= max_y; ++cell_y) {
         for (S32 cell_x = min_x; cell_x <= max_x; ++cell_x) {
@@ -187,7 +193,6 @@ Vector3 static inline i_calculate_separation_force(EID id) {
             GridCell *cell = &g_grid.cells[cell_index];
 
             // Process relevant entity types directly
-            static constexpr EntityType relevant_types[] = {ENTITY_TYPE_NPC, ENTITY_TYPE_BUILDING_LUMBERYARD, ENTITY_TYPE_VEGETATION};
             for (EntityType other_type : relevant_types) {
                 SZ const count = cell->count_per_type[other_type];
                 if (count == 0) { continue; }
