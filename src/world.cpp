@@ -3,6 +3,7 @@
 #include "audio.hpp"
 #include "color.hpp"
 #include "cvar.hpp"
+#include "dungeon.hpp"
 #include "edit.hpp"
 #include "log.hpp"
 #include "map.hpp"
@@ -174,6 +175,11 @@ void world_draw_2d_hud() {
 
         if (!ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM)) { continue; }
 
+        // Check occlusion by dungeon walls (only in dungeon scene)
+        if (g_scenes.current_scene_type == SCENE_DUNGEON) {
+            if (dungeon_is_entity_occluded(i)) { continue; }
+        }
+
         if (g_world->type[i] == ENTITY_TYPE_NPC) {
             entity_actor_draw_2d_hud(i);
             d2d_healthbar(i);
@@ -189,6 +195,11 @@ void world_draw_2d_dbg() {
     for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
         EID const i = g_world->active_entities[idx];
         if (!ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM)) { continue; }
+
+        // Check occlusion by dungeon walls (only in dungeon scene)
+        if (g_scenes.current_scene_type == SCENE_DUNGEON) {
+            if (dungeon_is_entity_occluded(i)) { continue; }
+        }
 
         BOOL const is_selected = (g_world->selected_id == i);
 
@@ -236,6 +247,11 @@ void world_draw_3d_sketch() {
     for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
         EID const i = g_world->active_entities[idx];
         if (!ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM)) { continue; }
+
+        // Check occlusion by dungeon walls (only in dungeon scene)
+        if (g_scenes.current_scene_type == SCENE_DUNGEON) {
+            if (dungeon_is_entity_occluded(i)) { continue; }
+        }
 
         // Check if entity has active animation
         if (g_world->animation[i].has_animations) {
@@ -381,6 +397,11 @@ void world_draw_3d_dbg() {
     for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
         EID const i = g_world->active_entities[idx];
         if (!ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM)) { continue; }
+
+        // Check occlusion by dungeon walls (only in dungeon scene)
+        if (g_scenes.current_scene_type == SCENE_DUNGEON) {
+            if (dungeon_is_entity_occluded(i)) { continue; }
+        }
 
         F32 gizmos_alpha       = 1.0F;
         BOOL const is_selected = g_world->selected_id == i;

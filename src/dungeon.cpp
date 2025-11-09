@@ -9,6 +9,7 @@
 #include "raymath.h"
 #include "render.hpp"
 #include "player.hpp"
+#include "world.hpp"
 
 #include <raylib.h>
 
@@ -85,6 +86,15 @@ struct IDungeonData {
     DungeonTileArray tiles;
     DungeonCollisionWallArray collision_walls;
     Model combined_model;
+    OrientedBoundingBox *mesh_bounding_boxes;  // One per mesh for frustum culling
+    SZ mesh_bbox_count;
+    U8 *wall_grid;      // 2D grid for fast wall lookups (1 = wall, 0 = no wall)
+    S32 grid_min_x;
+    S32 grid_min_z;
+    S32 grid_max_x;
+    S32 grid_max_z;
+    S32 grid_width;
+    S32 grid_height;
 };
 
 IDungeonData static i_parse_dungeon(C8 const* filepath) {
@@ -153,11 +163,52 @@ IDungeonData static i_parse_dungeon(C8 const* filepath) {
         ptr++;
     }
 
-    // Generate combined model with multiple meshes from all tiles
+    // Build spatial grid for fast wall lookups
     SZ const tile_count = data.tiles.count;
+    if (tile_count > 0) {
+        // Find grid bounds
+        data.grid_min_x = S32_MAX;
+        data.grid_min_z = S32_MAX;
+        data.grid_max_x = S32_MIN;
+        data.grid_max_z = S32_MIN;
+
+        for (SZ i = 0; i < tile_count; i++) {
+            S32 const grid_x = (S32)(data.tiles.data[i].position.x / tile_size);
+            S32 const grid_z = (S32)(data.tiles.data[i].position.z / tile_size);
+            data.grid_min_x = glm::min(data.grid_min_x, grid_x);
+            data.grid_min_z = glm::min(data.grid_min_z, grid_z);
+            data.grid_max_x = glm::max(data.grid_max_x, grid_x);
+            data.grid_max_z = glm::max(data.grid_max_z, grid_z);
+        }
+
+        data.grid_width  = data.grid_max_x - data.grid_min_x + 1;
+        data.grid_height = data.grid_max_z - data.grid_min_z + 1;
+
+        // Allocate and zero the grid
+        SZ const grid_size = (SZ)(data.grid_width * data.grid_height);
+        data.wall_grid = mmpa(U8*, grid_size * sizeof(U8));
+        for (SZ i = 0; i < grid_size; i++) {
+            data.wall_grid[i] = 0;
+        }
+
+        // Mark wall cells
+        for (SZ i = 0; i < data.collision_walls.count; i++) {
+            IDungeonCollisionWall const *wall = &data.collision_walls.data[i];
+            S32 const grid_x = (S32)(wall->position.x / tile_size);
+            S32 const grid_z = (S32)(wall->position.z / tile_size);
+            S32 const local_x = grid_x - data.grid_min_x;
+            S32 const local_z = grid_z - data.grid_min_z;
+
+            if (local_x >= 0 && local_x < data.grid_width && local_z >= 0 && local_z < data.grid_height) {
+                data.wall_grid[local_z * data.grid_width + local_x] = 1;
+            }
+        }
+    }
+
+    // Generate combined model with multiple meshes from all tiles
 
     if (tile_count > 0) {
-        SZ const MAX_TILES_PER_MESH = 2700; // ~65k vertices max per mesh
+        SZ const MAX_TILES_PER_MESH = 300; // Smaller chunks for better frustum culling (face culling fixed for boundaries)
 
         // Sort tiles by spatial location to keep adjacent tiles in same mesh
         // This prevents seams between meshes at tile boundaries
@@ -200,6 +251,10 @@ IDungeonData static i_parse_dungeon(C8 const* filepath) {
         for (SZ i = 0; i < mesh_count; i++) {
             data.combined_model.meshMaterial[i] = 0;
         }
+
+        // Allocate bounding boxes for frustum culling
+        data.mesh_bounding_boxes = mmpa(OrientedBoundingBox*, mesh_count * sizeof(OrientedBoundingBox));
+        data.mesh_bbox_count = mesh_count;
 
         // Create each mesh
         for (SZ mesh_idx = 0; mesh_idx < mesh_count; mesh_idx++) {
@@ -259,8 +314,8 @@ IDungeonData static i_parse_dungeon(C8 const* filepath) {
                 BOOL right_exposed  = true;
                 BOOL left_exposed   = true;
 
-                // Check adjacency (simplified - just check if there's another tile at adjacent position)
-                for (SZ other_idx = start_tile; other_idx < end_tile; other_idx++) {
+                // Check adjacency across ALL tiles (not just current mesh) for proper face culling at boundaries
+                for (SZ other_idx = 0; other_idx < tile_count; other_idx++) {
                     if (other_idx == tile_idx) { continue; }
                     IDungeonTileData* other = &data.tiles.data[other_idx];
 
@@ -402,6 +457,44 @@ IDungeonData static i_parse_dungeon(C8 const* filepath) {
 
             // Upload this mesh to GPU
             UploadMesh(mesh, false);
+
+            // Calculate bounding box for this mesh
+            Vector3 min_bounds = {F32_MAX, F32_MAX, F32_MAX};
+            Vector3 max_bounds = {-F32_MAX, -F32_MAX, -F32_MAX};
+
+            for (SZ tile_idx = start_tile; tile_idx < end_tile; tile_idx++) {
+                IDungeonTileData* tile = &data.tiles.data[tile_idx];
+                Vector3 const pos = tile->position;
+                Vector3 const size = tile->size;
+
+                // Calculate tile bounds
+                Vector3 const tile_min = {pos.x - (size.x/2), pos.y, pos.z - (size.z/2)};
+                Vector3 const tile_max = {pos.x + (size.x/2), pos.y + size.y, pos.z + (size.z/2)};
+
+                // Update mesh bounds
+                min_bounds.x = glm::min(min_bounds.x, tile_min.x);
+                min_bounds.y = glm::min(min_bounds.y, tile_min.y);
+                min_bounds.z = glm::min(min_bounds.z, tile_min.z);
+                max_bounds.x = glm::max(max_bounds.x, tile_max.x);
+                max_bounds.y = glm::max(max_bounds.y, tile_max.y);
+                max_bounds.z = glm::max(max_bounds.z, tile_max.z);
+            }
+
+            // Create axis-aligned OBB
+            data.mesh_bounding_boxes[mesh_idx].center = {
+                (min_bounds.x + max_bounds.x) * 0.5F,
+                (min_bounds.y + max_bounds.y) * 0.5F,
+                (min_bounds.z + max_bounds.z) * 0.5F
+            };
+            data.mesh_bounding_boxes[mesh_idx].extents = {
+                (max_bounds.x - min_bounds.x) * 0.5F,
+                (max_bounds.y - min_bounds.y) * 0.5F,
+                (max_bounds.z - min_bounds.z) * 0.5F
+            };
+            // Axis-aligned, so axes are identity
+            data.mesh_bounding_boxes[mesh_idx].axes[0] = {1.0F, 0.0F, 0.0F};
+            data.mesh_bounding_boxes[mesh_idx].axes[1] = {0.0F, 1.0F, 0.0F};
+            data.mesh_bounding_boxes[mesh_idx].axes[2] = {0.0F, 0.0F, 1.0F};
         }
     }
 
@@ -457,6 +550,8 @@ BOOL static i_is_position_too_close_to_wall(Vector3 pos) {
 }
 
 void dungeon_update(F32 dt) {
+    unused(dt);
+
     Vector3 static prev_player_pos  = {0, 0, 0};
     Vector3 static initialized      = {0, 0, 0};
     F32 static accumulated_distance = 0.0F;
@@ -540,15 +635,82 @@ void dungeon_update(F32 dt) {
     was_moving      = is_moving;
 }
 
+BOOL dungeon_is_entity_occluded(EID entity_id) {
+    if (!g_dungeon_loaded) { return false; }
+
+    Camera3D const *cam = c3d_get_ptr();
+    Vector3 const camera_pos = cam->position;
+    Vector3 const entity_pos = g_world->position[entity_id];
+
+    F32 const tile_size = DUNGEON_TILE_SIZE;
+
+    // Convert to grid coordinates
+    S32 const x0 = (S32)(camera_pos.x / tile_size);
+    S32 const z0 = (S32)(camera_pos.z / tile_size);
+    S32 const x1 = (S32)(entity_pos.x / tile_size);
+    S32 const z1 = (S32)(entity_pos.z / tile_size);
+
+    // Bresenham's line algorithm to traverse grid
+    S32 dx = math_abs_s32(x1 - x0);
+    S32 dz = math_abs_s32(z1 - z0);
+    S32 sx = (x0 < x1) ? 1 : -1;
+    S32 sz = (z0 < z1) ? 1 : -1;
+    S32 err = dx - dz;
+
+    S32 x = x0;
+    S32 z = z0;
+
+    while (true) {
+        // Reached the entity's tile
+        if (x == x1 && z == z1) { break; }
+
+        // Skip the starting tile (camera position)
+        if (!(x == x0 && z == z0)) {
+            // Fast grid lookup - O(1) instead of O(N)
+            S32 const local_x = x - g_dungeon_data.grid_min_x;
+            S32 const local_z = z - g_dungeon_data.grid_min_z;
+
+            // Check bounds and wall presence
+            if (local_x >= 0 && local_x < g_dungeon_data.grid_width &&
+                local_z >= 0 && local_z < g_dungeon_data.grid_height) {
+                if (g_dungeon_data.wall_grid[local_z * g_dungeon_data.grid_width + local_x]) {
+                    return true; // Entity is occluded by wall
+                }
+            }
+        }
+
+        // Bresenham step
+        S32 const e2 = 2 * err;
+        if (e2 > -dz) {
+            err -= dz;
+            x += sx;
+        }
+        if (e2 < dx) {
+            err += dx;
+            z += sz;
+        }
+    }
+
+    return false; // No walls blocking line of sight
+}
+
 void dungeon_draw_3d_sketch() {
     if (!g_dungeon_loaded) {
         g_dungeon_data = i_parse_dungeon("assets/dungeons/example.dun");
         g_dungeon_loaded = true;
     }
 
-    // Draw the combined model (which contains multiple meshes)
+    // Draw each mesh individually with frustum culling
     if (g_dungeon_data.combined_model.meshCount > 0) {
-        d3d_model_rl(&g_dungeon_data.combined_model, Vector3Zero(), 1.0F, WHITE);
+        Matrix transform = MatrixIdentity();
+        Material *material = &g_dungeon_data.combined_model.materials[0];
+
+        for (S32 i = 0; i < g_dungeon_data.combined_model.meshCount; i++) {
+            // Frustum cull this mesh
+            if (c3d_is_obb_in_frustum(g_dungeon_data.mesh_bounding_boxes[i])) {
+                d3d_mesh_rl(&g_dungeon_data.combined_model.meshes[i], material, &transform);
+            }
+        }
     }
 }
 
@@ -561,20 +723,60 @@ void dungeon_draw_2d_dbg() {
     Color const wall_color     = g_render.sketch.minor_color;
     Color const floor_color    = g_render.sketch.major_color;
 
-    // Draw tiles - just go back to individual tiles, batching isn't worth the complexity
+    // Merge adjacent tiles into larger rectangles to reduce draw calls
+    Rectangle *merged_rects = mmta(Rectangle*, g_dungeon_data.tiles.count * sizeof(Rectangle));
+    Color *merged_colors = mmta(Color*, g_dungeon_data.tiles.count * sizeof(Color));
+    SZ merged_count = 0;
+
     for (SZ i = 0; i < g_dungeon_data.tiles.count; i++) {
         IDungeonTileData *tile = &g_dungeon_data.tiles.data[i];
 
-        Vector2 const screen_pos = {
-            map_pos.x + ((tile->position.x / DUNGEON_TILE_SIZE) * tile_screen_size),
-            map_pos.y + ((tile->position.z / DUNGEON_TILE_SIZE) * tile_screen_size),
+        if (tile->type != DUNGEON_TILE_TYPE_BASIC_FLOOR && tile->type != DUNGEON_TILE_TYPE_BASIC_WALL) {
+            continue;
+        }
+
+        Color const color = (tile->type == DUNGEON_TILE_TYPE_BASIC_FLOOR) ? floor_color : wall_color;
+
+        F32 const start_x = tile->position.x;
+        F32 const z = tile->position.z;
+
+        // Merge horizontally: find consecutive tiles on same row with same type
+        SZ run_length = 1;
+        while (i + run_length < g_dungeon_data.tiles.count) {
+            IDungeonTileData *next = &g_dungeon_data.tiles.data[i + run_length];
+
+            // Same type, same row, consecutive X position?
+            if (next->type == tile->type &&
+                next->position.z == z &&
+                next->position.x == start_x + ((F32)run_length * DUNGEON_TILE_SIZE)) {
+                run_length++;
+            } else {
+                break;
+            }
+        }
+
+        // Create merged rectangle
+        Vector2 const screen_start = {
+            map_pos.x + ((start_x / DUNGEON_TILE_SIZE) * tile_screen_size),
+            map_pos.y + ((z / DUNGEON_TILE_SIZE) * tile_screen_size),
         };
 
-        if (tile->type == DUNGEON_TILE_TYPE_BASIC_FLOOR) {
-            d2d_rectangle_rec({screen_pos.x, screen_pos.y, tile_screen_size, tile_screen_size}, floor_color);
-        } else if (tile->type == DUNGEON_TILE_TYPE_BASIC_WALL) {
-            d2d_rectangle_rec({screen_pos.x, screen_pos.y, tile_screen_size, tile_screen_size}, wall_color);
-        }
+        merged_rects[merged_count] = {
+            screen_start.x,
+            screen_start.y,
+            tile_screen_size * (F32)run_length,
+            tile_screen_size
+        };
+        merged_colors[merged_count] = color;
+        merged_count++;
+
+        // Skip the tiles we just merged
+        i += run_length - 1;
+    }
+
+    // Draw merged rectangles
+    for (SZ i = 0; i < merged_count; i++) {
+        d2d_rectangle_rec(merged_rects[i], merged_colors[i]);
     }
 
     // Camera frustum visualization
@@ -620,4 +822,34 @@ void dungeon_draw_2d_dbg() {
         cam_screen_pos.y + (forward.z * tile_screen_size * 0.1F),
     };
     d2d_line(cam_screen_pos, cam_forward_screen, WHITE);
+
+    // Draw entities
+    for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
+        EID const i = g_world->active_entities[idx];
+        if (!ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_USE)) { continue; }
+
+        Vector3 const entity_pos = g_world->position[i];
+
+        // Convert entity position to screen coordinates
+        Vector2 const entity_screen_pos = {
+            map_pos.x + ((entity_pos.x / DUNGEON_TILE_SIZE) * tile_screen_size),
+            map_pos.y + ((entity_pos.z / DUNGEON_TILE_SIZE) * tile_screen_size),
+        };
+
+        // Check frustum first (cheap flag check)
+        BOOL const in_frustum = ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM);
+
+        // Color based on occlusion and frustum status
+        Color entity_color;
+        if (!in_frustum) {
+            entity_color = GRAY; // Not in frustum - skip expensive occlusion check
+        } else {
+            // Only check occlusion for entities in frustum
+            BOOL const is_occluded = dungeon_is_entity_occluded(i);
+            entity_color = is_occluded ? RED : GREEN;
+        }
+
+        // Draw entity as a circle
+        d2d_circle(entity_screen_pos, 3.0F, entity_color);
+    }
 }
