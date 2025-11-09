@@ -174,7 +174,7 @@ void static inline i_d3d_model_instanced_impl(AModel *model, Matrix *transforms,
     Matrix mat_view_proj = g_render.cameras.c3d.mat_view_proj;
     SetShaderValueMatrix(g_render.model_instanced_shader.shader->base, g_render.model_instanced_shader.mvp_loc, mat_view_proj);
 
-    // Convert colors to float array for GPU
+    // Convert colors to F32 array for GPU
     F32 *instance_colors = mmta(F32 *, instance_count * 4 * sizeof(F32));
     for (SZ j = 0; j < instance_count; ++j) {
         instance_colors[(j * 4) + 0] = (F32)tints[j].r / 255.0F;

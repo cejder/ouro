@@ -159,7 +159,7 @@ SKIP_OTHER_INPUT:
     PP(screen_fade_update(dt));
 
     PP(player_update(dt, dtu));
-    PP(dungeon_update(&g_player, dt));
+    PP(dungeon_update(dt));
     PP(world_update(dt, dtu));
     PP(hud_update(dt, dtu));
 
