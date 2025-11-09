@@ -211,7 +211,7 @@ Vector3 static inline i_calculate_separation_force(EID id) {
                         F32 const inv_separation_radius_sqr = 1.0F / separation_radius_sqr;
                         F32 const strength_sqr              = (separation_radius_sqr - distance_sqr) * inv_separation_radius_sqr;
 
-                        // Fast inverse square root for normalization
+                        // Square root for normalization
                         F32 const inv_distance = glm::inversesqrt(distance_sqr);
                         separation.x += diff_x * inv_distance * strength_sqr;
                         separation.z += diff_z * inv_distance * strength_sqr;
@@ -243,7 +243,7 @@ Vector3 static inline i_calculate_separation_force(EID id) {
         F32 const inv_player_separation_radius_sqr = 1.0F / player_separation_radius_sqr;
         F32 const player_strength_sqr = (player_separation_radius_sqr - player_distance_sqr) * inv_player_separation_radius_sqr;
 
-        // Fast inverse square root for normalization
+        // Square root for normalization
         F32 const inv_player_distance = glm::inversesqrt(player_distance_sqr);
         separation.x += player_diff_x * inv_player_distance * player_strength_sqr;
         separation.z += player_diff_z * inv_player_distance * player_strength_sqr;
