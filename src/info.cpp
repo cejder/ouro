@@ -1,6 +1,8 @@
 #include "info.hpp"
+#include "arg.hpp"
 #include "audio.hpp"
 #include "log.hpp"
+#include "std.hpp"
 #include "string.hpp"
 
 #include <mimalloc.h>
@@ -224,11 +226,11 @@ void static i_print_audio() {
 
 VersionInfo info_create_version_info(U8 major, U8 minor, U8 patch, C8 const *build_type) {
     VersionInfo version_info = {};
-    version_info.major      = major;
-    version_info.minor      = minor;
-    version_info.patch      = patch;
-    version_info.c          = PS("%d.%d.%d %s", major, minor, patch, build_type)->c;
-    version_info.build_type = build_type;
+    version_info.major       = major;
+    version_info.minor       = minor;
+    version_info.patch       = patch;
+    version_info.build_type  = build_type;
+    version_info.c           = PS("%d.%d.%d (%s, %s)", major, minor, patch, build_type, args_get_string("Platform"))->c;
     return version_info;
 }
 

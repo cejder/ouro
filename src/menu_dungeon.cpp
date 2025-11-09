@@ -115,9 +115,7 @@ C8 const *menu_extra_dungeon_func_get_value(void *cb_data, SZ idx, Color *color_
 void menu_extra_dungeon_func_yes(void *_cb_data) {
     auto selected_entry = *(SZ *)_cb_data;
 
-    BOOL const shift_down = is_mod(I_MODIFIER_SHIFT);
-    SZ const count        = shift_down ? 100 : 1;
-    BOOL const report     = !shift_down;
+    SZ const count        = 1000;
 
     switch (selected_entry) {
         case MENU_CHOICE_NOCLIP: {
@@ -141,10 +139,10 @@ void menu_extra_dungeon_func_yes(void *_cb_data) {
             menu_extra_toggle_data_cb_toggle(&toggle_data);
         } break;
         case MENU_CHOICE_ADD_REMOVE_RANDOM_NPC: {
-            entity_spawn_random_npc_around_camera(count, report);
+            entity_spawn_random_npc_around_camera(count, false);
         } break;
         case MENU_CHOICE_ADD_REMOVE_VEGETATION: {
-            entity_spawn_random_vegetation_on_terrain(g_world->base_terrain, count, report);
+            entity_spawn_random_vegetation_on_terrain(g_world->base_terrain, count, false);
         } break;
         case MENU_CHOICE_RANDOMLY_ROTATE_ENTITIES: {
             world_randomly_rotate_entities();
