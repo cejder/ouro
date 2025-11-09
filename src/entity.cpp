@@ -472,7 +472,7 @@ BOOL entity_collides_other(EID id, EID other_id) {
 }
 
 BOOL entity_collides_player(EID id) {
-    Vector3 const player_position = g_world->player.camera3d.position;
+    Vector3 const player_position = g_player.cameras[g_scenes.current_scene_type].position;
     F32 constexpr min_distance    = PLAYER_RADIUS * 10.0F;
     Vector3 const position        = g_world->position[id];
     OrientedBoundingBox const obb = g_world->obb[id];
@@ -484,7 +484,7 @@ BOOL entity_collides_player(EID id) {
 }
 
 F32 entity_distance_to_player(EID id) {
-    return Vector3Distance(g_world->position[id], g_world->player.camera3d.position);
+    return Vector3Distance(g_world->position[id], g_player.cameras[g_scenes.current_scene_type].position);
 }
 
 void entity_move(EID id, MoveDirection direction, F32 length) {

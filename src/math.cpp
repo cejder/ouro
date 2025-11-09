@@ -472,18 +472,18 @@ Vector3 math_keep_entity_on_ground(ATerrain *terrain, Vector3 position, F32 dt, 
     return position;
 }
 
-void math_keep_player_on_ground(ATerrain *terrain, F32 dt, Player *player) {
+void math_keep_player_on_ground(ATerrain *terrain, F32 dt) {
     if (c_debug__noclip) { return; }
 
-    Camera3D *player_camera = &player->camera3d;
+    Camera3D *player_camera = &g_player.cameras[g_scenes.current_scene_type];
 
     Vector3 const new_pos =
         math_keep_entity_on_ground(terrain,
                                    player_camera->position,
                                    dt,
-                                   &player->keep_on_ground_state.fall_velocity,
-                                   &player->keep_on_ground_state.last_height,
-                                   &player->keep_on_ground_state.ground_pos,
+                                   &g_player.keep_on_ground_state.fall_velocity,
+                                   &g_player.keep_on_ground_state.last_height,
+                                   &g_player.keep_on_ground_state.ground_pos,
                                    PLAYER_HEIGHT_TO_EYES);
 
     F32 const height_diff    = new_pos.y - player_camera->position.y;

@@ -156,7 +156,7 @@ void edit_update(F32 dt, F32 dtu) {
     // Calculate ray collision for mouse interactions
     if (mouse_left_down || mouse_right_pressed) {
         Vector2 const mouse_pos = mouse_side_down ? render_get_center_of_window() : input_get_mouse_position_screen();
-        Ray const ray           = GetScreenToWorldRay(mouse_pos, g_world->player.camera3d);
+        Ray const ray           = GetScreenToWorldRay(mouse_pos, g_player.cameras[g_scenes.current_scene_type]);
         collision               = GetRayCollisionMesh(ray, g_world->base_terrain->mesh, g_world->base_terrain->transform);
     }
 

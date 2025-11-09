@@ -75,11 +75,11 @@ void c3d_cb_toggle(void *data) {
     if (active_cam == cam) {
         c3d_set(c3d_get_default_ptr());
         mio("Switching to \\ouc{#ffff00ff}default camera", WHITE);
-        g_world->player.non_player_camera = true;
+        g_player.non_player_camera = true;
     } else {
         c3d_set(cam);
         mio("Switching to \\ouc{#00ff00ff}player camera", WHITE);
-        g_world->player.non_player_camera = false;
+        g_player.non_player_camera = false;
     }
 }
 

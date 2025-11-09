@@ -484,14 +484,14 @@ void dungeon_update(Player *player, F32 dt) {
 
     // Reset position tracking when coming out of noclip
     if (was_noclip) {
-        prev_player_pos      = player->camera3d.position;
+        prev_player_pos      = player->cameras[g_scenes.current_scene_type].position;
         was_moving           = false;
         accumulated_distance = 0.0F;
         was_noclip           = false;
         return;
     }
 
-    Vector3 const current_pos = player->camera3d.position;
+    Vector3 const current_pos = player->cameras[g_scenes.current_scene_type].position;
     Vector3 const player_size = {PLAYER_RADIUS * 2, PLAYER_HEIGHT_TO_EYES, PLAYER_RADIUS * 2};
 
     // Initialize previous position on first call
@@ -508,7 +508,7 @@ void dungeon_update(Player *player, F32 dt) {
 
     // Play footstep on movement start
     if (is_moving && !was_moving && i_is_position_on_floor(current_pos)) {
-        player_step(player);
+        player_step();
         accumulated_distance = 0.0F;
     }
 
@@ -521,7 +521,7 @@ void dungeon_update(Player *player, F32 dt) {
     accumulated_distance += movement_distance;
     if (accumulated_distance >= FOOTSTEP_DISTANCE_THRESHOLD) {
         if (i_is_position_on_floor(current_pos)) {
-            player_step(player);
+            player_step();
         }
         accumulated_distance = 0.0F;
     }
@@ -547,8 +547,8 @@ void dungeon_update(Player *player, F32 dt) {
 
     // Apply the final position
     Vector3 const pos_delta   = Vector3Subtract(new_position, current_pos);
-    player->camera3d.position = Vector3Add(player->camera3d.position, pos_delta);
-    player->camera3d.target   = Vector3Add(player->camera3d.target, pos_delta);
+    player->cameras[g_scenes.current_scene_type].position = Vector3Add(player->cameras[g_scenes.current_scene_type].position, pos_delta);
+    player->cameras[g_scenes.current_scene_type].target   = Vector3Add(player->cameras[g_scenes.current_scene_type].target, pos_delta);
 
     prev_player_pos = new_position;
     was_moving      = is_moving;

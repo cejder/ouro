@@ -33,6 +33,8 @@ void world_init() {
     entity_init();
     grid_init({A_TERRAIN_DEFAULT_SIZE, A_TERRAIN_DEFAULT_SIZE}); // TODO: We need to make sure that we set the proper size. Right now we are defaulting.
     g_world_state.initialized = true;
+
+    player_init();
 }
 
 // TODO: This basically is just a retarded dumb idea. We are technically not reseting anything reliably idk man. We should set flags for sub things like talker
@@ -426,7 +428,7 @@ void world_vegetation_collision() {
     // NOTE: This is me after a few months(?). I don't understand the 2nd half of the sentence. I think I was trying to be funny. I don't know.
     // NOTE: Now optimized to use grid-based spatial queries instead of brute-force O(n) loop.
 
-    Vector3 const player_position  = g_world->player.camera3d.position;
+    Vector3 const player_position  = g_player.cameras[g_scenes.current_scene_type].position;
     F32 constexpr collision_radius = PLAYER_RADIUS * 12.0F;
 
     EID static nearby_entities[GRID_NEARBY_ENTITIES_MAX];
@@ -477,8 +479,8 @@ void world_set_entity_triangle_collision(EID id, AModel *model, Vector3 offset) 
 BOOL world_triangle_mesh_collision() {
     if (c_debug__noclip) { return false; }
 
-    Vector3 const player_position   = g_world->player.camera3d.position;
-    Vector3 const previous_position = g_world->player.previous_position;
+    Vector3 const player_position   = g_player.cameras[g_scenes.current_scene_type].position;
+    Vector3 const previous_position = g_player.previous_position;
     F32 constexpr player_radius     = PLAYER_RADIUS;
     F32 constexpr player_height     = PLAYER_HEIGHT_TO_EYES;
 
@@ -697,23 +699,23 @@ BOOL world_triangle_mesh_collision() {
             wall_correction.x *= scale;
             wall_correction.z *= scale;
         }
-        g_world->player.camera3d.position.x += wall_correction.x;
-        g_world->player.camera3d.position.z += wall_correction.z;
+        g_player.cameras[g_scenes.current_scene_type].position.x += wall_correction.x;
+        g_player.cameras[g_scenes.current_scene_type].position.z += wall_correction.z;
     }
 
     // Apply floor snapping
     if (found_floor) {
-        g_world->player.camera3d.position.y = closest_floor_y + player_radius;
+        g_player.cameras[g_scenes.current_scene_type].position.y = closest_floor_y + player_radius;
     }
 
     // Store position for next frame's swept collision (AFTER all corrections!)
-    g_world->player.previous_position = g_world->player.camera3d.position;
+    g_player.previous_position = g_player.cameras[g_scenes.current_scene_type].position;
 
     return found_floor;
 }
 
 F32 world_get_distance_to_player(Vector3 position) {
-    return Vector3Distance(position, g_world->player.camera3d.position);
+    return Vector3Distance(position, g_player.cameras[g_scenes.current_scene_type].position);
 }
 
 void world_randomly_rotate_entities() {

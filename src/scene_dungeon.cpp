@@ -34,26 +34,6 @@ struct State {
     Scene *scene;
 } static s = {};
 
-void static i_reset_cameras(void *data) {
-    BOOL const during_enter = (BOOL)(data);
-
-    Camera3D *c = &g_world->player.camera3d;
-    c->position   = PLAYER_POSITION;
-    c->target     = PLAYER_LOOK_AT;
-    c->up         = {0.0F, 1.0F, 0.0F};
-    c->fovy       = 80.0F;
-    c->projection = CAMERA_PERSPECTIVE;
-
-    c = c3d_get_default_ptr();
-    c->position   = PLAYER_POSITION;
-    c->target     = PLAYER_LOOK_AT;
-    c->up         = {0.0F, 1.0F, 0.0F};
-    c->fovy       = 80.0F;
-    c->projection = CAMERA_PERSPECTIVE;
-
-    if (!during_enter) { mi("Cameras reset", WHITE); }
-}
-
 void static i_toggle_fn(void *data) {
     auto *toggle_data = (MenuExtraToggleData *)data;
     *toggle_data->toggle = !*toggle_data->toggle;
@@ -64,24 +44,15 @@ void static i_toggle_camera(void *data) {
     unused(data);
 
     Camera3D const *camera = c3d_get_ptr();
-    if (camera == &g_world->player.camera3d) {
+    if (camera == &g_player.cameras[SCENE_DUNGEON]) {
         c3d_set(c3d_get_default_ptr());
         mio("Switching to \\ouc{#ffff00ff}default camera", WHITE);
-        g_world->player.non_player_camera = true;
+        g_player.non_player_camera = true;
     } else {
-        c3d_set(&g_world->player.camera3d);
+        c3d_set(&g_player.cameras[SCENE_DUNGEON]);
         mio("Switching to \\ouc{#00ff00ff}player camera", WHITE);
-        g_world->player.non_player_camera = false;
+        g_player.non_player_camera = false;
     }
-}
-
-void static i_dbg_ui_cb(void *data) {
-    unused(data);
-
-    AFont *font_s = asset_get_font(c_debug__small_font.cstr, c_debug__small_font_size);
-
-    dwis(5.0F);
-    dwib("Reset Camera", font_s, NAYBEIGE, DBG_REF_BUTTON_SIZE, i_reset_cameras, (void *)false);
 }
 
 SCENE_INIT(dungeon) {
@@ -112,7 +83,7 @@ SCENE_INIT(dungeon) {
               5.5F,
               200.00F - ((F32)i * (5.0F * math_sin_f32((F32)i))),
           };
-          EID const e = entity_create(ENTITY_TYPE_NPC, word_generate_name()->c, pos, 0.0F, {5.0F, 5.0F, 5.0F}, RED, "cesium.m3d");
+          EID const e = entity_create(ENTITY_TYPE_NPC, word_generate_name()->c, pos, 0.0F, {1.5F, 1.5F, 1.5F}, color_random_vibrant(), "greenman.glb");
           pos.y = math_get_terrain_height(g_world->base_terrain, pos.x, pos.z);
           entity_set_position(e, pos);
           entity_enable_actor(e);
@@ -127,20 +98,13 @@ SCENE_ENTER(dungeon) {
 
     // hud_init(5.0F, 12.5F, 5.0F, 5.0F);
     hud_init(0.0F, 0.0F, 0.0F, 0.0F);
+    player_set_camera(SCENE_DUNGEON);
 
-    dbg_add_cb(DBG_WID_CUSTOM_0, {i_dbg_ui_cb, nullptr});
-
-    player_init(&g_world->player, PLAYER_POSITION, PLAYER_LOOK_AT);
-    player_activate_camera(&g_world->player);
-
-    i_reset_cameras((void *)true);
-    c3d_copy_from_other(c3d_get_default_ptr(), &g_world->player.camera3d);
+    lighting_default_lights_setup();
 
     audio_play(ACG_MUSIC, "drone.ogg");
 
-    g_world->player.non_player_camera = false;
-
-    lighting_disable_all_lights();
+    g_player.non_player_camera = false;
 
     screen_fade_init(SCREEN_FADE_TYPE_FADE_OUT, SCREEN_FADE_DEFAULT_DURATION, g_render.accent_color, EASE_IN_OUT_SINE, nullptr);
 }
@@ -151,17 +115,16 @@ SCENE_RESUME(dungeon) {
 }
 
 SCENE_EXIT(dungeon) {
-    dbg_remove_cb(DBG_WID_CUSTOM_0, {i_dbg_ui_cb, nullptr});
     audio_reset_all();
 }
 
 SCENE_UPDATE(dungeon) {
     if (c_console__enabled) { goto SKIP_OTHER_INPUT;  } // Early skip for console
 
-    if (is_pressed(IA_DBG_RESET_CAMERA))                   { i_reset_cameras((void*)false);                                                               }
+    if (is_pressed(IA_DBG_RESET_CAMERA))                   { player_init();                                                                               }
     if (is_pressed(IA_DBG_TOGGLE_NOCLIP))                  { MenuExtraToggleData toggle_data = { &c_debug__noclip, "Noclip" }; i_toggle_fn(&toggle_data); }
     if (is_pressed(IA_DBG_TOGGLE_CAMERA))                  { i_toggle_camera(nullptr);                                                                    }
-    if (is_pressed(IA_DBG_PULL_DEFAULT_CAM_TO_PLAYER_CAM)) { c3d_pull_default_to_other(&g_world->player.camera3d);                                        }
+    if (is_pressed(IA_DBG_PULL_DEFAULT_CAM_TO_PLAYER_CAM)) { c3d_pull_default_to_other(&g_player.cameras[SCENE_DUNGEON]);                                        }
     if (is_pressed(IA_OPEN_OVERLAY_MENU))                  { scenes_push_overlay_scene(SCENE_OVERLAY_MENU);                                               }
     if (is_pressed(IA_DBG_OPEN_TEST_MENU))                 { s.menu.enabled = !s.menu.enabled;                                                            }
 
@@ -176,11 +139,14 @@ SKIP_OTHER_INPUT:
     F32 dt_for_debug = dt;
     if (c_debug__enabled) { dt_for_debug = dtu; }
 
-    if (g_world->player.non_player_camera) {
+    if (g_player.non_player_camera) {
         PP(input_camera_input_update(dt_for_debug, c3d_get_ptr(), c_debug__noclip_move_speed));
     } else {
-        PP(player_input_update(&g_world->player, dt_for_debug, dtu));
+        PP(player_input_update(dt_for_debug, dtu));
     }
+
+    // Early return if scene changed (e.g., tab to switch scenes)
+    if (g_scenes.next_scene_type != SCENE_NONE) { return; }
 
     // World state recording controls
     if (is_pressed(IA_DBG_WORLD_STATE_RECORD))   { world_recorder_toggle_record_state(); }
@@ -192,8 +158,8 @@ SKIP_OTHER_INPUT:
     g_fog.density = c_render__dungeon_fog_density;
     PP(screen_fade_update(dt));
 
-    PP(player_update(&g_world->player, g_world, dt, dtu));
-    PP(dungeon_update(&g_world->player, dt));
+    PP(player_update(dt, dtu));
+    PP(dungeon_update(&g_player, dt));
     PP(world_update(dt, dtu));
     PP(hud_update(dt, dtu));
 
@@ -207,7 +173,7 @@ SKIP_OTHER_INPUT:
 
 SCENE_DRAW(dungeon) {
     Vector2 const res = render_get_render_resolution();;
-    Camera3D *other_camera = g_world->player.non_player_camera ? &g_world->player.camera3d : c3d_get_default_ptr();
+    Camera3D *other_camera = g_player.non_player_camera ? &g_player.cameras[SCENE_DUNGEON] : c3d_get_default_ptr();
 
     render_set_render_mode_order_for_frame((RenderModeOrderTarget){
         RMODE_3D_SKETCH,
@@ -238,14 +204,14 @@ SCENE_DRAW(dungeon) {
     RMODE_END;
 
     RMODE_BEGIN(RMODE_3D) {
-        if (!g_world->player.non_player_camera) { player_draw_3d_hud(&g_world->player); }
+        if (!g_player.non_player_camera) { player_draw_3d_hud(); }
 
         world_draw_3d();
     }
     RMODE_END;
 
     RMODE_BEGIN(RMODE_3D_HUD_SKETCH) {
-        if (!g_world->player.non_player_camera) { player_draw_3d_hud(&g_world->player); }
+        if (!g_player.non_player_camera) { player_draw_3d_hud(); }
 
         world_draw_3d_hud();
     }
@@ -253,7 +219,7 @@ SCENE_DRAW(dungeon) {
 
     RMODE_BEGIN(RMODE_3D_DBG) {
         if (c_debug__enabled) {
-            if (g_world->player.non_player_camera) { player_draw_3d_dbg(&g_world->player); }
+            if (g_player.non_player_camera) { player_draw_3d_dbg(); }
             world_draw_3d_dbg();
             lighting_draw_3d_dbg();
             render_draw_3d_dbg(other_camera);
@@ -270,7 +236,7 @@ SCENE_DRAW(dungeon) {
     RMODE_BEGIN(RMODE_2D_HUD) {
         world_draw_2d_hud();
 
-        if (g_world->player.non_player_camera) {
+        if (g_player.non_player_camera) {
             d2d_rectangle_v({}, res, Fade(MAGENTA, 0.25F));
             C8 const *text = "NON-PLAYER CAMERA ACTIVE";
             AFont *font = asset_get_font("spleen-8x16", 16);

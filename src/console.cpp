@@ -316,8 +316,8 @@ BOOL con_cmd_dump(ConCMD const *cmd) {
     asset_print_state();
 
     console_draw_separator();
-    lln("Player_Position: %.2f %.2f %.2f", g_world->player.camera3d.position.x, g_world->player.camera3d.position.y, g_world->player.camera3d.position.z);
-    lln("Player_Target: %.2f %.2f %.2f", g_world->player.camera3d.target.x, g_world->player.camera3d.target.y, g_world->player.camera3d.target.z);
+    lln("Player_Position: %.2f %.2f %.2f", g_player.cameras[g_scenes.current_scene_type].position.x, g_player.cameras[g_scenes.current_scene_type].position.y, g_player.cameras[g_scenes.current_scene_type].position.z);
+    lln("Player_Target: %.2f %.2f %.2f", g_player.cameras[g_scenes.current_scene_type].target.x, g_player.cameras[g_scenes.current_scene_type].target.y, g_player.cameras[g_scenes.current_scene_type].target.z);
 
     if (g_world->selected_id != INVALID_EID) {
         console_draw_separator();

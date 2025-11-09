@@ -4,6 +4,7 @@
 #include "ease.hpp"
 #include "entity.hpp"
 #include "math.hpp"
+#include "scene.hpp"
 
 #define PLAYER_RADIUS 2.0F
 #define PLAYER_HEIGHT_TO_EYES 2.0F
@@ -58,7 +59,7 @@ struct Player {
 
     BOOL non_player_camera;
     BOOL on_triangle_floor;
-    Camera3D camera3d;
+    Camera3D cameras[SCENE_COUNT];
     Vector3 previous_position;  // For swept collision detection
     OrientedBoundingBox obb;
     BOOL in_frustum;
@@ -66,10 +67,13 @@ struct Player {
     ATexture *debug_icon;
 };
 
-void player_init(Player *p, Vector3 position, Vector3 target);
-void player_update(Player *p, World *world, F32 dt, F32 dtu);
-void player_activate_camera(Player *p);
-void player_input_update(Player *p, F32 dt, F32 dtu);
-void player_draw_3d_hud(Player *p);
-void player_draw_3d_dbg(Player *p);
-void player_step(Player *p);
+Player extern g_player;
+
+void player_init();
+void player_update(F32 dt, F32 dtu);
+void player_input_update(F32 dt, F32 dtu);
+void player_set_camera(SceneType type);
+void player_draw_3d_hud();
+void player_draw_3d_dbg();
+void player_step();
+void player_dump_cameras();

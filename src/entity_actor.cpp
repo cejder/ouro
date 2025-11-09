@@ -230,7 +230,7 @@ Vector3 static inline i_calculate_separation_force(EID id) {
 
     // Separation from player
     // NOTE: We want a more pronounced reaction here, people don't stop right before you hitting you.
-    Vector3 const player_position = g_world->player.camera3d.position;
+    Vector3 const player_position = g_player.cameras[g_scenes.current_scene_type].position;
     F32 const player_radius       = PLAYER_RADIUS * 2.0F;
 
     // Calculate separation distance based on both entity's and player's actual sizes

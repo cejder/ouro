@@ -1,6 +1,7 @@
 #include "scene.hpp"
 #include "assert.hpp"
 #include "log.hpp"
+#include "player.hpp"
 #include "profiler.hpp"
 #include "render.hpp"
 #include "std.hpp"

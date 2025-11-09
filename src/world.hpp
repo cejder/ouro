@@ -29,7 +29,6 @@ struct TriangleMeshCollider {
 struct World {
     SZ visible_vertex_count;
     ATerrain *base_terrain;
-    Player player;
     EID selected_id;
     U32 active_ent_count;
     U32 entity_type_counts[ENTITY_TYPE_COUNT];

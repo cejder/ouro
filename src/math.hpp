@@ -10,7 +10,6 @@
 
 fwd_decl(AFont);
 fwd_decl(ATerrain);
-fwd_decl(Player);
 fwd_decl(World);
 
 #define GRAVITY 50.0F  // TODO: We should change the scale of stuff so we can later change this to 9.81F.
@@ -44,7 +43,7 @@ F32 math_obb_get_top_y(OrientedBoundingBox obb);
 void math_fill_transform_matrix(Matrix *dst, Vector3 position, Vector3 rotation, Vector3 scale);
 RayCollision math_ray_collision_to_terrain(ATerrain *terrain, Vector3 position, Vector3 direction);
 Vector3 math_keep_entity_on_ground(ATerrain *terrain, Vector3 position, F32 dt, F32 *fall_velocity, F32 *last_height, F32 *ground_pos, F32 height_offset);
-void math_keep_player_on_ground(ATerrain *terrain, F32 dt, Player *player);
+void math_keep_player_on_ground(ATerrain *terrain, F32 dt);
 F32 math_get_terrain_height(ATerrain const *terrain, F32 world_x, F32 world_z);
 Vector3 math_get_terrain_normal(ATerrain const *terrain, F32 world_x, F32 world_z);
 F32 math_calculate_y_rotation(F32 pos_x, F32 pos_z, F32 tgt_x, F32 tgt_z);
