@@ -17,7 +17,7 @@ S32 main(S32 argc, C8 const **argv) {
     args_add("InDebugger",   "Simplify log output for compatibility with GDB",         "-d",  "--debugger",     ARG_TYPE_BOOL);
     args_add("InEmacs",      "Adjust log format for Emacs compilation buffer parsing", "-e",  "--emacs",        ARG_TYPE_BOOL);
     args_add("RebuildBlob",  "Force recreation of the asset blob file",                "-r",  "--rebuild-blob", ARG_TYPE_BOOL);
-    args_add("SteamDeck",    "Run with Steam Deck configuration",                      "-sd", "--steam-deck",   ARG_TYPE_BOOL);
+    args_add("Platform",     "Platform configuration (steam-deck, macbookair, etc)",   "-p",  "--platform",     ARG_TYPE_STRING);
     args_add("Help",         "Show this help message and exit",                        "-h",  "--help",         ARG_TYPE_BOOL);
 
     args_parse(OURO_TITLE, argc, argv);

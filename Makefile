@@ -91,11 +91,13 @@ build-cvars: ${CVAR_PARSER_BIN} ## build the cvars for the project
 
 run: build ## run the project
 	@echo -e "${COLORED}# Running ${EXECUTABLE_NAME}${NC}"
-	${EXECUTABLE_PATH}
+	@PLATFORM=$$(${TOOLS_FOLDER}/detect_platform.sh); \
+	${EXECUTABLE_PATH} --platform $$PLATFORM
 
 emacs-run: build ## run the project with a preset configuration for running it from emacs
 	@echo -e "${COLORED}# Running ${EXECUTABLE_NAME}${NC}"
-	${EXECUTABLE_PATH} --emacs
+	@PLATFORM=$$(${TOOLS_FOLDER}/detect_platform.sh); \
+	${EXECUTABLE_PATH} --emacs --platform $$PLATFORM
 
 test: build ## test the project
 	@echo -e "${COLORED}# Running tests${NC}"

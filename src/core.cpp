@@ -108,20 +108,19 @@ void core_init(U8 major, U8 minor, U8 patch, C8 const *build_type) {
 
     g_core.initialized = true;
 
-
-    // HACK: Check if we want the Steam Deck or macOS config
-#ifdef __APPLE__
-    option_set_video_resolution({2560, 1664});
-    option_set_video_max_fps(60);
-    option_set_video_vsync(true);
-#else
-    BOOL const on_deck = args_get_bool("SteamDeck");
-    if (on_deck) {
-        option_set_video_resolution({1280, 800});
-        option_set_video_max_fps(0);
-        option_set_video_vsync(false);
+    // Platform-specific configuration
+    C8 const* platform = args_get_string("Platform");
+    if (platform) {
+        if (ou_strcmp(platform, "steam-deck") == 0) {
+            option_set_video_resolution({1280, 800});
+            option_set_video_max_fps(0);
+            option_set_video_vsync(false);
+        } else if (ou_strcmp(platform, "macbookair") == 0) {
+            option_set_video_resolution({2560, 1664});
+            option_set_video_max_fps(60);
+            option_set_video_vsync(true);
+        }
     }
-#endif
 }
 
 void core_quit() {
