@@ -254,7 +254,7 @@ void world_draw_3d_sketch() {
             U32 const model_name_hash = asset_get_model(g_world->model_name[i])->header.name_hash;
             EIDArray *group = InstanceGroupMap_get(&instance_groups, model_name_hash);
             if (!group) {
-                EIDArray new_group;
+                EIDArray new_group = {};
                 array_init(MEMORY_TYPE_ARENA_TRANSIENT, &new_group, 1024);
                 InstanceGroupMap_insert(&instance_groups, model_name_hash, new_group);
                 group = InstanceGroupMap_get(&instance_groups, model_name_hash);
@@ -325,8 +325,8 @@ void world_draw_3d_sketch() {
     }
 
     // Second pass: Batch render static entity groups
-    U32 model_name_hash = U32_MAX;
-    EIDArray group;
+    U32 model_name_hash = 0;
+    EIDArray group = {};
     MAP_EACH(&instance_groups, model_name_hash, group) {
         if (group.count < MIN_INSTANCE_COUNT) {
             // Not worth instancing for single/few entities - use regular rendering
