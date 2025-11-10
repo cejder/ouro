@@ -1185,13 +1185,11 @@ void particles3d_add_chaos_stress_test(Vector3 center, F32 radius, SZ count) {
 
 void particles3d_add_harvest_impact(Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
     C8 const* impact_texture_names[] = {
-        "particle_slash_01.png",
-        "particle_slash_02.png",
-        "particle_slash_03.png",
-        "particle_slash_04.png",
-        "particle_scratch_01.png",
-        "particle_trace_01.png",
-        "particle_trace_05.png"
+        "particle_muzzle_01.png",
+        "particle_muzzle_02.png",
+        "particle_muzzle_03.png",
+        "particle_muzzle_04.png",
+        "particle_muzzle_05.png",
     };
     SZ const texture_count = sizeof(impact_texture_names) / sizeof(impact_texture_names[0]);
 
@@ -1231,7 +1229,7 @@ void particles3d_add_harvest_impact(Vector3 center, Color start_color, Color end
         start_colors[i]    = color_variation(start_color, 30);
         end_colors[i]      = color_variation(end_color, 30);
         lives[i]           = random_f32(0.8F, 1.8F);
-        sizes[i]           = random_f32(0.2F, 0.6F) * size_multiplier;
+        sizes[i]           = random_f32(0.1F, 0.3F) * size_multiplier;
         gravities[i]       = random_f32(12.0F, 20.0F);
         rotation_speeds[i] = random_f32(-12.0F, 12.0F);
         air_resistances[i] = random_f32(0.015F, 0.035F);
@@ -1247,11 +1245,11 @@ void particles3d_add_harvest_impact(Vector3 center, Color start_color, Color end
 
 void particles3d_add_harvest_active(Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
     C8 const* active_texture_names[] = {
-        "particle_dirt_01.png",
-        "particle_dirt_02.png",
-        "particle_dirt_03.png",
-        "particle_smoke_01.png",
-        "particle_smoke_05.png"
+        "particle_muzzle_01.png",
+        "particle_muzzle_02.png",
+        "particle_muzzle_03.png",
+        "particle_muzzle_04.png",
+        "particle_muzzle_05.png",
     };
     SZ const texture_count = sizeof(active_texture_names) / sizeof(active_texture_names[0]);
 
@@ -1460,15 +1458,11 @@ void particles3d_add_click_indicator(Vector3 position, F32 radius, Color start_c
 
 void particles3d_add_harvest_complete(Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
     C8 const* complete_texture_names[] = {
-        "particle_explosion_01.png",
-        "particle_explosion_02.png",
-        "particle_flash_01.png",
-        "particle_flash_03.png",
-        "particle_circle_01.png",
-        "particle_circle_03.png",
-        "particle_dirt_01.png",
-        "particle_dirt_02.png",
-        "particle_smoke_01.png"
+        "particle_muzzle_01.png",
+        "particle_muzzle_02.png",
+        "particle_muzzle_03.png",
+        "particle_muzzle_04.png",
+        "particle_muzzle_05.png",
     };
     SZ const texture_count = sizeof(complete_texture_names) / sizeof(complete_texture_names[0]);
 
