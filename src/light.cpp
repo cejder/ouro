@@ -80,7 +80,7 @@ void lighting_default_lights_setup() {
     lighting_set_spot_light(3, false, {}, {}, i_overworld_light_colors[3], LIGHT_DEFAULT_INTENSITY, 0, 0);
     lighting_set_spot_light(4, false, {}, {}, i_overworld_light_colors[4], LIGHT_DEFAULT_INTENSITY, 0, 0);
     // Center light
-    lighting_set_point_light(5, true, center, i_overworld_light_colors[5], LIGHT_DEFAULT_INTENSITY);
+    lighting_set_point_light(5, false, center, i_overworld_light_colors[5], LIGHT_DEFAULT_INTENSITY);
     // Corner lights using Vector3Add
     lighting_set_point_light(6, true, Vector3Add(center, (Vector3){half_size, height, half_size}), i_overworld_light_colors[6], LIGHT_DEFAULT_INTENSITY);    // (1000, 1000)
     lighting_set_point_light(7, true, Vector3Add(center, (Vector3){-half_size, height, half_size}), i_overworld_light_colors[7], LIGHT_DEFAULT_INTENSITY);   // (0, 1000)

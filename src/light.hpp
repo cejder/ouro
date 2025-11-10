@@ -5,7 +5,7 @@
 #include <raylib.h>
 
 #define LIGHTS_MAX 10
-#define LIGHT_DEFAULT_INTENSITY 2000.0F
+#define LIGHT_DEFAULT_INTENSITY 2500.0F
 
 // Light Types:
 // - POINT: Emits light omnidirectionally from a position (like a light bulb)

@@ -4,6 +4,7 @@
 #include "cvar.hpp"
 #include "log.hpp"
 #include "math.hpp"
+#include "message.hpp"
 #include "render.hpp"
 #include "scene.hpp"
 #include "std.hpp"
@@ -1332,11 +1333,14 @@ void particles3d_add_selection_indicator(Vector3 position, F32 radius, Color sta
     U32* billboard_modes    = mcta(U32*,     actual_count, sizeof(U32));
     F32* stretch_factors    = mcta(F32*,     actual_count, sizeof(F32));
 
+    Vector3 terrain_normal = math_get_terrain_normal(g_world->base_terrain, position.x, position.z);
+    F32 y_offset            = 0.15F * (1.0F - terrain_normal.y);
+
     for (SZ i = 0; i < actual_count; ++i) {
         // All particles at the same position - centered beneath the entity
         positions_arr[i] = {
             position.x,
-            position.y + 0.15F,  // Raised higher to prevent clipping into ground
+            position.y + y_offset,  // Raised higher to prevent clipping into ground
             position.z
         };
 
@@ -1368,7 +1372,6 @@ void particles3d_add_selection_indicator(Vector3 position, F32 radius, Color sta
     particles3d_add(positions_arr, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, actual_count);
 
     // Set terrain normal for all particles we just added
-    Vector3 terrain_normal = math_get_terrain_normal(g_world->base_terrain, position.x, position.z);
     for (SZ i = 0; i < actual_count; ++i) {
         SZ const particle_index = (g_particles3d.write_index - actual_count + i + PARTICLES_3D_MAX) % PARTICLES_3D_MAX;
         g_particles3d.mapped_data[particle_index].extra0 = terrain_normal.x;
@@ -1408,11 +1411,14 @@ void particles3d_add_click_indicator(Vector3 position, F32 radius, Color start_c
     U32* billboard_modes    = mcta(U32*,     actual_count, sizeof(U32));
     F32* stretch_factors    = mcta(F32*,     actual_count, sizeof(F32));
 
+    Vector3 terrain_normal = math_get_terrain_normal(g_world->base_terrain, position.x, position.z);
+    F32 y_offset           = 0.15F * (1.0F - terrain_normal.y);
+
     for (SZ i = 0; i < actual_count; ++i) {
         // All particles at the same position - centered at click location
         positions_arr[i] = {
             position.x,
-            position.y + 0.15F,  // Raised higher to prevent clipping into ground
+            position.y + y_offset,  // Raised higher to prevent clipping into ground
             position.z
         };
 
@@ -1444,7 +1450,6 @@ void particles3d_add_click_indicator(Vector3 position, F32 radius, Color start_c
     particles3d_add(positions_arr, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, actual_count);
 
     // Set terrain normal for all particles we just added
-    Vector3 terrain_normal = math_get_terrain_normal(g_world->base_terrain, position.x, position.z);
     for (SZ i = 0; i < actual_count; ++i) {
         SZ const particle_index = (g_particles3d.write_index - actual_count + i + PARTICLES_3D_MAX) % PARTICLES_3D_MAX;
         g_particles3d.mapped_data[particle_index].extra0 = terrain_normal.x;
