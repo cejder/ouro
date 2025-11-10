@@ -64,7 +64,7 @@ struct AHeader {
     AType type;
     C8 path[A_PATH_MAX_LENGTH];
     C8 name[A_NAME_MAX_LENGTH];
-    U32 name_hash;         // Cached hash of name (for fast lookups)
+    U32 name_hash;
     time_t last_access;
     time_t last_modified;
     BOOL want_reload;
@@ -76,7 +76,7 @@ struct AModel {
     Model base;
     ModelAnimation *animations;
     S32 animation_count;
-    BOOL has_animations;      // True if model has animations and bones (computed once on load)
+    BOOL has_animations;
     BoundingBox bb;
     SZ vertex_count;
     Texture2D icon;

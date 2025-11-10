@@ -447,14 +447,14 @@ void static i_load_skybox(C8 const *path) {
     a->header.loaded = true;
 }
 
-void static i_delete_outdated_terrain_caches(C8 const *path, S64 heightmap_modtime) {
+void static i_delete_outdated_terrain_caches(C8 const *path, S64 heightmap_modtime, Vector3 dimensions) {
     // Get all .bin files
     FilePathList const files = LoadDirectoryFilesEx(path, ".bin", false);
 
     for (U32 i = 0U; i < files.count; i++) {
         C8 const *filename = GetFileName(files.paths[i]);
         // Check if this is one of our cache files
-        if (ou_strncmp(filename, "height_cache_", 12) == 0) {
+        if (ou_strncmp(filename, "height_cache_", 12) == 0 || ou_strncmp(filename, "info_cache_", 10) == 0) {
             // Find the modtime in the filename (after the last underscore)
             C8 const *modtime_str = ou_strrchr(filename, '_') + 1;
             // Remove .bin extension before converting
@@ -468,7 +468,7 @@ void static i_delete_outdated_terrain_caches(C8 const *path, S64 heightmap_modti
 
             // Check if the dimensions differ
             String *t = TS("%s", filename);
-            if (!string_contains(t, TS("%d_%d", A_TERRAIN_DEFAULT_SIZE, A_TERRAIN_SAMPLE_RATE))) {  // HACK: But good enough I guess
+            if (!string_contains(t, TS("%d_%d", (U32)dimensions.x, A_TERRAIN_SAMPLE_RATE))) {
                 remove(files.paths[i]);
                 lld("Deleted outdated terrain cache (reason: size/sample rate): %s", files.paths[i]);
             }
@@ -478,15 +478,15 @@ void static i_delete_outdated_terrain_caches(C8 const *path, S64 heightmap_modti
     UnloadDirectoryFiles(files);
 }
 
-struct ITerrainThreadData {
+struct ICreateTerrainThreadData {
     ATerrain *terrain;
     Vector3 dimensions;
     U32 start_z;
     U32 end_z;
 };
 
-S32 static i_terrain_thread_func(void *arg) {
-    auto *data = (ITerrainThreadData *)arg;
+S32 static i_create_terrain_thread_func(void *arg) {
+    ICreateTerrainThreadData *data = (ICreateTerrainThreadData *)arg;
     ATerrain *a = data->terrain;
     Vector3 const dimensions = data->dimensions;
 
@@ -499,6 +499,38 @@ S32 static i_terrain_thread_func(void *arg) {
             Vector3 const ray_start      = {world_x, dimensions.y * 2.0F, world_z};
             RayCollision const collision = math_ray_collision_to_terrain(a, ray_start, {0.0F, -1.0F, 0.0F});
             a->height_field[idx] = collision.hit ? collision.point.y : 0.0F;
+        }
+    }
+
+    return 0;
+}
+
+struct IGenerateTerrainInfoThreadData {
+    ATerrain *terrain;
+    Vector3 dimensions;
+    F32 normal_length;
+    U32 r;
+    U32 start_z;
+    U32 end_z;
+    U32 x_steps;
+};
+
+S32 static i_generate_terrain_info_thread_func(void *arg) {
+    IGenerateTerrainInfoThreadData *data = (IGenerateTerrainInfoThreadData *)arg;
+    ATerrain *a = data->terrain;
+
+    for (U32 z = data->start_z; z < data->end_z; z += data->r) {
+        U32 const z_step = z / data->r;
+        for (U32 x = 0U; x < (U32)data->dimensions.x; x += data->r) {
+            U32 const x_step       = x / data->r;
+            U32 const idx          = (z_step * data->x_steps) + x_step;
+            F32 const height       = math_get_terrain_height(a, (F32)x, (F32)z);
+            Vector3 const normal   = math_get_terrain_normal(a, (F32)x, (F32)z);
+            Vector3 const position = {(F32)x, height, (F32)z};
+
+            array_set(&a->info_positions,  idx, position);
+            array_set(&a->info_normals,    idx, Vector3Scale(normal, data->normal_length));
+            array_set(&a->info_transforms, idx, MatrixTranslate((F32)x, height, (F32)z));
         }
     }
 
@@ -562,10 +594,10 @@ void static i_load_terrain(C8 const *path, Vector3 dimensions) {
 
     // Generate cache filename based on heightmap modtime
     S64 const modtime  = GetFileModTime(height_path->c);
-    String *cache_path = TS("%s/height_cache_%u_%u_%" PRId64 ".bin", path, A_TERRAIN_DEFAULT_SIZE, A_TERRAIN_SAMPLE_RATE, modtime);
+    String *cache_path = TS("%s/height_cache_%u_%u_%" PRId64 ".bin", path, (U32)dimensions.x, A_TERRAIN_SAMPLE_RATE, modtime);
 
     // Delete old cache files before checking/loading current one
-    i_delete_outdated_terrain_caches(path, modtime);
+    i_delete_outdated_terrain_caches(path, modtime, dimensions);
 
     S32 const expected_size = (S32)(sizeof(F32) * A_TERRAIN_SAMPLE_RATE * A_TERRAIN_SAMPLE_RATE);
     BOOL need_generate      = true;
@@ -601,7 +633,7 @@ void static i_load_terrain(C8 const *path, Vector3 dimensions) {
         a->height_field = mmpa(F32 *, sizeof(F32) * sample_count);
 
         auto *threads = mmta(thrd_t *, sizeof(thrd_t) * core_count);
-        auto *thread_data = mmta(ITerrainThreadData *, sizeof(ITerrainThreadData) * core_count);
+        auto *thread_data = mmta(ICreateTerrainThreadData *, sizeof(ICreateTerrainThreadData) * core_count);
 
         U32 const rows_per_thread = A_TERRAIN_SAMPLE_RATE / core_count;
         U32 const remaining_rows  = A_TERRAIN_SAMPLE_RATE % core_count;
@@ -614,8 +646,8 @@ void static i_load_terrain(C8 const *path, Vector3 dimensions) {
             thread_data[i].end_z      = current_row + rows_per_thread + (i < remaining_rows ? 1 : 0);
             current_row               = thread_data[i].end_z;
 
-            if (thrd_create(&threads[i], i_terrain_thread_func, &thread_data[i]) != thrd_success) {
-                lld("Failed to create thread %u", i);
+            if (thrd_create(&threads[i], i_create_terrain_thread_func, &thread_data[i]) != thrd_success) {
+                lle("Failed to create thread %u", i);
                 return;
             }
         }
@@ -635,12 +667,15 @@ void static i_load_terrain(C8 const *path, Vector3 dimensions) {
     UnloadImage(heightmap_image);
 
     // Generate terrain info data
-    SZ const cap = (SZ)A_TERRAIN_DEFAULT_SIZE * (SZ)A_TERRAIN_DEFAULT_SIZE;
+    U32 const r = (U32)dimensions.x / A_TERRAIN_SAMPLE_RATE;  // NOLINT
+    U32 const x_steps = (U32)dimensions.x / r;
+    U32 const z_steps = (U32)dimensions.z / r;
+    SZ const cap = (SZ)x_steps * (SZ)z_steps;
+
     array_init(MEMORY_TYPE_ARENA_PERMANENT, &a->info_positions,  cap);
     array_init(MEMORY_TYPE_ARENA_PERMANENT, &a->info_normals,    cap);
     array_init(MEMORY_TYPE_ARENA_PERMANENT, &a->info_transforms, cap);
 
-    U32 r = A_TERRAIN_DEFAULT_SIZE / A_TERRAIN_SAMPLE_RATE;  // NOLINT
     F32 const normal_length = 2.0F;
 
     a->info_material = g_render.default_material;
@@ -648,16 +683,76 @@ void static i_load_terrain(C8 const *path, Vector3 dimensions) {
     F32 const min_height = math_find_lowest_point_in_model (&a->model, a->transform).y;
     F32 const max_height = math_find_highest_point_in_model(&a->model, a->transform).y;
 
-    for (U32 z = 0U; z < A_TERRAIN_DEFAULT_SIZE; z += r) {
-        for (U32 x = 0U; x < A_TERRAIN_DEFAULT_SIZE; x += r) {
-            F32 const height       = math_get_terrain_height(a, (F32)x, (F32)z);
-            Vector3 const normal   = math_get_terrain_normal(a, (F32)x, (F32)z);
-            Vector3 const position = {(F32)x, height, (F32)z};
+    // Try to load terrain info from cache
+    String *info_cache_path = TS("%s/info_cache_%u_%u_%" PRId64 ".bin", path, (U32)dimensions.x, A_TERRAIN_SAMPLE_RATE, modtime);
+    S32 const expected_info_size = (S32)(cap * (sizeof(Vector3) + sizeof(Vector3) + sizeof(Matrix)));
+    BOOL need_generate_info = true;
 
-            array_push(&a->info_positions, position);
-            array_push(&a->info_normals, Vector3Scale(normal, normal_length));
-            array_push(&a->info_transforms, MatrixTranslate((F32)x, height, (F32)z));
+    if (FileExists(info_cache_path->c) && GetFileLength(info_cache_path->c) == expected_info_size) {
+        S32 data_size = 0;
+        U8 *file_data = LoadFileData(info_cache_path->c, &data_size);
+
+        if (file_data) {
+            U8 *ptr = file_data;
+            ou_memcpy(a->info_positions.data,  ptr, cap * sizeof(Vector3)); ptr += cap * sizeof(Vector3);
+            ou_memcpy(a->info_normals.data,    ptr, cap * sizeof(Vector3)); ptr += cap * sizeof(Vector3);
+            ou_memcpy(a->info_transforms.data, ptr, cap * sizeof(Matrix));
+            a->info_positions.count  = cap;
+            a->info_normals.count    = cap;
+            a->info_transforms.count = cap;
+            UnloadFileData(file_data);
+            need_generate_info = false;
+            lld("Loaded terrain info from cache: %s", info_cache_path->c);
         }
+    }
+
+    if (need_generate_info) {
+        SZ const core_count = info_get_cpu_core_count();
+        lld("Generating terrain info with %zu threads for %s", core_count, path);
+
+        auto *threads     = mmta(thrd_t *, sizeof(thrd_t) * core_count);
+        auto *thread_data = mmta(IGenerateTerrainInfoThreadData *, sizeof(IGenerateTerrainInfoThreadData) * core_count);
+
+        U32 const rows_per_thread = z_steps / core_count;
+        U32 const remaining_rows  = z_steps % core_count;
+        U32 current_row           = 0;
+
+        for (U32 i = 0; i < core_count; i++) {
+            U32 const rows_for_thread = rows_per_thread + (i < remaining_rows ? 1 : 0);
+            thread_data[i].terrain       = a;
+            thread_data[i].dimensions    = dimensions;
+            thread_data[i].normal_length = normal_length;
+            thread_data[i].r             = r;
+            thread_data[i].start_z       = current_row * r;
+            thread_data[i].end_z         = (current_row + rows_for_thread) * r;
+            thread_data[i].x_steps       = x_steps;
+            current_row                  += rows_for_thread;
+
+            if (thrd_create(&threads[i], i_generate_terrain_info_thread_func, &thread_data[i]) != thrd_success) {
+                lle("Failed to create thread %u", i);
+                return;
+            }
+        }
+
+        for (U32 i = 0; i < core_count; i++) {
+            S32 res = S32_MAX;
+            thrd_join(threads[i], &res);
+            lli("Thread %u/%zu completed", i + 1, core_count);
+        }
+
+        // Set counts since array_set doesn't update them
+        a->info_positions.count  = cap;
+        a->info_normals.count    = cap;
+        a->info_transforms.count = cap;
+
+        // Save terrain info to cache
+        U8 *cache_data = mmta(U8 *, (SZ)expected_info_size);
+        U8 *ptr = cache_data;
+        ou_memcpy(ptr, a->info_positions.data,  cap * sizeof(Vector3)); ptr += cap * sizeof(Vector3);
+        ou_memcpy(ptr, a->info_normals.data,    cap * sizeof(Vector3)); ptr += cap * sizeof(Vector3);
+        ou_memcpy(ptr, a->info_transforms.data, cap * sizeof(Matrix));
+        SaveFileData(info_cache_path->c, cache_data, expected_info_size);
+        lld("Saved terrain info to cache: %s", info_cache_path->c);
     }
 
     AShader *terrain_info_shader = asset_get_shader("terrain_info");
