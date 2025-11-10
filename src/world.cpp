@@ -7,6 +7,7 @@
 #include "edit.hpp"
 #include "log.hpp"
 #include "map.hpp"
+#include "memory.hpp"
 #include "message.hpp"
 #include "particles_3d.hpp"
 #include "render.hpp"
@@ -23,11 +24,15 @@ WorldState g_world_state = {};
 World* g_world = g_world_state.current;
 
 void world_init() {
+    // Allocate both worlds using permanent arena
+    g_world_state.overworld = mmpa(World*, sizeof(World));
+    g_world_state.dungeon = mmpa(World*, sizeof(World));
+
     // Reset both worlds and default on start on overworld
-    g_world = &g_world_state.dungeon;
+    g_world = g_world_state.dungeon;
     world_reset();
 
-    g_world = &g_world_state.overworld;
+    g_world = g_world_state.overworld;
     world_reset();
 
     world_recorder_init();
@@ -781,13 +786,13 @@ void world_dump_all_entities_cb(void *data) {
 }
 
 void world_set_overworld(ATerrain *terrain) {
-    g_world = &g_world_state.overworld;
+    g_world = g_world_state.overworld;
     g_world->base_terrain = terrain;
     if (!g_world_state.initialized) { world_init(); }
 }
 
 void world_set_dungeon(ATerrain *terrain) {
-    g_world = &g_world_state.dungeon;
+    g_world = g_world_state.dungeon;
     g_world->base_terrain = terrain;
     if (!g_world_state.initialized) { world_init(); }
 }

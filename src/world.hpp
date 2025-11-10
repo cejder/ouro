@@ -83,8 +83,8 @@ struct WorldState {
     BOOL initialized;
     World* current;
 
-    World overworld;
-    World dungeon;
+    World* overworld;
+    World* dungeon;
 };
 
 WorldState extern g_world_state;
