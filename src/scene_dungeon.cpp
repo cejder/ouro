@@ -183,11 +183,11 @@ SKIP_OTHER_INPUT:
         Vector3 const torch_left_pos  = {502.50F, 8.5F, 776.80F};
         Vector3 const torch_right_pos = {517.50F, 8.5F, 776.80F};
 
-        particles3d_add_effect_fire(torch_left_pos, 0.3F, YELLOW, RED, 0.3F, 1);
-        particles3d_add_effect_smoke(torch_left_pos, 0.2F, ORANGE, RED, 0.25F, 1);
+        particles3d_add_fire(torch_left_pos, 0.3F, YELLOW, RED, 0.3F, 1);
+        particles3d_add_smoke(torch_left_pos, 0.2F, ORANGE, RED, 0.25F, 1);
 
-        particles3d_add_effect_fire(torch_right_pos, 0.3F, YELLOW, RED, 0.3F, 1);
-        particles3d_add_effect_smoke(torch_right_pos, 0.2F, ORANGE, RED, 0.25F, 1);
+        particles3d_add_fire(torch_right_pos, 0.3F, YELLOW, RED, 0.3F, 1);
+        particles3d_add_smoke(torch_right_pos, 0.2F, ORANGE, RED, 0.25F, 1);
     }
 }
 

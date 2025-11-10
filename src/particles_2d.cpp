@@ -273,7 +273,7 @@ void particles2d_add(Vector2 *positions,
     }
 }
 
-void particles2d_add_effect_explosion(Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+void particles2d_add_explosion(Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
     // Use multiple textures for variety
     C8 const* explosion_texture_names[] = {
         "particle_flare_01.png",
@@ -334,7 +334,7 @@ void particles2d_add_effect_explosion(Rectangle spawn_rect, Color start_color, C
     particles2d_add(positions, velocities, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, count);
 }
 
-void particles2d_add_effect_smoke(Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+void particles2d_add_smoke(Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
     // Use varied smoke textures for realistic effect
     C8 const* smoke_texture_names[] = {
         "particle_black_smoke_00.png",
@@ -418,7 +418,7 @@ void particles2d_add_effect_smoke(Rectangle spawn_rect, Color start_color, Color
     particles2d_add(positions, velocities, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, count);
 }
 
-void particles2d_add_effect_sparkle(Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+void particles2d_add_sparkle(Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
     // Mix of sparkly textures for magical effect
     C8 const* sparkle_texture_names[] = {
         "particle_star_01.png",
@@ -494,7 +494,7 @@ void particles2d_add_effect_sparkle(Rectangle spawn_rect, Color start_color, Col
     particles2d_add(positions, velocities, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, count);
 }
 
-void particles2d_add_effect_fire(Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+void particles2d_add_fire(Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
     // Mix flame and fire textures for realistic fire effect
     C8 const* fire_texture_names[] = {
         "particle_flame_01.png",
@@ -563,7 +563,7 @@ void particles2d_add_effect_fire(Rectangle spawn_rect, Color start_color, Color 
     particles2d_add(positions, velocities, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, count);
 }
 
-void particles2d_add_effect_spiral(Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+void particles2d_add_spiral(Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
     // Use magical and mystical textures for spiral effect
     C8 const* magic_texture_names[] = {
         "particle_magic_01.png",
@@ -653,10 +653,10 @@ void particles2d_add(Vector2 *positions,
                    F32 *rotation_speeds,
                    F32 *air_resistances,
                    SZ count) {}
-void particles2d_add_effect_explosion(Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
-void particles2d_add_effect_smoke    (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
-void particles2d_add_effect_sparkle  (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
-void particles2d_add_effect_fire     (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
-void particles2d_add_effect_spiral   (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles2d_add_explosion(Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles2d_add_smoke    (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles2d_add_sparkle  (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles2d_add_fire     (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles2d_add_spiral   (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
 
 #endif

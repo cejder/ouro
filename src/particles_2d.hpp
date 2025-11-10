@@ -82,8 +82,8 @@ void particles2d_add(Vector2 *positions,
                    F32 *rotation_speeds,
                    F32 *air_resistances,
                    SZ count);
-void particles2d_add_effect_explosion(Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count);
-void particles2d_add_effect_smoke    (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count);
-void particles2d_add_effect_sparkle  (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count);
-void particles2d_add_effect_fire     (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count);
-void particles2d_add_effect_spiral   (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count);
+void particles2d_add_explosion(Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count);
+void particles2d_add_smoke    (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count);
+void particles2d_add_sparkle  (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count);
+void particles2d_add_fire     (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count);
+void particles2d_add_spiral   (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count);

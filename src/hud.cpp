@@ -37,7 +37,7 @@ void hud_draw_2d_hud() {
     AFont *stat_font  = asset_get_font("GoMono", ui_font_size(1.2F));
 
     // Colors
-    Color const text_color   = g_render.sketch.minor_color;
+    Color const text_color   = g_render.sketch_shader.minor_color;
     Color const shadow_color = Fade(NAYBEIGE, 0.8F);
     Color const status_color = color_sync_blinking_regular({0, 175, 0, 255}, {0, 255, 0, 255});
 
@@ -195,7 +195,7 @@ void hud_draw_2d_hud() {
 void hud_draw_2d_hud_sketch() {
     if (!c_render__hud) { return; }
 
-    Color const hud_tint = g_render.sketch.major_color;
+    Color const hud_tint = g_render.sketch_shader.major_color;
     Vector2 const res = {(F32)c_video__render_resolution_width, (F32)c_video__render_resolution_height};
 
     // BACKGROUND

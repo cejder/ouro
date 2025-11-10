@@ -524,7 +524,7 @@ void static inline i_evaluate_behavior_transitions(EID id) {
                 // Final destruction burst when entity is actually destroyed
                 Vector3 const target_pos = g_world->position[behavior->target_id];
                 Color const actor_color  = color_saturated(g_world->tint[id]);
-                particles3d_add_effect_harvest_complete(target_pos, actor_color, Fade(color_darken(actor_color, 0.3F), 0.0F), HARVEST_COMPLETE_SIZE_MULTIPLIER, HARVEST_COMPLETE_PARTICLE_COUNT);
+                particles3d_add_harvest_complete(target_pos, actor_color, Fade(color_darken(actor_color, 0.3F), 0.0F), HARVEST_COMPLETE_SIZE_MULTIPLIER, HARVEST_COMPLETE_PARTICLE_COUNT);
                 audio_play_3d_at_position(ACG_SFX, "plop.ogg", g_world->position[behavior->target_id]);
                 entity_destroy(behavior->target_id);
                 behavior->wood_count++;
@@ -878,7 +878,7 @@ void entity_actor_update(EID id, F32 dt) {
                     F32 const spawn_interval = 1.0F / HARVEST_ACTIVE_PARTICLES_PER_SECOND;
                     behavior->particle_spawn_timer += dt;
                     while (behavior->particle_spawn_timer >= spawn_interval) {
-                        particles3d_add_effect_harvest_active(target_pos, actor_color, Fade(color_darken(actor_color, 0.3F), 0.0F),
+                        particles3d_add_harvest_active(target_pos, actor_color, Fade(color_darken(actor_color, 0.3F), 0.0F),
                                                              HARVEST_ACTIVE_SIZE_MULTIPLIER, HARVEST_ACTIVE_PARTICLE_COUNT);
                         behavior->particle_spawn_timer -= spawn_interval;
                     }
@@ -975,7 +975,7 @@ void entity_actor_behavior_transition_to_state(EID id, EntityBehaviorState new_s
                 // Spawn initial impact particles using actor's color
                 Vector3 const target_pos = g_world->position[behavior->target_id];
                 Color const actor_color  = color_saturated(g_world->tint[id]);
-                particles3d_add_effect_harvest_impact(target_pos, actor_color, Fade(color_darken(actor_color, 0.3F), 0.0F),
+                particles3d_add_harvest_impact(target_pos, actor_color, Fade(color_darken(actor_color, 0.3F), 0.0F),
                                                      HARVEST_IMPACT_SIZE_MULTIPLIER, HARVEST_IMPACT_PARTICLE_COUNT);
 
                 // Reset particle spawn timer for active effect

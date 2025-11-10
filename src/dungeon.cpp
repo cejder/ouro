@@ -820,8 +820,8 @@ void dungeon_draw_2d_dbg() {
     // Small minimap in top-left corner
     Vector2 const map_pos      = {5.0F, 5.0F};
     F32 const tile_screen_size = (F32)(S32)ui_scale_x(0.25F);
-    Color const wall_color     = g_render.sketch.minor_color;
-    Color const floor_color    = g_render.sketch.major_color;
+    Color const wall_color     = g_render.sketch_shader.minor_color;
+    Color const floor_color    = g_render.sketch_shader.major_color;
 
     // Merge adjacent tiles into larger rectangles to reduce draw calls
     Rectangle *merged_rects = mmta(Rectangle*, g_dungeon_data.tiles.count * sizeof(Rectangle));

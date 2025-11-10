@@ -77,7 +77,7 @@ void world_reset() {
 }
 
 void world_update(F32 dt, F32 dtu) {
-    g_world->visible_vertex_count = 0;
+    g_render.visible_vertex_count = 0;
 
     world_recorder_update();  // WARN: This needs to happen before anything that changes the world.
     grid_populate();
@@ -97,7 +97,7 @@ void world_update(F32 dt, F32 dtu) {
         c3d_is_obb_in_frustum(g_world->obb[i]) ? ENTITY_SET_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM)
                                               : ENTITY_CLEAR_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM);
 
-        if (ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM)) { g_world->visible_vertex_count += asset_get_model_by_hash(g_world->model_name_hash[i])->vertex_count; }
+        if (ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM)) { g_render.visible_vertex_count += asset_get_model_by_hash(g_world->model_name_hash[i])->vertex_count; }
         if (ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_ACTOR))      { entity_actor_update(i, dt); }
         if (g_world->type[i] == ENTITY_TYPE_BUILDING_LUMBERYARD)        { entity_building_update(i, dt); }
 

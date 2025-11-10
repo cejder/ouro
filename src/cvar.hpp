@@ -93,7 +93,7 @@ extern F32     c_render__dungeon_fog_density;
 extern BOOL    c_render__fboy;
 extern BOOL    c_render__hud;
 extern F32     c_render__overworld_fog_density;
-extern BOOL    c_render__sketch_effect;
+extern BOOL    c_render__sketch;
 extern BOOL    c_render__skybox;
 extern BOOL    c_render__skybox_night;
 extern BOOL    c_render__tboy;

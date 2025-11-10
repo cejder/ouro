@@ -232,8 +232,8 @@ void static i_setup_dbg_gui() {
 
         Color const clear_color   = scenes_get_clear_color();
         Color const ambient_color = render_get_ambient_color();
-        Color const major_color   = g_render.sketch.major_color;
-        Color const minor_color   = g_render.sketch.minor_color;
+        Color const major_color   = g_render.sketch_shader.major_color;
+        Color const minor_color   = g_render.sketch_shader.minor_color;
 
         qilcs("Clear Color", TS("%d %d %d %d", clear_color.r, clear_color.g, clear_color.b, clear_color.a)->c, clear_color);
         qilcs("Ambient Color", TS("%d %d %d %d", ambient_color.r, ambient_color.g, ambient_color.b, ambient_color.a)->c, ambient_color);
@@ -253,11 +253,11 @@ void static i_setup_dbg_gui() {
 
         dwib("Wireframe Mode", medium_font, g_render.wireframe_mode ? GREEN : RED, DBG_REF_BUTTON_SIZE,
              [](void *data) { unused(data); g_render.wireframe_mode = !g_render.wireframe_mode; }, nullptr);
-        dwib("Sketch Mode", medium_font, c_render__sketch_effect ? GREEN : RED, DBG_REF_BUTTON_SIZE,
-             [](void *data) { unused(data); c_render__sketch_effect = !c_render__sketch_effect; }, nullptr);
-        dwib("Major Color", medium_font, g_render.sketch.major_color, DBG_REF_BUTTON_SIZE,
+        dwib("Sketch Shader", medium_font, c_render__sketch ? GREEN : RED, DBG_REF_BUTTON_SIZE,
+             [](void *data) { unused(data); c_render__sketch = !c_render__sketch; }, nullptr);
+        dwib("Major Color", medium_font, g_render.sketch_shader.major_color, DBG_REF_BUTTON_SIZE,
              [](void *data) { unused(data); render_sketch_set_major_color(color_random()); }, nullptr);
-        dwib("Minor Color", medium_font, g_render.sketch.minor_color, DBG_REF_BUTTON_SIZE,
+        dwib("Minor Color", medium_font, g_render.sketch_shader.minor_color, DBG_REF_BUTTON_SIZE,
              [](void *data) { unused(data); render_sketch_set_minor_color(color_random()); }, nullptr);
         dwib("Swap", medium_font, WHITE, DBG_REF_BUTTON_SIZE,
              [](void *data) { unused(data); render_sketch_swap_colors(); }, nullptr);
@@ -450,7 +450,7 @@ void static i_setup_dbg_gui() {
         C8 pretty_buffer_2[PRETTY_BUFFER_SIZE] = {};
         C8 pretty_buffer_3[PRETTY_BUFFER_SIZE] = {};
 
-        unit_to_pretty_prefix_u("", g_world->visible_vertex_count, pretty_buffer_1, PRETTY_BUFFER_SIZE, UNIT_PREFIX_MEGA);
+        unit_to_pretty_prefix_u("", g_render.visible_vertex_count, pretty_buffer_1, PRETTY_BUFFER_SIZE, UNIT_PREFIX_MEGA);
 
         dwil("World", large_font, contrast_color);
         qil("Visible Vertices", TS("%s", pretty_buffer_1)->c);

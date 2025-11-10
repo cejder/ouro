@@ -85,7 +85,7 @@ void render_init() {
     ss->shader             = asset_get_shader("skybox");;
     ss->ambient_color_loc  = GetShaderLocation(ss->shader->base, "ambient");
 
-    RenderSketchEffect *se = &g_render.sketch;
+    RenderSketchShader *se = &g_render.sketch_shader;
     se->shader             = asset_get_shader("sketch");;
     se->resolution_loc     = GetShaderLocation(se->shader->base, "resolution");
     se->major_color_loc    = GetShaderLocation(se->shader->base, "majorColor");
@@ -190,8 +190,8 @@ void static i_do_tboy(F32 dt) {
 
     // We reached change_time and need new colors.
     if (accumulated_time > change_time) {
-        start_major_color = g_render.sketch.major_color;
-        start_minor_color = g_render.sketch.minor_color;
+        start_major_color = g_render.sketch_shader.major_color;
+        start_minor_color = g_render.sketch_shader.minor_color;
         end_major_color   = color_variation(start_major_color, variation);
         end_minor_color   = color_variation(start_minor_color, variation);
         accumulated_time  = 0.0F;
@@ -262,13 +262,13 @@ void render_update_render_resolution(Vector2 new_res) {
     F32 major_color[4];
     F32 minor_color[4];
 
-    color_to_vec4(g_render.sketch.major_color, major_color);
-    color_to_vec4(g_render.sketch.minor_color, minor_color);
+    color_to_vec4(g_render.sketch_shader.major_color, major_color);
+    color_to_vec4(g_render.sketch_shader.minor_color, minor_color);
 
-    SetShaderValue(g_render.sketch.shader->base, g_render.sketch.time_loc, &time, SHADER_UNIFORM_FLOAT);
-    SetShaderValue(g_render.sketch.shader->base, g_render.sketch.resolution_loc, (F32[2]){new_res.x, new_res.y}, SHADER_UNIFORM_VEC2);
-    SetShaderValue(g_render.sketch.shader->base, g_render.sketch.major_color_loc, major_color, SHADER_UNIFORM_VEC4);
-    SetShaderValue(g_render.sketch.shader->base, g_render.sketch.minor_color_loc, minor_color, SHADER_UNIFORM_VEC4);
+    SetShaderValue(g_render.sketch_shader.shader->base, g_render.sketch_shader.time_loc, &time, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(g_render.sketch_shader.shader->base, g_render.sketch_shader.resolution_loc, (F32[2]){new_res.x, new_res.y}, SHADER_UNIFORM_VEC2);
+    SetShaderValue(g_render.sketch_shader.shader->base, g_render.sketch_shader.major_color_loc, major_color, SHADER_UNIFORM_VEC4);
+    SetShaderValue(g_render.sketch_shader.shader->base, g_render.sketch_shader.minor_color_loc, minor_color, SHADER_UNIFORM_VEC4);
 
     // Also recreate the default font size
     g_render.default_font = asset_get_font("GoMono", ui_font_size(RENDER_DEFAULT_FONT_PERC));
@@ -401,7 +401,7 @@ void static i_set_uniforms() {
     F32 const current_time = time_get();
 
     // SKETCH
-    SetShaderValue(g_render.sketch.shader->base, g_render.sketch.time_loc, &current_time, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(g_render.sketch_shader.shader->base, g_render.sketch_shader.time_loc, &current_time, SHADER_UNIFORM_FLOAT);
 }
 
 void render_end() {
@@ -423,13 +423,13 @@ void render_end() {
         }
 
         if (g_render.rmode_data[mode].draw_call_count > 0) {
-            BOOL const should_use_sketch = c_render__sketch_effect && (
+            BOOL const should_use_sketch = c_render__sketch && (
                 mode == RMODE_3D_SKETCH     ||
                 mode == RMODE_3D_HUD_SKETCH ||
                 mode == RMODE_2D_SKETCH     ||
                 mode == RMODE_2D_HUD_SKETCH );
 
-            if (should_use_sketch) { BeginShaderMode(g_render.sketch.shader->base); }
+            if (should_use_sketch) { BeginShaderMode(g_render.sketch_shader.shader->base); }
 
             DrawTexturePro(g_render.rmode_data[mode].target.texture, src, dst, {}, 0.0F, g_render.rmode_data[mode].tint_color);
 
@@ -553,19 +553,19 @@ Color render_get_ambient_color() {
 }
 
 void render_sketch_set_major_color(Color color) {
-    g_render.sketch.major_color = color;
+    g_render.sketch_shader.major_color = color;
 
     F32 major_color[4];
     color_to_vec4(color, major_color);
-    SetShaderValue(g_render.sketch.shader->base, g_render.sketch.major_color_loc, major_color, SHADER_UNIFORM_VEC4);
+    SetShaderValue(g_render.sketch_shader.shader->base, g_render.sketch_shader.major_color_loc, major_color, SHADER_UNIFORM_VEC4);
 }
 
 void render_sketch_set_minor_color(Color color) {
-    g_render.sketch.minor_color = color;
+    g_render.sketch_shader.minor_color = color;
 
     F32 minor_color[4];
     color_to_vec4(color, minor_color);
-    SetShaderValue(g_render.sketch.shader->base, g_render.sketch.minor_color_loc, minor_color, SHADER_UNIFORM_VEC4);
+    SetShaderValue(g_render.sketch_shader.shader->base, g_render.sketch_shader.minor_color_loc, minor_color, SHADER_UNIFORM_VEC4);
 }
 
 void render_vary_sketch_colors(S32 variation) {
@@ -577,8 +577,8 @@ void render_vary_sketch_colors(S32 variation) {
     SZ const max_changes           = 1000;
     F32 const min_variance         = 0.25F;
 
-    start_major_color = g_render.sketch.major_color;
-    start_minor_color = g_render.sketch.minor_color;
+    start_major_color = g_render.sketch_shader.major_color;
+    start_minor_color = g_render.sketch_shader.minor_color;
     end_major_color   = color_variation(start_major_color, variation);
     end_minor_color   = color_variation(start_minor_color, variation);
     change_count++;
@@ -598,8 +598,8 @@ void render_vary_sketch_colors(S32 variation) {
 }
 
 void render_sketch_swap_colors() {
-    Color const t = g_render.sketch.major_color;
-    render_sketch_set_major_color(g_render.sketch.minor_color);
+    Color const t = g_render.sketch_shader.major_color;
+    render_sketch_set_major_color(g_render.sketch_shader.minor_color);
     render_sketch_set_minor_color(t);
 }
 

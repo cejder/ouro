@@ -308,7 +308,7 @@ void particles3d_add(Vector3 *positions,
     }
 }
 
-void particles3d_add_effect_explosion(Vector3 center, F32 radius, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+void particles3d_add_explosion(Vector3 center, F32 radius, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
     // Use multiple textures for variety
     C8 const* explosion_texture_names[] = {
         "particle_flare_01.png",
@@ -375,7 +375,7 @@ void particles3d_add_effect_explosion(Vector3 center, F32 radius, Color start_co
     particles3d_add(positions, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, count);
 }
 
-void particles3d_add_effect_smoke(Vector3 origin, F32 spread, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+void particles3d_add_smoke(Vector3 origin, F32 spread, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
     C8 const* smoke_texture_names[] = {
         "particle_black_smoke_00.png",
         "particle_black_smoke_05.png",
@@ -436,7 +436,7 @@ void particles3d_add_effect_smoke(Vector3 origin, F32 spread, Color start_color,
     particles3d_add(positions, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, count);
 }
 
-void particles3d_add_effect_sparkle(Vector3 center, F32 radius, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+void particles3d_add_sparkle(Vector3 center, F32 radius, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
     C8 const* sparkle_texture_names[] = {
         "particle_star_01.png",
         "particle_star_05.png",
@@ -499,7 +499,7 @@ void particles3d_add_effect_sparkle(Vector3 center, F32 radius, Color start_colo
     particles3d_add(positions, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, count);
 }
 
-void particles3d_add_effect_fire(Vector3 origin, F32 radius, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+void particles3d_add_fire(Vector3 origin, F32 radius, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
     C8 const* fire_texture_names[] = {
         "particle_flame_01.png",
         "particle_flame_02.png",
@@ -558,7 +558,7 @@ void particles3d_add_effect_fire(Vector3 origin, F32 radius, Color start_color, 
     particles3d_add(positions, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, count);
 }
 
-void particles3d_add_effect_spiral(Vector3 center, F32 radius, F32 height, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+void particles3d_add_spiral(Vector3 center, F32 radius, F32 height, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
     C8 const* magic_texture_names[] = {
         "particle_magic_01.png",
         "particle_magic_03.png",
@@ -627,7 +627,7 @@ void particles3d_add_effect_spiral(Vector3 center, F32 radius, F32 height, Color
     particles3d_add(positions, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, count);
 }
 
-void particles3d_add_effect_fountain(Vector3 origin, F32 spread_angle, F32 power, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+void particles3d_add_fountain(Vector3 origin, F32 spread_angle, F32 power, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
     C8 const* fountain_texture_names[] = {
         "particle_circle_01.png",
         "particle_circle_03.png",
@@ -685,7 +685,7 @@ void particles3d_add_effect_fountain(Vector3 origin, F32 spread_angle, F32 power
     particles3d_add(positions, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, count);
 }
 
-void particles3d_add_effect_trail(Vector3 start, Vector3 velocity, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+void particles3d_add_trail(Vector3 start, Vector3 velocity, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
     C8 const* trail_texture_names[] = {
         "particle_trace_01.png",
         "particle_trace_03.png",
@@ -735,7 +735,7 @@ void particles3d_add_effect_trail(Vector3 start, Vector3 velocity, Color start_c
     particles3d_add(positions, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, count);
 }
 
-void particles3d_add_effect_dust_cloud(Vector3 center, F32 radius, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+void particles3d_add_dust_cloud(Vector3 center, F32 radius, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
     C8 const* dust_texture_names[] = {
         "particle_dirt_01.png",
         "particle_dirt_02.png",
@@ -794,7 +794,7 @@ void particles3d_add_effect_dust_cloud(Vector3 center, F32 radius, Color start_c
     particles3d_add(positions, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, count);
 }
 
-void particles3d_add_effect_magic_burst(Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+void particles3d_add_magic_burst(Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
     C8 const* magic_texture_names[] = {
         "particle_magic_01.png",
         "particle_magic_02.png",
@@ -858,7 +858,7 @@ void particles3d_add_effect_magic_burst(Vector3 center, Color start_color, Color
     particles3d_add(positions, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, count);
 }
 
-void particles3d_add_effect_debris(Vector3 center, Vector3 impulse, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+void particles3d_add_debris(Vector3 center, Vector3 impulse, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
     C8 const* debris_texture_names[] = {
         "particle_dirt_01.png",
         "particle_dirt_02.png",
@@ -914,7 +914,7 @@ void particles3d_add_effect_debris(Vector3 center, Vector3 impulse, Color start_
     particles3d_add(positions, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, count);
 }
 
-void particles3d_add_effect_ambient_rain(Vector3 origin, F32 spread_radius, F32 fall_height, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+void particles3d_add_ambient_rain(Vector3 origin, F32 spread_radius, F32 fall_height, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
     // Clean rain effect implementation:
     // 1. Spawn particles at random heights within fall_height
     // 2. Give them initial downward velocity
@@ -1038,7 +1038,7 @@ void particles3d_add_effect_ambient_rain(Vector3 origin, F32 spread_radius, F32 
     particles3d_add(positions, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, count);
 }
 
-void particles3d_add_effect_chaos_stress_test(Vector3 center, F32 radius, SZ count) {
+void particles3d_add_chaos_stress_test(Vector3 center, F32 radius, SZ count) {
     // ALL 157 particle textures for maximum stress testing!
     C8 const* all_texture_names[] = {
         "particle_black_smoke_00.png", "particle_black_smoke_01.png", "particle_black_smoke_02.png", "particle_black_smoke_03.png",
@@ -1182,7 +1182,7 @@ void particles3d_add_effect_chaos_stress_test(Vector3 center, F32 radius, SZ cou
     particles3d_add(positions, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, count);
 }
 
-void particles3d_add_effect_harvest_impact(Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+void particles3d_add_harvest_impact(Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
     C8 const* impact_texture_names[] = {
         "particle_slash_01.png",
         "particle_slash_02.png",
@@ -1244,7 +1244,7 @@ void particles3d_add_effect_harvest_impact(Vector3 center, Color start_color, Co
     particles3d_add(positions, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, count);
 }
 
-void particles3d_add_effect_harvest_active(Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+void particles3d_add_harvest_active(Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
     C8 const* active_texture_names[] = {
         "particle_dirt_01.png",
         "particle_dirt_02.png",
@@ -1301,7 +1301,7 @@ void particles3d_add_effect_harvest_active(Vector3 center, Color start_color, Co
     particles3d_add(positions, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, count);
 }
 
-void particles3d_add_effect_selection_indicator(Vector3 position, F32 radius, Color start_color, Color end_color, SZ count) {
+void particles3d_add_selection_indicator(Vector3 position, F32 radius, Color start_color, Color end_color, SZ count) {
     // Large spinning magic circles: 2-4 big stationary particles rotating in place beneath the entity
     C8 const* selection_texture_names[] = {
         "particle_magic_03.png",
@@ -1377,7 +1377,7 @@ void particles3d_add_effect_selection_indicator(Vector3 position, F32 radius, Co
     }
 }
 
-void particles3d_add_effect_click_indicator(Vector3 position, F32 radius, Color start_color, Color end_color, SZ count) {
+void particles3d_add_click_indicator(Vector3 position, F32 radius, Color start_color, Color end_color, SZ count) {
     // Large spinning light circles for ground click indicators
     C8 const* click_texture_names[] = {
         "particle_light_03.png",
@@ -1453,7 +1453,7 @@ void particles3d_add_effect_click_indicator(Vector3 position, F32 radius, Color 
     }
 }
 
-void particles3d_add_effect_harvest_complete(Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+void particles3d_add_harvest_complete(Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
     C8 const* complete_texture_names[] = {
         "particle_explosion_01.png",
         "particle_explosion_02.png",
@@ -1517,7 +1517,7 @@ void particles3d_add_effect_harvest_complete(Vector3 center, Color start_color, 
     particles3d_add(positions, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, count);
 }
 
-void particles3d_add_effect_blood_hit(Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+void particles3d_add_blood_hit(Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
     C8 const* blood_texture_names[] = {
         "particle_circle_01.png",
         "particle_circle_02.png",
@@ -1580,7 +1580,7 @@ void particles3d_add_effect_blood_hit(Vector3 center, Color start_color, Color e
     particles3d_add(positions, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, count);
 }
 
-void particles3d_add_effect_blood_death(Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+void particles3d_add_blood_death(Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
     C8 const* blood_texture_names[] = {
         "particle_circle_01.png",
         "particle_circle_02.png",
@@ -1647,7 +1647,7 @@ void particles3d_add_effect_blood_death(Vector3 center, Color start_color, Color
     particles3d_add(positions, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, count);
 }
 
-void particles3d_add_effect_spawn(Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+void particles3d_add_spawn(Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
     C8 const* spawn_texture_names[] = {
         "particle_star_01.png",
         "particle_star_05.png",
@@ -1742,25 +1742,25 @@ void particles3d_add(Vector3 *positions,
                    U32 *billboard_modes,
                    F32 *stretch_factors,
                    SZ count) {}
-void particles3d_add_effect_explosion           (Vector3 center, F32 radius, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
-void particles3d_add_effect_smoke               (Vector3 origin, F32 spread, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
-void particles3d_add_effect_sparkle             (Vector3 center, F32 radius, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
-void particles3d_add_effect_fire                (Vector3 origin, F32 radius, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
-void particles3d_add_effect_spiral              (Vector3 center, F32 radius, F32 height, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
-void particles3d_add_effect_fountain            (Vector3 origin, F32 spread_angle, F32 power, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
-void particles3d_add_effect_trail               (Vector3 start, Vector3 velocity, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
-void particles3d_add_effect_dust_cloud          (Vector3 center, F32 radius, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
-void particles3d_add_effect_magic_burst         (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
-void particles3d_add_effect_debris              (Vector3 center, Vector3 impulse, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
-void particles3d_add_effect_ambient_rain        (Vector3 origin, F32 spread_radius, F32 fall_height, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
-void particles3d_add_effect_chaos_stress_test   (Vector3 center, F32 radius, SZ count) {}
-void particles3d_add_effect_harvest_impact      (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
-void particles3d_add_effect_harvest_active      (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
-void particles3d_add_effect_harvest_complete    (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
-void particles3d_add_effect_selection_indicator (Vector3 position, F32 radius, Color start_color, Color end_color, SZ count) {}
-void particles3d_add_effect_click_indicator     (Vector3 position, F32 radius, Color start_color, Color end_color, SZ count) {}
-void particles3d_add_effect_blood_hit           (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
-void particles3d_add_effect_blood_death         (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
-void particles3d_add_effect_spawn               (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_add_explosion           (Vector3 center, F32 radius, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_add_smoke               (Vector3 origin, F32 spread, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_add_sparkle             (Vector3 center, F32 radius, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_add_fire                (Vector3 origin, F32 radius, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_add_spiral              (Vector3 center, F32 radius, F32 height, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_add_fountain            (Vector3 origin, F32 spread_angle, F32 power, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_add_trail               (Vector3 start, Vector3 velocity, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_add_dust_cloud          (Vector3 center, F32 radius, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_add_magic_burst         (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_add_debris              (Vector3 center, Vector3 impulse, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_add_ambient_rain        (Vector3 origin, F32 spread_radius, F32 fall_height, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_add_chaos_stress_test   (Vector3 center, F32 radius, SZ count) {}
+void particles3d_add_harvest_impact      (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_add_harvest_active      (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_add_harvest_complete    (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_add_selection_indicator (Vector3 position, F32 radius, Color start_color, Color end_color, SZ count) {}
+void particles3d_add_click_indicator     (Vector3 position, F32 radius, Color start_color, Color end_color, SZ count) {}
+void particles3d_add_blood_hit           (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_add_blood_death         (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_add_spawn               (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
 
 #endif

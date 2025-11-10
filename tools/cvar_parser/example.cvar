@@ -17,7 +17,7 @@ draw_audio_3d                : false
 
 [render]
 hud                          : false
-sketch_effect                : true
+sketch                       : true
 skybox                       : true
 skybox_night                 : false
 fboy                         : false

@@ -184,8 +184,8 @@ void talker_draw(EntityTalker *talker, C8 const *name) {
     }
 
     if (talker->is_active) {
-        auto major_color                 = g_render.sketch.major_color;
-        auto minor_color                 = g_render.sketch.minor_color;
+        auto major_color                 = g_render.sketch_shader.major_color;
+        auto minor_color                 = g_render.sketch_shader.minor_color;
         auto box_color                   = Fade(minor_color, 0.85F);
         auto shadow_color                = BLACK;
         auto name_color                  = major_color;

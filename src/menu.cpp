@@ -509,7 +509,7 @@ void menu_update(Menu *menu) {
                         5.0F, 5.0F,
                     };
 
-                    particles2d_add_effect_fire(target_rect, start_color, end_color, 2.0F, 5);
+                    particles2d_add_fire(target_rect, start_color, end_color, 2.0F, 5);
                 }
             }
         }

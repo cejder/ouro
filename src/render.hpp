@@ -93,7 +93,7 @@ struct RenderCameras {
     RenderCamera3D c3d;
 };
 
-struct RenderSketchEffect {
+struct RenderSketchShader {
     Color major_color;
     Color minor_color;
     AShader *shader;
@@ -132,10 +132,9 @@ struct RenderSkyboxShader {
 struct Render {
     BOOL initialized;
 
-    SZ request_count;
-    SZ request_capacity;
+    SZ visible_vertex_count;
 
-    RenderSketchEffect sketch;
+    RenderSketchShader sketch_shader;
     RenderSkyboxShader skybox_shader;
     RenderModelShader model_shader;
     RenderModelInstancedShader model_instanced_shader;

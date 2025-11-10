@@ -20,7 +20,7 @@ F32     c_audio__pan_sfx                         = 0.00000000F;
 F32     c_audio__pan_voice                       = 0.00000000F;
 F32     c_audio__pitch_ambience                  = 1.00000000F;
 F32     c_audio__pitch_music                     = 1.00000000F;
-F32     c_audio__pitch_sfx                       = 1.92000008F;
+F32     c_audio__pitch_sfx                       = 1.00000000F;
 F32     c_audio__pitch_voice                     = 1.50000000F;
 F32     c_audio__rolloff_scale                   = 1.00000000F;
 F32     c_audio__volume_ambience                 = 0.00000000F;
@@ -72,7 +72,7 @@ F32     c_render__dungeon_fog_density            = 0.03300000F;
 BOOL    c_render__fboy                           = false;
 BOOL    c_render__hud                            = false;
 F32     c_render__overworld_fog_density          = 0.00050000F;
-BOOL    c_render__sketch_effect                  = true;
+BOOL    c_render__sketch                         = true;
 BOOL    c_render__skybox                         = true;
 BOOL    c_render__skybox_night                   = true;
 BOOL    c_render__tboy                           = true;
@@ -150,7 +150,7 @@ CVarMeta const cvar_meta_table[CVAR_COUNT] = {
     {"render__fboy",                            &c_render__fboy,                            CVAR_TYPE_BOOL,     ""},
     {"render__hud",                             &c_render__hud,                             CVAR_TYPE_BOOL,     ""},
     {"render__overworld_fog_density",           &c_render__overworld_fog_density,           CVAR_TYPE_F32,      ""},
-    {"render__sketch_effect",                   &c_render__sketch_effect,                   CVAR_TYPE_BOOL,     ""},
+    {"render__sketch",                          &c_render__sketch,                          CVAR_TYPE_BOOL,     ""},
     {"render__skybox",                          &c_render__skybox,                          CVAR_TYPE_BOOL,     ""},
     {"render__skybox_night",                    &c_render__skybox_night,                    CVAR_TYPE_BOOL,     ""},
     {"render__tboy",                            &c_render__tboy,                            CVAR_TYPE_BOOL,     ""},

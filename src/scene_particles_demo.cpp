@@ -113,23 +113,23 @@ SCENE_UPDATE(particles_demo) {
 
     if (is_down(IA_DBG_LIGHT_1)) {
         Rectangle const spawn_rect = {mouse_pos.x - 25.0F, mouse_pos.y - 25.0F, 50.0F, 50.0F};
-        particles2d_add_effect_explosion(spawn_rect, ORANGE, RED, s.size_multiplier, 150);
+        particles2d_add_explosion(spawn_rect, ORANGE, RED, s.size_multiplier, 150);
     }
     if (is_down(IA_DBG_LIGHT_2) || is_mouse_down(I_MOUSE_LEFT)) {
         Rectangle const spawn_rect = {mouse_pos.x - 20.0F, mouse_pos.y - 10.0F, 40.0F, 20.0F};
-        particles2d_add_effect_smoke(spawn_rect, GOLD, RED, s.size_multiplier, 100);
+        particles2d_add_smoke(spawn_rect, GOLD, RED, s.size_multiplier, 100);
     }
     if (is_down(IA_DBG_LIGHT_3)) {
         Rectangle const spawn_rect = {mouse_pos.x - 40.0F, mouse_pos.y - 40.0F, 80.0F, 80.0F};
-        particles2d_add_effect_sparkle(spawn_rect, BEIGE, GOLD, s.size_multiplier, 80);
+        particles2d_add_sparkle(spawn_rect, BEIGE, GOLD, s.size_multiplier, 80);
     }
     if (is_down(IA_DBG_LIGHT_4)) {
         Rectangle const spawn_rect = {mouse_pos.x - 25.0F, mouse_pos.y - 15.0F, 50.0F, 20.0F};
-        particles2d_add_effect_fire(spawn_rect, GOLD, RED, s.size_multiplier, 120);
+        particles2d_add_fire(spawn_rect, GOLD, RED, s.size_multiplier, 120);
     }
     if (is_down(IA_DBG_LIGHT_5)) {
         Rectangle const spawn_rect = {mouse_pos.x - 80.0F, mouse_pos.y - 80.0F, 160.0F, 160.0F};
-        particles2d_add_effect_spiral(spawn_rect, SKYBLUE, PURPLE, s.size_multiplier, 120);
+        particles2d_add_spiral(spawn_rect, SKYBLUE, PURPLE, s.size_multiplier, 120);
     }
 
     if (is_pressed(IA_OPEN_OVERLAY_MENU)) {

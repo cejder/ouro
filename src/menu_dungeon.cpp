@@ -16,7 +16,7 @@ enum MenuChoice : U8 {
     MENU_CHOICE_DEBUG,
     MENU_CHOICE_SKYBOX,
     MENU_CHOICE_SKYBOX_NIGHT,
-    MENU_CHOICE_SKETCH_EFFECT,
+    MENU_CHOICE_SKETCH,
     MENU_CHOICE_ADD_REMOVE_RANDOM_NPC,
     MENU_CHOICE_ADD_REMOVE_VEGETATION,
     MENU_CHOICE_RANDOMLY_ROTATE_ENTITIES,
@@ -35,7 +35,7 @@ SZ menu_extra_dungeon_func_get_entry_count() {
     "Debug",
     "Skybox",
     "Day Skybox",
-    "Sketch Effect",
+    "Sketch",
     "+/- NPC",
     "+/- Vegetation",
     "Rotate Entities",
@@ -84,9 +84,9 @@ C8 const *menu_extra_dungeon_func_get_value(void *cb_data, SZ idx, Color *color_
             menu_extra_override_toggle_color(color_ptr, color_override_ptr, c_render__skybox_night);
             return c_render__skybox_night ? on_text : off_text;
         }
-        case MENU_CHOICE_SKETCH_EFFECT: {
-            menu_extra_override_toggle_color(color_ptr, color_override_ptr, c_render__sketch_effect);
-            return c_render__sketch_effect ? on_text : off_text;
+        case MENU_CHOICE_SKETCH: {
+            menu_extra_override_toggle_color(color_ptr, color_override_ptr, c_render__sketch);
+            return c_render__sketch ? on_text : off_text;
         }
         case MENU_CHOICE_RANDOMLY_ROTATE_ENTITIES:
         case MENU_CHOICE_DUMP_ALL_ENTITIES: {
@@ -134,8 +134,8 @@ void menu_extra_dungeon_func_yes(void *_cb_data) {
             MenuExtraToggleData toggle_data = {&c_render__skybox_night, "Night Skybox"};
             menu_extra_toggle_data_cb_toggle(&toggle_data);
         } break;
-        case MENU_CHOICE_SKETCH_EFFECT: {
-            MenuExtraToggleData toggle_data = {&c_render__sketch_effect, "Sketch Effect"};
+        case MENU_CHOICE_SKETCH: {
+            MenuExtraToggleData toggle_data = {&c_render__sketch, "Sketch"};
             menu_extra_toggle_data_cb_toggle(&toggle_data);
         } break;
         case MENU_CHOICE_ADD_REMOVE_RANDOM_NPC: {

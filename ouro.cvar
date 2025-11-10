@@ -31,7 +31,7 @@ bone_label_font_size         : 24
 camera_info                  : false
 cursor_info                  : false
 dungeon_info                 : true
-enabled                      : true
+enabled                      : false
 gizmo_info                   : false
 grid_info                    : false
 keybindings_info             : false
@@ -69,7 +69,7 @@ dungeon_fog_density          : 0.03300000
 fboy                         : false
 hud                          : false
 overworld_fog_density        : 0.00050000
-sketch_effect                : true
+sketch                       : true
 skybox                       : true
 skybox_night                 : true
 tboy                         : true

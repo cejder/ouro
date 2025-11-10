@@ -18,47 +18,38 @@ fwd_decl(ATerrain);
 fwd_decl(ASound);
 fwd_decl(AModel);
 
-// TODO: This needs to be skinnier
-
 struct World {
-    SZ visible_vertex_count;
     ATerrain *base_terrain;
     EID selected_id;
     U32 active_ent_count;
     U32 entity_type_counts[ENTITY_TYPE_COUNT];
     U32 max_gen;
-    BOOL pawn_interactions_dirty;
 
     // Active entity optimization: array of active entity IDs for fast iteration
     EID active_entities[WORLD_MAX_ENTITIES];
     SZ active_entity_count;
 
-    // NOTE: Field order optimized for cache locality - hot data first
-
     alignas(32) U32 flags[WORLD_MAX_ENTITIES];
     alignas(32) U32 generation[WORLD_MAX_ENTITIES];
     alignas(32) EntityType type[WORLD_MAX_ENTITIES];
     alignas(32) F32 lifetime[WORLD_MAX_ENTITIES];
+    alignas(32) C8 name[WORLD_MAX_ENTITIES][ENTITY_NAME_MAX_LENGTH];
 
     alignas(32) Vector3 position[WORLD_MAX_ENTITIES];
     alignas(32) F32 rotation[WORLD_MAX_ENTITIES];
     alignas(32) Vector3 scale[WORLD_MAX_ENTITIES];
+    alignas(32) Vector3 original_scale[WORLD_MAX_ENTITIES];
     alignas(32) OrientedBoundingBox obb[WORLD_MAX_ENTITIES];
     alignas(32) F32 radius[WORLD_MAX_ENTITIES];
 
-    alignas(32) EntityActor actor[WORLD_MAX_ENTITIES];
-
     alignas(32) U32 model_name_hash[WORLD_MAX_ENTITIES];
     alignas(32) Color tint[WORLD_MAX_ENTITIES];
+    alignas(32) EntityAnimation animation[WORLD_MAX_ENTITIES];
 
+    alignas(32) EntityActor actor[WORLD_MAX_ENTITIES];
     alignas(32) EntityHealth health[WORLD_MAX_ENTITIES];
-    alignas(32) C8 name[WORLD_MAX_ENTITIES][ENTITY_NAME_MAX_LENGTH];
-
     alignas(32) EntityTalker talker[WORLD_MAX_ENTITIES];
     alignas(32) EntityBuilding building[WORLD_MAX_ENTITIES];
-    alignas(32) Vector3 original_scale[WORLD_MAX_ENTITIES];
-
-    alignas(32) EntityAnimation animation[WORLD_MAX_ENTITIES];
 
     struct {
         U8 follower_counts[WORLD_MAX_ENTITIES];
