@@ -12,19 +12,13 @@
 
 #include <raylib.h>
 
-#define WORLD_MAX_ENTITIES 50000
+#define WORLD_MAX_ENTITIES 15000
 
 fwd_decl(ATerrain);
 fwd_decl(ASound);
 fwd_decl(AModel);
 
 // TODO: This needs to be skinnier
-
-// TODO: MOVE THIS
-struct TriangleMeshCollider {
-    AModel *model;
-    Vector3 offset;
-};
 
 struct World {
     SZ visible_vertex_count;
@@ -64,8 +58,6 @@ struct World {
     alignas(32) EntityBuilding building[WORLD_MAX_ENTITIES];
     alignas(32) Vector3 original_scale[WORLD_MAX_ENTITIES];
 
-    alignas(32) TriangleMeshCollider triangle_collider[WORLD_MAX_ENTITIES];
-
     alignas(32) EntityAnimation animation[WORLD_MAX_ENTITIES];
 
     struct {
@@ -102,8 +94,6 @@ void world_draw_3d_hud();
 void world_draw_3d_dbg();
 void world_set_selected_entity(EID id);
 void world_vegetation_collision();
-BOOL world_triangle_mesh_collision();
-void world_set_entity_triangle_collision(EID id, AModel *model, Vector3 offset);
 F32 world_get_distance_to_player(Vector3 position);
 void world_randomly_rotate_entities();
 void world_dump_all_entities();

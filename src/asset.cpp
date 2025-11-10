@@ -98,104 +98,6 @@ void static i_fill_header(AHeader *header, C8 const *path, AType type) {
     header->type          = type;
 }
 
-// Generate simplified collision mesh from visual mesh
-// Strategy: Keep significant geometry (floors/walls), remove visual details
-void static i_generate_collision_mesh(AModel *model) {
-    model->collision.vertices = nullptr;
-    model->collision.indices = nullptr;
-    model->collision.vertex_count = 0;
-    model->collision.triangle_count = 0;
-    model->collision.generated = false;
-
-    U32 total_triangles = 0;
-    for (S32 mesh_idx = 0; mesh_idx < model->base.meshCount; ++mesh_idx) {
-        Mesh *mesh = &model->base.meshes[mesh_idx];
-        if (mesh->triangleCount > 0) {
-            total_triangles += (U32)mesh->triangleCount;
-        }
-    }
-
-    if (total_triangles == 0) { return; }
-
-    U32 constexpr max_collision_triangles = 10000;
-    U32 const collision_tri_count = (total_triangles < max_collision_triangles) ? total_triangles : max_collision_triangles;
-
-    // Use transient arena for temp buffer during generation
-    auto *temp_verts = mmta(Vector3*, (SZ)(collision_tri_count) * 3 * sizeof(Vector3));
-    U32 vert_count = 0;
-
-    for (S32 mesh_idx = 0; mesh_idx < model->base.meshCount; ++mesh_idx) {
-        Mesh *mesh = &model->base.meshes[mesh_idx];
-        if (!mesh->vertices || mesh->triangleCount == 0) { continue; }
-
-        BOOL const is_indexed = (mesh->indices != nullptr);
-        U32 const tri_count = (U32)mesh->triangleCount;
-
-        for (U32 tri_idx = 0; tri_idx < tri_count && vert_count < collision_tri_count * 3; ++tri_idx) {
-            U32 idx0 = 0;
-            U32 idx1 = 0;
-            U32 idx2 = 0;
-            if (is_indexed) {
-                idx0 = mesh->indices[(tri_idx * 3) + 0];
-                idx1 = mesh->indices[(tri_idx * 3) + 1];
-                idx2 = mesh->indices[(tri_idx * 3) + 2];
-            } else {
-                idx0 = (tri_idx * 3) + 0;
-                idx1 = (tri_idx * 3) + 1;
-                idx2 = (tri_idx * 3) + 2;
-            }
-
-            Vector3 const v0 = {mesh->vertices[(idx0 * 3) + 0], mesh->vertices[(idx0 * 3) + 1], mesh->vertices[(idx0 * 3) + 2]};
-            Vector3 const v1 = {mesh->vertices[(idx1 * 3) + 0], mesh->vertices[(idx1 * 3) + 1], mesh->vertices[(idx1 * 3) + 2]};
-            Vector3 const v2 = {mesh->vertices[(idx2 * 3) + 0], mesh->vertices[(idx2 * 3) + 1], mesh->vertices[(idx2 * 3) + 2]};
-
-            Vector3 const edge1 = Vector3Subtract(v1, v0);
-            Vector3 const edge2 = Vector3Subtract(v2, v0);
-            Vector3 const cross = Vector3CrossProduct(edge1, edge2);
-            F32 const area = Vector3Length(cross) * 0.5F;
-
-            if (area < 0.01F) { continue; }
-
-            Vector3 const normal = Vector3Normalize(cross);
-            F32 const normal_y = normal.y;
-            BOOL const is_floor_or_ceiling = (normal_y > 0.7F || normal_y < -0.7F);
-            BOOL const is_wall = (normal_y > -0.5F && normal_y < 0.5F);
-
-            if (is_floor_or_ceiling || is_wall) {
-                temp_verts[vert_count++] = v0;
-                temp_verts[vert_count++] = v1;
-                temp_verts[vert_count++] = v2;
-            }
-        }
-    }
-
-    if (vert_count == 0) {
-        return;  // No free needed - arena allocator!
-    }
-
-    U32 const final_tri_count = vert_count / 3;
-    model->collision.vertex_count = vert_count;
-    model->collision.triangle_count = final_tri_count;
-
-    // Use permanent arena for collision mesh - lives with the asset
-    model->collision.vertices = mmpa(F32*, (SZ)(vert_count) * 3 * sizeof(F32));
-    for (U32 i = 0; i < vert_count; ++i) {
-        model->collision.vertices[(i * 3) + 0] = temp_verts[i].x;
-        model->collision.vertices[(i * 3) + 1] = temp_verts[i].y;
-        model->collision.vertices[(i * 3) + 2] = temp_verts[i].z;
-    }
-
-    model->collision.indices = mmpa(U32*, vert_count * sizeof(U32));
-    for (U32 i = 0; i < vert_count; ++i) {
-        model->collision.indices[i] = i;
-    }
-
-    model->collision.generated = true;
-    // No free needed - temp_verts in TARENA gets cleared automatically!
-
-    lli("Collision mesh for %s: %u tris (from %u visual)", model->header.name, final_tri_count, total_triangles);
-}
-
 void static i_load_model(C8 const *path) {
     AModel *a = &g_assets.models[g_assets.model_count++];
     i_fill_header(&a->header, path, A_TYPE_MODEL);
@@ -224,9 +126,6 @@ void static i_load_model(C8 const *path) {
     for (S32 i = 0; i < a->base.meshCount; ++i) { a->vertex_count += (SZ)a->base.meshes[i].vertexCount; }
 
     if (a->vertex_count > A_MAX_VERTICES_BEFORE_WARNING) { llw("Model %s has more than %d vertices.", a->header.name, A_MAX_VERTICES_BEFORE_WARNING); }
-
-    // Generate simplified collision mesh for physics
-    i_generate_collision_mesh(a);
 
     // Load animation related stuff
     a->animations = LoadModelAnimations(a->header.path, &a->animation_count);

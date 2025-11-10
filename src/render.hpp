@@ -279,7 +279,6 @@ void d3d_camera(Camera3D *camera, Color color);
 void d3d_billboard(ATexture *texture, Vector3 position, F32 scale, Color tint);
 void d3d_gizmo(Vector3 position, F32 rotation, OrientedBoundingBox bbox, Color bbox_color, F32 gizmos_alpha, BOOL has_talker, BOOL is_selected);
 void d3d_bone_gizmo(EID entity_id);
-void d3d_collision_mesh(CollisionMesh *collision, Vector3 position, Vector3 scale, Color color);
 
 void c2d_set(Camera2D *camera);
 Camera2D *c2d_get_ptr();

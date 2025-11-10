@@ -71,14 +71,6 @@ struct AHeader {
     SZ file_size;
 };
 
-struct CollisionMesh {
-    F32 *vertices;           // Simplified collision vertices (x,y,z packed)
-    U32 *indices;            // Triangle indices
-    U32 vertex_count;
-    U32 triangle_count;
-    BOOL generated;          // Whether collision mesh was generated
-};
-
 struct AModel {
     AHeader header;
     Model base;
@@ -87,7 +79,6 @@ struct AModel {
     BOOL has_animations;      // True if model has animations and bones (computed once on load)
     BoundingBox bb;
     SZ vertex_count;
-    CollisionMesh collision;  // Simplified collision mesh for physics
     Texture2D icon;
 };
 

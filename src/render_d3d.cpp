@@ -405,40 +405,6 @@ void d3d_billboard(ATexture *texture, Vector3 position, F32 scale, Color tint) {
     DrawBillboard(c3d_get(), texture->base, position, scale, tint);
 }
 
-void d3d_collision_mesh(CollisionMesh *collision, Vector3 position, Vector3 scale, Color color) {
-    if (!collision || !collision->generated || collision->triangle_count == 0) { return; }
-
-    // Draw wireframe triangles - each triangle is 3 lines
-    for (U32 tri_idx = 0; tri_idx < collision->triangle_count; ++tri_idx) {
-        U32 const idx0 = collision->indices[(tri_idx * 3) + 0];
-        U32 const idx1 = collision->indices[(tri_idx * 3) + 1];
-        U32 const idx2 = collision->indices[(tri_idx * 3) + 2];
-
-        // Transform vertices to world space
-        Vector3 const v0 = {
-            (collision->vertices[(idx0 * 3) + 0] * scale.x) + position.x,
-            (collision->vertices[(idx0 * 3) + 1] * scale.y) + position.y,
-            (collision->vertices[(idx0 * 3) + 2] * scale.z) + position.z
-        };
-        Vector3 const v1 = {
-            (collision->vertices[(idx1 * 3) + 0] * scale.x) + position.x,
-            (collision->vertices[(idx1 * 3) + 1] * scale.y) + position.y,
-            (collision->vertices[(idx1 * 3) + 2] * scale.z) + position.z
-        };
-        Vector3 const v2 = {
-            (collision->vertices[(idx2 * 3) + 0] * scale.x) + position.x,
-            (collision->vertices[(idx2 * 3) + 1] * scale.y) + position.y,
-            (collision->vertices[(idx2 * 3) + 2] * scale.z) + position.z
-        };
-
-        // Draw the 3 edges of the triangle
-        INCREMENT_DRAW_CALL;
-        DrawLine3D(v0, v1, color);
-        DrawLine3D(v1, v2, color);
-        DrawLine3D(v2, v0, color);
-    }
-}
-
 void d3d_gizmo(Vector3 position, F32 rotation, OrientedBoundingBox bbox, Color bbox_color, F32 gizmos_alpha, BOOL has_talker, BOOL is_selected) {
     INCREMENT_DRAW_CALL;
 

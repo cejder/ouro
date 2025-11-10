@@ -487,10 +487,6 @@ SKIP_OTHER_INPUT:
     PP(screen_fade_update(dt));
     PP(i_fade_out_maybe(dt));
 
-    // Triangle collision must run BEFORE player_update so the flag is set
-    BOOL const on_triangle_floor = world_triangle_mesh_collision();
-    g_player.on_triangle_floor = on_triangle_floor;
-
     PP(player_update(dt, dtu));
     PP(world_vegetation_collision());
     PP(world_update(dt, dtu));
