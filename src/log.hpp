@@ -23,7 +23,8 @@ enum LLogFlags : U8 {
     LLOG_FLAG_EMACS = 1 << 0,
     LLOG_FLAG_SHORTFILE = 1 << 1,
     LLOG_FLAG_COLOR = 1 << 2,
-    LLOG_FLAG_EXIT_ON_ERROR = 1 << 3,
+    LLOG_FLAG_QUIET_THIRD_PARTY = 1 << 4,
+    LLOG_FLAG_EXIT_ON_ERROR = 1 << 5,
 };
 
 struct LLogger {

@@ -29,6 +29,7 @@ C8 static const *i_get_short_file_name(C8 const *filepath) {
 
 void llog_init() {
     llog_enable_flag(LLOG_FLAG_EXIT_ON_ERROR);
+    llog_enable_flag(LLOG_FLAG_QUIET_THIRD_PARTY);
     mi_register_output(llog_mimalloc_cb, nullptr);
 }
 
@@ -132,9 +133,12 @@ void llog_format(LLogLevel level, C8 const *file, C8 const *func, U32 line, C8 c
 void llog_raylib_cb(S32 log_level, C8 const *text, va_list args) {
     if (log_level >= LLOG_LEVEL_COUNT) { return; }
 
+    LLogLevel llog_level = (LLogLevel)(log_level - 1);
+    if (FLAG_HAS(i_logger.flags, LLOG_FLAG_QUIET_THIRD_PARTY)) { llog_level = LLOG_LEVEL_TRACE; }
+
     C8 formatted_msg[1024];
     ou_vsnprintf(formatted_msg, sizeof(formatted_msg), text, args);
-    llog_format((LLogLevel)(log_level - 1), "raylib", "callback", 1, "%s", formatted_msg);
+    llog_format(llog_level, "raylib", "callback", 1, "%s", formatted_msg);
 }
 
 void llog_mimalloc_cb(C8 const *message, void *arg) {
@@ -142,15 +146,10 @@ void llog_mimalloc_cb(C8 const *message, void *arg) {
     SZ const len = ou_strlen_no_whitespace(message);
     if (len == 0) { return; }
 
-    LLogLevel level = LLOG_LEVEL_WARN;
+    LLogLevel llog_level = LLOG_LEVEL_WARN;
+    if (FLAG_HAS(i_logger.flags, LLOG_FLAG_QUIET_THIRD_PARTY)) { llog_level = LLOG_LEVEL_TRACE; }
 
-    // NOTE: Downgrade alignment fallback warnings to trace - these are not critical
-    if (ou_strstr(message, "unable to allocate aligned OS memory directly, fall back to over-allocation") ||
-        ou_strstr(message, "mimalloc: warning:")) {
-        level = LLOG_LEVEL_TRACE;
-    }
-
-    llog_format(level, "mimalloc", "callback", 1, "%s", message);
+    llog_format(llog_level, "mimalloc", "callback", 1, "%s", message);
 }
 
 FMOD_RESULT F_CALL llog_fmod_cb(FMOD_DEBUG_FLAGS flags, C8 const *file, S32 line, C8 const *func, C8 const *message) {
@@ -162,20 +161,22 @@ FMOD_RESULT F_CALL llog_fmod_cb(FMOD_DEBUG_FLAGS flags, C8 const *file, S32 line
     SZ const msg_len = ou_strlen(modified_message);
     if (msg_len > 0 && modified_message[msg_len - 1] == '\n') { modified_message[msg_len - 1] = '\0'; }
 
-    LLogLevel level = LLOG_LEVEL_NONE;
+    LLogLevel llog_level = LLOG_LEVEL_NONE;
     switch (flags) {
         case FMOD_DEBUG_LEVEL_ERROR: {
-            level = LLOG_LEVEL_ERROR;
+            llog_level = LLOG_LEVEL_ERROR;
         } break;
         case FMOD_DEBUG_LEVEL_WARNING: {
-            level = LLOG_LEVEL_WARN;
+            llog_level = LLOG_LEVEL_WARN;
         } break;
         case FMOD_DEBUG_LEVEL_LOG:
         default: {
-            level = LLOG_LEVEL_INFO;
+            llog_level = LLOG_LEVEL_INFO;
         } break;
     }
 
-    llog_format(level, file ? file : "fmod", func ? func : "callback", line > 0 ? (U32)line : 1, "%s", modified_message);
+    if (FLAG_HAS(i_logger.flags, LLOG_FLAG_QUIET_THIRD_PARTY)) { llog_level = LLOG_LEVEL_TRACE; }
+
+    llog_format(llog_level, file ? file : "fmod", func ? func : "callback", line > 0 ? (U32)line : 1, "%s", modified_message);
     return FMOD_OK;
 }
