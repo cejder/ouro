@@ -4,7 +4,7 @@
 
 // WARN: DO NOT EDIT - THIS IS A GENERATED FILE!
 
-#define CVAR_COUNT 75
+#define CVAR_COUNT 76
 #define CVAR_FILE_NAME "ouro.cvar"
 #define CVAR_NAME_MAX_LENGTH 128
 #define CVAR_STR_MAX_LENGTH 128
@@ -73,6 +73,7 @@ extern BOOL    c_debug__noclip;
 extern F32     c_debug__noclip_move_speed;
 extern BOOL    c_debug__profiler_hide_trivial_tracks;
 extern BOOL    c_debug__profiler_tracks;
+extern BOOL    c_debug__radius_info;
 extern CVarStr c_debug__small_font;
 extern S32     c_debug__small_font_size;
 extern BOOL    c_debug__terrain_info;

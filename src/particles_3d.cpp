@@ -1349,7 +1349,7 @@ void particles3d_add_effect_selection_indicator(Vector3 position, F32 radius, Co
         end_colors[i]      = color_variation(end_color, 15);
 
         lives[i]           = random_f32(1.2F, 1.8F);
-        sizes[i]           = radius * random_f32(2.25F, 3.0F);  // BIG particles scaled to entity size! (25% wider)
+        sizes[i]           = radius * 2.0F;
         gravities[i]       = 0.0F;  // No gravity
 
         // Alternate rotation direction for counter-rotating effect

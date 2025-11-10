@@ -411,7 +411,7 @@ void world_draw_3d_dbg() {
         if (!is_selected) {
             // If the target is more than X units, we can fade the gizmos. This is to avoid cluttering the screen.
             F32 const dist_till_no_fade = 75.0F;
-            F32 const dist_at_full_fade = 450.0F;
+            F32 const dist_at_full_fade = 150.0F;
             F32 const dist_to_player    = world_get_distance_to_player(g_world->position[i]);  // Use physics-aware position
 
             if (dist_to_player > dist_till_no_fade) {
@@ -425,6 +425,11 @@ void world_draw_3d_dbg() {
         // Draw the original OBB gizmo
         if (c_debug__bbox_info) {
             d3d_gizmo(g_world->position[i], g_world->rotation[i], g_world->obb[i], obb_color, gizmos_alpha, g_world->talker[i].is_enabled, is_selected);
+        }
+
+        // Draw the radius info
+        if (c_debug__radius_info && gizmos_alpha > 0.0F) {
+            d3d_sphere(g_world->position[i], g_world->radius[i], Fade(MAGENTA, 0.35F * gizmos_alpha));
         }
 
         // Draw bone debug info for selected entity
