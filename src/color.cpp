@@ -554,28 +554,60 @@ Color color_from_cstr(C8 const *str) {
     return result;
 }
 
-Color color_from_texture(ATexture *texture) {
-    Image const img = LoadImageFromTexture(texture->base);
+Color color_from_texture_dominant(ATexture *texture) {
+    Image img = LoadImageFromTexture(texture->base);
 
-    SZ total_red = 0;
-    SZ total_green = 0;
-    SZ total_blue = 0;
+    F64 lin_r = 0;
+    F64 lin_g = 0;
+    F64 lin_b = 0;
+    F64 weight_sum = 0;
 
-    for (S32 y = 0; y < img.height; ++y) {
-        for (S32 x = 0; x < img.width; ++x) {
-            Color const color = GetImageColor(img, x, y);
-            total_red   += color.r;
-            total_green += color.g;
-            total_blue  += color.b;
+    for (int y = 0; y < img.height; ++y) {
+        for (int x = 0; x < img.width; ++x) {
+            Color c = GetImageColor(img, x, y);
+
+            // Convert to linear
+            F32 r = (F32)(c.r) / 255.0F;
+            F32 g = (F32)(c.g) / 255.0F;
+            F32 b = (F32)(c.b) / 255.0F;
+
+            r = (r <= 0.04045F) ? r / 12.92F : glm::pow((r + 0.055F) / 1.055F, 2.4F);
+            g = (g <= 0.04045F) ? g / 12.92F : glm::pow((g + 0.055F) / 1.055F, 2.4F);
+            b = (b <= 0.04045F) ? b / 12.92F : glm::pow((b + 0.055F) / 1.055F, 2.4F);
+
+            // Weight by luminance (bright areas matter more for ambient light)
+            F32 lum = (0.2126F * r) + (0.7152F * g) + (0.0722F * b);
+            lum = glm::max(lum, 0.01F);  // avoid zero
+
+            lin_r += r * lum;
+            lin_g += g * lum;
+            lin_b += b * lum;
+            weight_sum += lum;
         }
     }
 
-    SZ const pixel_count = (SZ)img.width * (SZ)img.height;
-    SZ const avg_red     = total_red / pixel_count;
-    SZ const avg_green   = total_green / pixel_count;
-    SZ const avg_blue    = total_blue / pixel_count;
+    if (weight_sum < 1e-6) {
+        return (Color){100, 150, 200, 255}; // fallback
+    }
 
-    return {(U8)avg_red, (U8)avg_green, (U8)avg_blue, 255};
+    // Normalize
+    F32 avg_r = (F32)(lin_r / weight_sum);
+    F32 avg_g = (F32)(lin_g / weight_sum);
+    F32 avg_b = (F32)(lin_b / weight_sum);
+
+    // Back to sRGB
+    auto to_srgb = [](F32 v) -> U8 {
+        v = glm::clamp(v, 0.0F, 1.0F);
+        if (v <= 0.0031308F) { return (U8)lroundf(v * 12.92F * 255.0F); };
+        return (U8)glm::round((1.055F * powf(v, 1.0F / 2.4F) - 0.055F) * 255.0F);
+    };
+
+    UnloadImage(img);
+    return { to_srgb(avg_r), to_srgb(avg_g), to_srgb(avg_b), 255 };
+}
+
+Color color_from_texture(ATexture *texture) {
+    return color_from_texture_rl(&texture->base);
 }
 
 Color color_from_texture_rl(Texture *texture) {

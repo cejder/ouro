@@ -598,7 +598,7 @@ SCENE_DRAW(overworld) {
     } RMODE_END;
 
     RMODE_BEGIN(RMODE_3D_SKETCH) {
-        if (c_render__skybox) { d3d_skybox(c_render__skybox_night ? asset_get_skybox("night.hdr") : asset_get_skybox("day.hdr")); }
+        if (c_render__skybox) { d3d_skybox_active(); }
 
         d3d_terrain_ex(asset_get_terrain("basic",{(F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE}),
                        {}, {A_TERRAIN_DEFAULT_SCALE, A_TERRAIN_DEFAULT_SCALE, A_TERRAIN_DEFAULT_SCALE}, WHITE);

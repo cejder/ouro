@@ -441,8 +441,10 @@ void static i_load_skybox(C8 const *path) {
     a->texture = asset_get_texture(GetFileName(a->header.path));
     SetTextureFilter(a->texture->base, TEXTURE_FILTER_BILINEAR);
     a->model.materials[0].maps[MATERIAL_MAP_CUBEMAP].texture = i_skybox_gen_cubemap(a);
-    a->main_texture_color = color_from_texture(a->texture);
-    a->header.loaded      = true;
+
+    a->dominant_color = color_from_texture_dominant(a->texture);
+
+    a->header.loaded = true;
 }
 
 void static i_delete_outdated_terrain_caches(C8 const *path, S64 heightmap_modtime) {
@@ -628,7 +630,7 @@ void static i_load_terrain(C8 const *path, Vector3 dimensions) {
         lld("Saved terrain heights to cache: %s", cache_path->c);
     }
 
-    a->main_diffuse_color = color_from_texture(a->diffuse_texture);
+    a->dominant_diffuse_color = color_from_texture_dominant(a->diffuse_texture);
 
     UnloadImage(heightmap_image);
 

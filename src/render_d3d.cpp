@@ -343,6 +343,10 @@ void d3d_skybox(ASkybox *skybox) {
     rlEnableDepthMask();
 }
 
+void d3d_skybox_active() {
+    d3d_skybox(g_render.active_skybox);
+}
+
 void d3d_camera(Camera3D *camera, Color color) {
     INCREMENT_DRAW_CALL;
 

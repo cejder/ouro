@@ -57,6 +57,7 @@ BOOL color_hsv_is_equal(ColorHSV c1, ColorHSV c2);
 BOOL colorf_is_equal(ColorF c1, ColorF c2);
 BOOL color_is_similar(Color c1, Color c2, F32 threshold_perc);
 Color color_from_cstr(C8 const *str);
+Color color_from_texture_dominant(ATexture *texture);
 Color color_from_texture(ATexture *texture);
 Color color_from_texture_rl(Texture *texture);
 void color_hex_from_color(Color c, C8 *buf);

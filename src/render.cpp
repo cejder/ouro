@@ -83,7 +83,6 @@ void render_init() {
 
     RenderSkyboxShader *ss = &g_render.skybox_shader;
     ss->shader             = asset_get_shader("skybox");;
-    ss->ambient_color_loc  = GetShaderLocation(ss->shader->base, "ambient");
 
     RenderSketchShader *se = &g_render.sketch_shader;
     se->shader             = asset_get_shader("sketch");;
@@ -157,6 +156,9 @@ void render_init() {
 
     g_render.default_font = asset_get_font("GoMono", ui_font_size(RENDER_DEFAULT_FONT_PERC));
 
+    render_set_day_skybox(asset_get_skybox("day.hdr"));
+    render_set_night_skybox(asset_get_skybox("night.hdr"));
+
     g_render.initialized = true;
 }
 
@@ -220,6 +222,14 @@ void render_update(F32 dt) {
     // TRIPS
     if (c_render__fboy) { i_do_fboy(dt); }
     if (c_render__tboy) { i_do_tboy(dt); }
+
+    // SKYBOX
+    g_render.active_skybox = c_render__skybox_night ? g_render.night_skybox : g_render.day_skybox;
+    if (c_render__skybox) {
+        render_set_ambient_color(g_render.active_skybox->dominant_color);
+    } else {
+        render_set_ambient_color(scenes_get_clear_color());
+    }
 }
 
 void render_update_window_resolution(Vector2 new_res) {
@@ -531,6 +541,14 @@ Vector2 render_get_window_resolution() {
     return {(F32)c_video__window_resolution_width, (F32)c_video__window_resolution_height};
 }
 
+void render_set_day_skybox(ASkybox *skybox) {
+    g_render.day_skybox = skybox;
+}
+
+void render_set_night_skybox(ASkybox *skybox) {
+    g_render.night_skybox = skybox;
+}
+
 void render_set_accent_color(Color color) {
     g_render.accent_color = color;
 }
@@ -539,7 +557,6 @@ void render_set_ambient_color(Color color) {
     color_to_vec4(color, g_render.ambient_color);
     SetShaderValue(g_render.model_shader.shader->base,           g_render.model_shader.ambient_color_loc,           g_render.ambient_color, SHADER_UNIFORM_VEC4);
     SetShaderValue(g_render.model_instanced_shader.shader->base, g_render.model_instanced_shader.ambient_color_loc, g_render.ambient_color, SHADER_UNIFORM_VEC4);
-    SetShaderValue(g_render.skybox_shader.shader->base,          g_render.skybox_shader.ambient_color_loc,          g_render.ambient_color, SHADER_UNIFORM_VEC4);
 }
 
 Color render_get_ambient_color() {

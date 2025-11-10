@@ -126,7 +126,6 @@ struct RenderModelInstancedShader {
 
 struct RenderSkyboxShader {
     AShader *shader;
-    S32 ambient_color_loc;
 };
 
 struct Render {
@@ -153,6 +152,10 @@ struct Render {
     RenderMode begun_rmode;
     RenderMode rmode_order[RMODE_COUNT];
     RenderModeData rmode_data[RMODE_COUNT];
+
+    ASkybox *active_skybox;
+    ASkybox *day_skybox;
+    ASkybox *night_skybox;
 
     AFont *default_font;
 };
@@ -186,6 +189,8 @@ S32 ui_font_size(F32 percentage);
 F32 ui_scale_x(F32 percentage);
 F32 ui_scale_y(F32 percentage);
 Vector2 ui_shadow_offset(F32 x_perc, F32 y_perc);
+void render_set_day_skybox(ASkybox *skybox);
+void render_set_night_skybox(ASkybox *skybox);
 void render_set_accent_color(Color color);
 void render_set_ambient_color(Color color);
 Color render_get_ambient_color();
@@ -271,6 +276,7 @@ void d3d_terrain(ATerrain *terrain, F32 scale, Color tint);
 void d3d_terrain_ex(ATerrain *terrain, Vector3 rotation, Vector3 scale, Color tint);
 void d3d_plane(Vector3 position, Vector2 size, Color color);
 void d3d_skybox(ASkybox *skybox);
+void d3d_skybox_active();
 void d3d_camera(Camera3D *camera, Color color);
 void d3d_billboard(ATexture *texture, Vector3 position, F32 scale, Color tint);
 void d3d_gizmo(Vector3 position, F32 rotation, OrientedBoundingBox bbox, Color bbox_color, F32 gizmos_alpha, BOOL has_talker, BOOL is_selected);

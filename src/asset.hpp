@@ -115,7 +115,7 @@ struct ASkybox {
     Mesh mesh;
     Model model;
     ATexture *texture;
-    Color main_texture_color;
+    Color dominant_color;
     AShader *skybox_shader;
     AShader *cubemap_shader;
 };
@@ -127,7 +127,7 @@ struct ATerrain {
     Model model;
     ATexture *height_texture;
     ATexture *diffuse_texture;
-    Color main_diffuse_color;
+    Color dominant_diffuse_color;
     Matrix transform;
     F32 *height_field;        // Raw height data
     U32 height_field_width;   // Width of height field

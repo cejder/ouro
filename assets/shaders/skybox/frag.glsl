@@ -7,7 +7,6 @@ in vec3 fragPosition;
 uniform samplerCube environmentMap;
 uniform bool vflipped;
 uniform bool doGamma;
-uniform vec4 ambient;
 
 // Output fragment color
 out vec4 finalColor;
@@ -27,8 +26,5 @@ void main() {
         color = pow(color, vec3(1.0 / 2.2));
     }
 
-    // Calculate final fragment color including ambient color
-    vec3 finalColorRGB = color + ambient.rgb * ambient.a;  // assuming ambient.a is used to scale the ambient.rgb
-
-    finalColor = vec4(finalColorRGB, 1.0);
+    finalColor = vec4(color, 1.0);
 }

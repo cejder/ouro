@@ -71,7 +71,7 @@ hud                          : false
 overworld_fog_density        : 0.00050000
 sketch                       : true
 skybox                       : true
-skybox_night                 : true
+skybox_night                 : false
 tboy                         : true
 
 [video]
