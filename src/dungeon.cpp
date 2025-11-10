@@ -246,12 +246,9 @@ IDungeonData static i_parse_dungeon(C8 const* filepath) {
 
         // Load and apply rock texture
         ATexture *texture = asset_get_texture("cracked_mud.jpg");
-        if (texture) {
-            data.combined_model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture->base;
-        }
-        for (SZ i = 0; i < mesh_count; i++) {
-            data.combined_model.meshMaterial[i] = 0;
-        }
+        data.combined_model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture->base;
+
+        for (SZ i = 0; i < mesh_count; i++) { data.combined_model.meshMaterial[i] = 0; }
 
         // Allocate bounding boxes for frustum culling
         data.mesh_bounding_boxes = mmpa(OrientedBoundingBox*, mesh_count * sizeof(OrientedBoundingBox));
