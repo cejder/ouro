@@ -359,6 +359,7 @@ BOOL con_cmd_dt_mod(ConCMD const *cmd) {
 void static i_print_header(AHeader *header) {
     lln("%s:", header->name);
     lln("  Path: %s", header->path);
+    lln("  Hash: 0x%08X", header->name_hash);
     lln("  Last Access: %s", ctime(&header->last_access));
     lln("  Last Modified: %s", ctime(&header->last_modified));
 

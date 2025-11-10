@@ -219,5 +219,6 @@ void asset_blob_read();
 void asset_blob_unload();
 
 F32 asset_get_animation_duration(C8 const *model_name, U32 anim_index, F32 fps, F32 anim_speed);
+F32 asset_get_animation_duration_by_hash(U32 model_name_hash, U32 anim_index, F32 fps, F32 anim_speed);
 
 #define DUMMY_TEXTURE asset_get_texture("texel_checker.png")

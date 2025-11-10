@@ -32,7 +32,7 @@ C8 static const *i_entity_type_strings[ENTITY_TYPE_COUNT] = {
 
 void static i_update_obb_extents_and_center(EID id) {
     Vector3 const scale          = g_world->scale[id];
-    BoundingBox const model_bbox = asset_get_model(g_world->model_name[id])->bb;
+    BoundingBox const model_bbox = asset_get_model_by_hash(g_world->model_name_hash[id])->bb;
     Vector3 const min            = Vector3Transform(model_bbox.min, MatrixScale(scale.x, scale.y, scale.z));
     Vector3 const max            = Vector3Transform(model_bbox.max, MatrixScale(scale.x, scale.y, scale.z));
 
@@ -64,6 +64,46 @@ EID entity_create(EntityType type, C8 const *name, Vector3 position, F32 rotatio
         }
     }
 
+    // Initialize animation state
+    // WARN: Since some stuff relies on a model being defined (like OBB etc.) we need to do this first
+    // We did not have to do this first since we used to store the model_name and getting the model
+    // from the asset system with the model name supports "auto loading" if it's not loaded yet.
+    // Hashes cannot do that, unless we traverse the existing files, calculate a hash for each,
+    // check if it's a match etc. etc.
+    AModel *model                = asset_get_model(model_name);
+    g_world->model_name_hash[id] = model->header.name_hash;
+    g_world->animation[id].has_animations = (model && model->has_animations);
+    g_world->animation[id].bone_count     = (model ? model->base.boneCount : 0);
+    // Determine animation FPS based on format (raylib uses ~60 FPS for GLTF/M3D, no standard for others)
+    // Default to 60 FPS as per raylib's GLTF_ANIMDELAY/M3D_ANIMDELAY (17ms ≈ 58.8 FPS)
+    g_world->animation[id].anim_fps     = 60.0F;
+    g_world->animation[id].anim_index   = 0;
+    g_world->animation[id].anim_frame   = 0;
+    g_world->animation[id].anim_time    = 0.0F;
+    g_world->animation[id].anim_speed   = 1.0F;
+    g_world->animation[id].anim_loop    = true;
+    g_world->animation[id].anim_playing = false;
+    // Initialize blending state
+    g_world->animation[id].is_blending      = false;
+    g_world->animation[id].blend_time       = 0.0F;
+    g_world->animation[id].blend_duration   = 0.2F;
+    g_world->animation[id].prev_anim_index  = 0;
+    g_world->animation[id].prev_anim_frame  = 0;
+    // Initialize bone matrices to identity
+    for (auto &bone_matrice : g_animation_bones[id].bone_matrices) { bone_matrice = MatrixIdentity(); }
+    for (auto &prev_bone_matrice : g_animation_bones[id].prev_bone_matrices) { prev_bone_matrice = MatrixIdentity(); }
+    // Auto-play first animation if model has animations
+    if (g_world->animation[id].has_animations) {
+        entity_set_animation(id, 0, true, 1.0F);
+        entity_play_animation(id);
+    }
+    // If the model has no animations, make sure bone 0 stays identity
+    // and vertices default to bone 0 with full weight.
+    // (This ensures GPU skinning will have no visual effect.)
+    if (!g_world->animation[id].has_animations) {
+        g_world->animation[id].bone_count = 1;
+    }
+
     // If no free entity slots are available, return error
     if (id == INVALID_EID) {
         llw("Failed to create entity, no more space in world");
@@ -83,7 +123,6 @@ EID entity_create(EntityType type, C8 const *name, Vector3 position, F32 rotatio
     ENTITY_SET_FLAG(g_world->flags[id], ENTITY_FLAG_IN_USE);
     g_world->generation[id]++;
     g_world->active_ent_count++;
-    ou_strncpy(g_world->model_name[id], model_name, A_NAME_MAX_LENGTH);
 
     g_world->type[id]           = type;
     g_world->lifetime[id]       = 0.0F;
@@ -137,44 +176,6 @@ EID entity_create(EntityType type, C8 const *name, Vector3 position, F32 rotatio
     entity_set_scale(id, scale);
 
     grid_add_entity(id, type, g_world->position[id]);
-
-    // Initialize animation state
-    AModel *model = asset_get_model(model_name);
-    g_world->animation[id].has_animations = (model && model->has_animations);
-    g_world->animation[id].bone_count     = (model ? model->base.boneCount : 0);
-    // Determine animation FPS based on format (raylib uses ~60 FPS for GLTF/M3D, no standard for others)
-    // Default to 60 FPS as per raylib's GLTF_ANIMDELAY/M3D_ANIMDELAY (17ms ≈ 58.8 FPS)
-    g_world->animation[id].anim_fps     = 60.0F;
-    g_world->animation[id].anim_index   = 0;
-    g_world->animation[id].anim_frame   = 0;
-    g_world->animation[id].anim_time    = 0.0F;
-    g_world->animation[id].anim_speed   = 1.0F;
-    g_world->animation[id].anim_loop    = true;
-    g_world->animation[id].anim_playing = false;
-
-    // Initialize blending state
-    g_world->animation[id].is_blending      = false;
-    g_world->animation[id].blend_time       = 0.0F;
-    g_world->animation[id].blend_duration   = 0.2F;
-    g_world->animation[id].prev_anim_index  = 0;
-    g_world->animation[id].prev_anim_frame  = 0;
-
-    // Initialize bone matrices to identity
-    for (auto &bone_matrice : g_animation_bones[id].bone_matrices) { bone_matrice = MatrixIdentity(); }
-    for (auto &prev_bone_matrice : g_animation_bones[id].prev_bone_matrices) { prev_bone_matrice = MatrixIdentity(); }
-
-    // Auto-play first animation if model has animations
-    if (g_world->animation[id].has_animations) {
-        entity_set_animation(id, 0, true, 1.0F);
-        entity_play_animation(id);
-    }
-
-    // If the model has no animations, make sure bone 0 stays identity
-    // and vertices default to bone 0 with full weight.
-    // (This ensures GPU skinning will have no visual effect.)
-    if (!g_world->animation[id].has_animations) {
-        g_world->animation[id].bone_count = 1;
-    }
 
     return id;
 }
@@ -590,7 +591,7 @@ void entity_set_model(EID id, C8 const *model_name) {
         return;
     }
 
-    ou_strncpy(g_world->model_name[id], model_name, A_NAME_MAX_LENGTH);
+    g_world->model_name_hash[id] = model->header.name_hash;
     i_update_obb_extents_and_center(id);
 
     // Update animation flag and bone count when model changes
@@ -623,7 +624,7 @@ void entity_set_model(EID id, C8 const *model_name) {
 }
 
 void entity_set_animation(EID id, U32 anim_index, BOOL loop, F32 speed) {
-    AModel *model = asset_get_model(g_world->model_name[id]);
+    AModel *model = asset_get_model_by_hash(g_world->model_name_hash[id]);
     if (!model || !model->has_animations)                { return; }
     if (anim_index >= (U32)model->animation_count)       { return; }
     if (anim_index == g_world->animation[id].anim_index) { return; }
@@ -663,7 +664,7 @@ void entity_stop_animation(EID id) {
 }
 
 void entity_set_animation_frame(EID id, U32 frame) {
-    AModel *model = asset_get_model(g_world->model_name[id]);
+    AModel *model = asset_get_model_by_hash(g_world->model_name_hash[id]);
     if (!model || !model->has_animations)                                 { return; }
     if (g_world->animation[id].anim_index >= (U32)model->animation_count) { return; }
 

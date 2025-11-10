@@ -18,7 +18,7 @@ volume_sfx                   : 0.00000000
 volume_voice                 : 0.00000000
 
 [console]
-enabled                      : false
+enabled                      : true
 font                         : GoMono
 font_size                    : 26
 fullscreen                   : false

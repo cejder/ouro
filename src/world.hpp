@@ -54,7 +54,7 @@ struct World {
 
     alignas(32) EntityActor actor[WORLD_MAX_ENTITIES];
 
-    alignas(32) C8 model_name[WORLD_MAX_ENTITIES][A_NAME_MAX_LENGTH];
+    alignas(32) U32 model_name_hash[WORLD_MAX_ENTITIES];
     alignas(32) Color tint[WORLD_MAX_ENTITIES];
 
     alignas(32) EntityHealth health[WORLD_MAX_ENTITIES];

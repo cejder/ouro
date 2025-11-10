@@ -264,6 +264,7 @@ void d3d_model_transform_rl(Model *model, Matrix *transform, Color tint);
 void d3d_model(C8 const *model_name, Vector3 position, F32 rotation, Vector3 scale, Color tint);
 void d3d_model_by_hash(U32 model_name_hash, Vector3 position, F32 rotation, Vector3 scale, Color tint);
 void d3d_model_animated(C8 const *model_name, Vector3 position, F32 rotation, Vector3 scale, Color tint, Matrix *bone_matrices, S32 bone_count);
+void d3d_model_animated_by_hash(U32 model_name_hash, Vector3 position, F32 rotation, Vector3 scale, Color tint, Matrix *bone_matrices, S32 bone_count);
 void d3d_model_instanced(C8 const *model_name, Matrix *transforms, Color *tints, SZ instance_count);
 void d3d_model_instanced_by_hash(U32 model_name_hash, Matrix *transforms, Color *tints, SZ instance_count);
 void d3d_mesh_rl(Mesh *mesh, Material *material, Matrix *transform);

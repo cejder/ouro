@@ -113,58 +113,7 @@ void d3d_model(C8 const *model_name, Vector3 position, F32 rotation, Vector3 sca
 
 void d3d_model_by_hash(U32 model_name_hash, Vector3 position, F32 rotation, Vector3 scale, Color tint) {
     AModel *model = asset_get_model_by_hash(model_name_hash);
-    if (!model) return;
     i_d3d_model_impl(model, position, rotation, scale, tint);
-}
-
-void d3d_model_animated(C8 const *model_name, Vector3 position, F32 rotation, Vector3 scale, Color tint, Matrix *bone_matrices, S32 bone_count) {
-    INCREMENT_DRAW_CALL;
-
-    S32 enabled = 1;
-    SetShaderValue(g_render.model_shader.shader->base, g_render.model_shader.animation_enabled_loc, &enabled, SHADER_UNIFORM_INT);
-
-    AModel *model = asset_get_model(model_name);
-
-    // Build transform matrix
-    Matrix mat_scale       = MatrixScale(scale.x, scale.y, scale.z);
-    Matrix mat_rotation    = MatrixRotate((Vector3){0, 1, 0}, rotation * DEG2RAD);
-    Matrix mat_translation = MatrixTranslate(position.x, position.y, position.z);
-    Matrix transform       = MatrixMultiply(MatrixMultiply(mat_scale, mat_rotation), mat_translation);
-
-    // Combine with model's base transform
-    transform = MatrixMultiply(model->base.transform, transform);
-
-    // Draw each mesh
-    for (S32 i = 0; i < model->base.meshCount; i++) {
-        Mesh *mesh         = &model->base.meshes[i];
-        Material *material = &model->base.materials[model->base.meshMaterial[i]];
-
-        // Apply tint to material color
-        Color original_color = material->maps[MATERIAL_MAP_DIFFUSE].color;
-        auto tinted_color    = WHITE;
-        tinted_color.r       = (U8)(((S32)original_color.r * (S32)tint.r) / 255);
-        tinted_color.g       = (U8)(((S32)original_color.g * (S32)tint.g) / 255);
-        tinted_color.b       = (U8)(((S32)original_color.b * (S32)tint.b) / 255);
-        tinted_color.a       = (U8)(((S32)original_color.a * (S32)tint.a) / 255);
-        material->maps[MATERIAL_MAP_DIFFUSE].color = tinted_color;
-
-        // Temporarily set bone matrices on mesh (if it has bones)
-        Matrix *original_bone_matrices = mesh->boneMatrices;
-        S32 original_bone_count        = mesh->boneCount;
-
-        if (bone_matrices && mesh->boneIds && mesh->boneWeights) {
-            mesh->boneMatrices = bone_matrices;
-            mesh->boneCount    = bone_count;
-        }
-
-        // Draw the mesh (raylib will upload bone matrices automatically)
-        DrawMesh(*mesh, *material, transform);
-
-        // Restore original pointers and color
-        mesh->boneMatrices = original_bone_matrices;
-        mesh->boneCount    = original_bone_count;
-        material->maps[MATERIAL_MAP_DIFFUSE].color = original_color;
-    }
 }
 
 void static inline i_d3d_model_instanced_impl(AModel *model, Matrix *transforms, Color *tints, SZ instance_count) {
@@ -230,8 +179,69 @@ void d3d_model_instanced(C8 const *model_name, Matrix *transforms, Color *tints,
 
 void d3d_model_instanced_by_hash(U32 model_name_hash, Matrix *transforms, Color *tints, SZ instance_count) {
     AModel *model = asset_get_model_by_hash(model_name_hash);
-    if (!model) return;
     i_d3d_model_instanced_impl(model, transforms, tints, instance_count);
+}
+
+void static inline i_d3d_model_animated_impl(AModel *model, Vector3 position, Vector3 scale, F32 rotation, Color tint, Matrix *bone_matrices, S32 bone_count) {
+    INCREMENT_DRAW_CALL;
+
+    // Build transform matrix
+    Matrix mat_scale       = MatrixScale(scale.x, scale.y, scale.z);
+    Matrix mat_rotation    = MatrixRotate((Vector3){0, 1, 0}, rotation * DEG2RAD);
+    Matrix mat_translation = MatrixTranslate(position.x, position.y, position.z);
+    Matrix transform       = MatrixMultiply(MatrixMultiply(mat_scale, mat_rotation), mat_translation);
+
+    // Combine with model's base transform
+    transform = MatrixMultiply(model->base.transform, transform);
+
+    // Draw each mesh
+    for (S32 i = 0; i < model->base.meshCount; i++) {
+        Mesh *mesh         = &model->base.meshes[i];
+        Material *material = &model->base.materials[model->base.meshMaterial[i]];
+
+        // Apply tint to material color
+        Color original_color = material->maps[MATERIAL_MAP_DIFFUSE].color;
+        auto tinted_color    = WHITE;
+        tinted_color.r       = (U8)(((S32)original_color.r * (S32)tint.r) / 255);
+        tinted_color.g       = (U8)(((S32)original_color.g * (S32)tint.g) / 255);
+        tinted_color.b       = (U8)(((S32)original_color.b * (S32)tint.b) / 255);
+        tinted_color.a       = (U8)(((S32)original_color.a * (S32)tint.a) / 255);
+        material->maps[MATERIAL_MAP_DIFFUSE].color = tinted_color;
+
+        // Temporarily set bone matrices on mesh (if it has bones)
+        Matrix *original_bone_matrices = mesh->boneMatrices;
+        S32 original_bone_count        = mesh->boneCount;
+
+        if (bone_matrices && mesh->boneIds && mesh->boneWeights) {
+            mesh->boneMatrices = bone_matrices;
+            mesh->boneCount    = bone_count;
+        }
+
+        // Draw the mesh (raylib will upload bone matrices automatically)
+        DrawMesh(*mesh, *material, transform);
+
+        // Restore original pointers and color
+        mesh->boneMatrices = original_bone_matrices;
+        mesh->boneCount    = original_bone_count;
+        material->maps[MATERIAL_MAP_DIFFUSE].color = original_color;
+    }
+}
+
+
+void d3d_model_animated(C8 const *model_name, Vector3 position, F32 rotation, Vector3 scale, Color tint, Matrix *bone_matrices, S32 bone_count) {
+    S32 enabled = 1;
+    SetShaderValue(g_render.model_shader.shader->base, g_render.model_shader.animation_enabled_loc, &enabled, SHADER_UNIFORM_INT);
+
+    AModel *model = asset_get_model(model_name);
+    i_d3d_model_animated_impl(model, position, scale, rotation, tint, bone_matrices, bone_count);
+}
+
+void d3d_model_animated_by_hash(U32 model_name_hash, Vector3 position, F32 rotation, Vector3 scale, Color tint, Matrix *bone_matrices, S32 bone_count) {
+    S32 enabled = 1;
+    SetShaderValue(g_render.model_shader.shader->base, g_render.model_shader.animation_enabled_loc, &enabled, SHADER_UNIFORM_INT);
+
+    AModel *model = asset_get_model_by_hash(model_name_hash);
+    i_d3d_model_animated_impl(model, position, scale, rotation, tint, bone_matrices, bone_count);
 }
 
 void d3d_mesh_rl(Mesh *mesh, Material *material, Matrix *transform) {
@@ -516,7 +526,7 @@ void d3d_gizmo(Vector3 position, F32 rotation, OrientedBoundingBox bbox, Color b
 void d3d_bone_gizmo(EID entity_id) {
     if (!g_world->animation[entity_id].has_animations) { return; }
 
-    AModel *model = asset_get_model(g_world->model_name[entity_id]);
+    AModel *model = asset_get_model_by_hash(g_world->model_name_hash[entity_id]);
     if (!model || !model->animations) { return; }
 
     U32 const anim_idx = g_world->animation[entity_id].anim_index;

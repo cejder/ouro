@@ -1282,14 +1282,25 @@ void static i_dump(void *asset) {
         ou_snprintf(pretty_modified, PRETTY_BUFFER_SIZE, "unknown");
     }
 
-    String *common = TS("\\ouc{#c0d6e4ff}%-40s \\ouc{#a0a0a0ff}%-65s \\ouc{#ffd700ff}%12s \\ouc{#00ff7fff}%12s \\ouc{#ff69b4ff}%12s", header->name,
-                        header->path, pretty_access, pretty_modified, pretty_size);
+    String *common = TS("\\ouc{#c0d6e4ff}%-40s (0x%08X) \\ouc{#a0a0a0ff}%-65s \\ouc{#ffd700ff}%12s \\ouc{#00ff7fff}%12s \\ouc{#ff69b4ff}%12s",
+                        header->name,
+                        header->name_hash,
+                        header->path,
+                        pretty_access,
+                        pretty_modified,
+                        pretty_size);
 
     switch (header->type) {
         case A_TYPE_MODEL: {
             auto *model = (AModel *)asset;
-            String *details = TS("  \\ouc{#ff5e48ff}Verts: \\ouc{#ffffffff}%zu\\ouc{#ff5e48ff}, BBox: \\ouc{#ffffffff}(%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f)",
-                                 model->vertex_count, model->bb.min.x, model->bb.min.y, model->bb.min.z, model->bb.max.x, model->bb.max.y, model->bb.max.z);
+            String *details = TS("  \\ouc{#ff5e48ff}Verts: \\ouc{#ffffffff}%4zu\\ouc{#ff5e48ff}, BBox: \\ouc{#ffffffff}(%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f)",
+                                 model->vertex_count,
+                                 model->bb.min.x,
+                                 model->bb.min.y,
+                                 model->bb.min.z,
+                                 model->bb.max.x,
+                                 model->bb.max.y,
+                                 model->bb.max.z);
             lln("%s%s", common->c, details->c);
         } break;
         case A_TYPE_FONT: {
@@ -1353,6 +1364,20 @@ C8 const *asset_type_to_cstr(AType type) {
 
 F32 asset_get_animation_duration(C8 const *model_name, U32 anim_index, F32 fps, F32 anim_speed) {
     AModel *model = asset_get_model(model_name);
+    if (!model)                                    { return 0.0F; }
+    if (!model->has_animations)                    { return 0.0F; }
+    if (anim_index >= (U32)model->animation_count) { return 0.0F; }
+
+    ModelAnimation const &anim = model->animations[anim_index];
+    F32 const frame_duration      = 1.0F / fps;
+    F32 const base_duration       = (F32)anim.frameCount * frame_duration;
+    F32 const real_world_duration = base_duration / anim_speed;
+
+    return real_world_duration;
+}
+
+F32 asset_get_animation_duration_by_hash(U32 model_name_hash, U32 anim_index, F32 fps, F32 anim_speed) {
+    AModel *model = asset_get_model_by_hash(model_name_hash);
     if (!model)                                    { return 0.0F; }
     if (!model->has_animations)                    { return 0.0F; }
     if (anim_index >= (U32)model->animation_count) { return 0.0F; }

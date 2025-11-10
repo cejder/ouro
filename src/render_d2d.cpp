@@ -367,7 +367,7 @@ void d2d_gizmo(EID id) {
     Vector3 const position      = g_world->position[id];
     F32 const rotation          = g_world->rotation[id];
     F32 const cam_dist          = Vector3Distance(position, g_render.cameras.c3d.active_cam->position);
-    AModel *model               = asset_get_model(g_world->model_name[id]);
+    AModel *model               = asset_get_model_by_hash(g_world->model_name_hash[id]);
     C8 tint_hex[COLOR_HEX_SIZE] = {};
     color_hex_from_color(g_world->tint[id], tint_hex);
 
@@ -554,7 +554,7 @@ void d2d_healthbar(EID id) {
 void d2d_bone_gizmo(EID id) {
     if (!g_world->animation[id].has_animations) { return; }
 
-    AModel *model = asset_get_model(g_world->model_name[id]);
+    AModel *model = asset_get_model_by_hash(g_world->model_name_hash[id]);
     if (!model || !model->animations) { return; }
     if (!model->base.bones) { return; }
 

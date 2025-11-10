@@ -60,7 +60,7 @@ void world_reset() {
         g_world->rotation[i]       = {};
         g_world->obb[i]            = {};
         g_world->radius[i]         = 0.0F;
-        g_world->model_name[i][0]  = '\0';
+        g_world->model_name_hash[i] = 0;
         g_world->tint[i]           = {};
         g_world->generation[i]     = 0;
         g_world->talker[i]         = {};
@@ -97,7 +97,7 @@ void world_update(F32 dt, F32 dtu) {
         c3d_is_obb_in_frustum(g_world->obb[i]) ? ENTITY_SET_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM)
                                               : ENTITY_CLEAR_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM);
 
-        if (ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM)) { g_world->visible_vertex_count += asset_get_model(g_world->model_name[i])->vertex_count; }
+        if (ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM)) { g_world->visible_vertex_count += asset_get_model_by_hash(g_world->model_name_hash[i])->vertex_count; }
         if (ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_ACTOR))      { entity_actor_update(i, dt); }
         if (g_world->type[i] == ENTITY_TYPE_BUILDING_LUMBERYARD)        { entity_building_update(i, dt); }
 
@@ -122,7 +122,7 @@ void world_update(F32 dt, F32 dtu) {
         if (!g_world->animation[id].has_animations) { continue; }
         if (!g_world->animation[id].anim_playing)   { continue; }
 
-        AModel *model      = asset_get_model(g_world->model_name[id]);
+        AModel *model      = asset_get_model_by_hash(g_world->model_name_hash[id]);
         U32 const anim_idx = g_world->animation[id].anim_index;
 
         if (anim_idx >= (U32)model->animation_count) { continue; }
@@ -265,8 +265,8 @@ void world_draw_3d_sketch() {
         // Check if entity has active animation
         if (g_world->animation[i].has_animations) {
             // Animated entities: draw immediately (no instancing for now)
-            d3d_model_animated(
-                g_world->model_name[i],
+            d3d_model_animated_by_hash(
+                g_world->model_name_hash[i],
                 g_world->position[i],
                 g_world->rotation[i],
                 g_world->scale[i],
@@ -276,7 +276,7 @@ void world_draw_3d_sketch() {
             );
         } else {
             // Static entities: group by model name hash
-            U32 const model_name_hash = asset_get_model(g_world->model_name[i])->header.name_hash;
+            U32 const model_name_hash = asset_get_model_by_hash(g_world->model_name_hash[i])->header.name_hash;
             EIDArray *group = InstanceGroupMap_get(&instance_groups, model_name_hash);
             if (!group) {
                 EIDArray new_group = {};

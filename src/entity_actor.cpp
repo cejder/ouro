@@ -626,7 +626,7 @@ void static inline i_evaluate_behavior_transitions(EID id) {
                 } else if (behavior->action_timer <= 0.0F) {
                     // Attack complete
                     audio_play_3d_at_position(ACG_SFX, "hit.ogg", g_world->position[behavior->target_id]);
-                    behavior->action_timer = asset_get_animation_duration(g_world->model_name[id], 3, g_world->animation[id].anim_fps, CESIUM_ANIMATION_SPEED);
+                    behavior->action_timer = asset_get_animation_duration_by_hash(g_world->model_name_hash[id], 3, g_world->animation[id].anim_fps, CESIUM_ANIMATION_SPEED);
 
                     BOOL const is_dead =  entity_damage(behavior->target_id, ATTACK_DAMAGE);
 
@@ -994,7 +994,7 @@ void entity_actor_behavior_transition_to_state(EID id, EntityBehaviorState new_s
         } break;
 
         case ENTITY_BEHAVIOR_STATE_ATTACKING_NPC: {
-            behavior->action_timer = asset_get_animation_duration(g_world->model_name[id], 3, g_world->animation[id].anim_fps, CESIUM_ANIMATION_SPEED);
+            behavior->action_timer = asset_get_animation_duration_by_hash(g_world->model_name_hash[id], 3, g_world->animation[id].anim_fps, CESIUM_ANIMATION_SPEED);
 
             i_movement_set_goal_stop(id);
 
@@ -1228,7 +1228,7 @@ void entity_actor_draw_2d_hud(EID id) {
 
         case ENTITY_BEHAVIOR_STATE_ATTACKING_NPC: {
             state_text     = TS("ATTACKING");
-            F32 const attack_duration = asset_get_animation_duration(g_world->model_name[id], 3, g_world->animation[id].anim_fps, CESIUM_ANIMATION_SPEED);
+            F32 const attack_duration = asset_get_animation_duration_by_hash(g_world->model_name_hash[id], 3, g_world->animation[id].anim_fps, CESIUM_ANIMATION_SPEED);
             progress       = glm::clamp(1.0F - (behavior->action_timer / attack_duration), 0.0F, 1.0F);
             progress_color = {220, 50, 50, 255};
             detail_text    = TS("Combat with %s (%.1fs)", g_world->name[behavior->target_id], behavior->action_timer);

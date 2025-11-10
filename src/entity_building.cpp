@@ -64,7 +64,7 @@ void entity_building_update(EID id, F32 dt) {
             // Calculate spawn position at building peak
             Vector3 const lumberyard_pos   = g_world->position[id];
             Vector3 const lumberyard_scale = g_world->scale[id];
-            BoundingBox const model_bbox   = asset_get_model(g_world->model_name[id])->bb;
+            BoundingBox const model_bbox   = asset_get_model_by_hash(g_world->model_name_hash[id])->bb;
             F32 const scaled_height        = (model_bbox.max.y - model_bbox.min.y) * lumberyard_scale.y;
             Vector3 const peak_pos         = {lumberyard_pos.x, lumberyard_pos.y + scaled_height, lumberyard_pos.z};
 

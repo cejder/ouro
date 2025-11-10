@@ -734,7 +734,7 @@ void math_matrix_decompose(Matrix mat, Vector3 *translation, Quaternion *rotatio
 // Supports blending between animations for smooth transitions
 // Uses caching to avoid redundant matrix computation for same model/animation/frame
 void  math_compute_entity_bone_matrices(EID id) {
-    AModel *model = asset_get_model(g_world->model_name[id]);
+    AModel *model = asset_get_model_by_hash(g_world->model_name_hash[id]);
 
     // Skip if model has no animations or bones
     if (!model || !model->has_animations) { return; }
@@ -823,7 +823,7 @@ void  math_compute_entity_bone_matrices(EID id) {
 }
 
 BOOL math_get_bone_world_position_by_index(EID id, S32 bone_index, Vector3 *out_position) {
-    AModel *model = asset_get_model(g_world->model_name[id]);
+    AModel *model = asset_get_model_by_hash(g_world->model_name_hash[id]);
 
     U32 const anim_idx = g_world->animation[id].anim_index;
     U32 const frame    = g_world->animation[id].anim_frame;
@@ -910,7 +910,7 @@ BOOL math_get_bone_world_position_by_index(EID id, S32 bone_index, Vector3 *out_
 }
 
 BOOL math_get_bone_world_position_by_name(EID id, C8 const *bone_name, Vector3 *out_position) {
-    AModel *model = asset_get_model(g_world->model_name[id]);
+    AModel *model = asset_get_model_by_hash(g_world->model_name_hash[id]);
     S32 const bone_count = g_world->animation[id].bone_count;
 
     // Find bone index by name
@@ -923,7 +923,7 @@ BOOL math_get_bone_world_position_by_name(EID id, C8 const *bone_name, Vector3 *
     }
 
     if (bone_index < 0) {
-        llw("Bone '%s' not found in model '%s'", bone_name, g_world->model_name[id]);
+        llw("Bone '%s' not found in model '%s'", bone_name, model->header.name);
         return false;
     }
 
