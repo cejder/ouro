@@ -51,25 +51,29 @@ struct EntityHealth {
 #define ENTITY_MAX_BONES 128
 
 struct EntityAnimation {
-    BOOL has_animations;                    // Does this entity's model have animations? (cached from AModel)
-    S32 bone_count;                         // Bone count for this entity's model (cached from AModel)
-    F32 anim_fps;                           // Animation FPS (frames per second) for this entity's animations
-    U32 anim_index;                         // Current animation index
-    U32 anim_frame;                         // Current animation frame
-    F32 anim_time;                          // Animation playback time (in seconds)
-    F32 anim_speed;                         // Animation playback speed multiplier
-    BOOL anim_loop;                         // Should animation loop?
-    BOOL anim_playing;                      // Is animation currently playing?
-    Matrix bone_matrices[ENTITY_MAX_BONES]; // Per-entity bone matrices (for GPU skinning)
-
-    // Animation blending state
-    BOOL is_blending;                            // Are we currently blending between animations?
-    F32 blend_time;                              // Current blend progress (0 to blend_duration)
-    F32 blend_duration;                          // How long to blend (e.g., 0.2 seconds)
-    U32 prev_anim_index;                         // Previous animation we're blending FROM
-    U32 prev_anim_frame;                         // Frame in previous animation
-    Matrix prev_bone_matrices[ENTITY_MAX_BONES]; // Bone matrices from previous animation
+    BOOL has_animations;
+    S32 bone_count;
+    F32 anim_fps;
+    U32 anim_index;
+    U32 anim_frame;
+    F32 anim_time;
+    F32 anim_speed;
+    BOOL anim_loop;
+    BOOL anim_playing;
+    BOOL is_blending;
+    F32 blend_time;
+    F32 blend_duration;
+    U32 prev_anim_index;
+    U32 prev_anim_frame;
 };
+
+// Computed bone matrices - stored separately from World (not saved by recorder)
+struct AnimationBoneData {
+    Matrix bone_matrices[ENTITY_MAX_BONES];
+    Matrix prev_bone_matrices[ENTITY_MAX_BONES];
+};
+
+AnimationBoneData extern *g_animation_bones;
 
 void entity_init();
 EID entity_create(EntityType type, C8 const *name, Vector3 position, F32 rotation, Vector3 scale, Color tint, C8 const *model_name);

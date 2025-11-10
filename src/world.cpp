@@ -22,11 +22,15 @@
 
 WorldState g_world_state = {};
 World* g_world = g_world_state.current;
+AnimationBoneData *g_animation_bones = nullptr;
 
 void world_init() {
     // Allocate both worlds using permanent arena
     g_world_state.overworld = mmpa(World*, sizeof(World));
     g_world_state.dungeon = mmpa(World*, sizeof(World));
+
+    // Allocate bone matrix buffer (NOT saved by recorder)
+    g_animation_bones = mmpa(AnimationBoneData*, sizeof(AnimationBoneData) * WORLD_MAX_ENTITIES);
 
     // Reset both worlds and default on start on overworld
     g_world = g_world_state.dungeon;
@@ -267,7 +271,7 @@ void world_draw_3d_sketch() {
                 g_world->rotation[i],
                 g_world->scale[i],
                 g_world->tint[i],
-                g_world->animation[i].bone_matrices,
+                g_animation_bones[i].bone_matrices,
                 g_world->animation[i].bone_count
             );
         } else {
@@ -1030,6 +1034,14 @@ void world_recorder_load_state_to_file(C8 const *file_path) {
     }
 
     if (fclose(file) != 0) { lle("Failed to close file: %s, %s", file_path, strerror(errno)); }
+
+    // Recompute bone matrices for all animated entities
+    for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
+        EID const id = g_world->active_entities[idx];
+        if (!g_world->animation[id].has_animations) { continue; }
+        if (!g_world->animation[id].anim_playing)   { continue; }
+        math_compute_entity_bone_matrices(id);
+    }
 }
 
 SZ world_recorder_get_state_size_bytes() {

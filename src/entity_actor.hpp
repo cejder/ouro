@@ -16,7 +16,7 @@ fwd_decl_enum(EntityType, U8);
 #define ATTACK_RANGE 3.0F
 #define ATTACK_RANGE_EXIT 6.0F
 #define HARVEST_TARGET_MAX_FOLLOWERS 3
-#define MAX_ACTORS_PER_TARGET 32
+#define MAX_ACTORS_PER_TARGET 8
 
 // Harvest impact effect (spawned once when starting harvest)
 #define HARVEST_IMPACT_PARTICLE_COUNT 25
@@ -86,7 +86,7 @@ struct EntityMovementController {
     EaseType turn_ease_type;
 };
 
-#define ENTITY_STATE_REASON_MAX 512
+#define ENTITY_STATE_REASON_MAX 128
 
 struct EntityBehaviorController {
     EntityBehaviorState state;

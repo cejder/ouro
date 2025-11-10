@@ -9,8 +9,8 @@ pan_sfx                      : 0.00000000
 pan_voice                    : 0.00000000
 pitch_ambience               : 1.00000000
 pitch_music                  : 1.00000000
-pitch_sfx                    : 1.69900000
-pitch_voice                  : 1.49300003
+pitch_sfx                    : 1.98399997
+pitch_voice                  : 1.53900003
 rolloff_scale                : 1.00000000
 volume_ambience              : 0.00000000
 volume_music                 : 0.00000000
@@ -41,11 +41,11 @@ light_info                   : true
 medium_font                  : GoMono
 medium_font_size             : 18
 menu_info                    : false
-noclip                       : false
+noclip                       : true
 noclip_move_speed            : 50.00000000
 profiler_hide_trivial_tracks : true
 profiler_tracks              : true
-radius_info                  : true
+radius_info                  : false
 small_font                   : GoMono
 small_font_size              : 16
 terrain_info                 : false

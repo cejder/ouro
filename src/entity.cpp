@@ -160,8 +160,8 @@ EID entity_create(EntityType type, C8 const *name, Vector3 position, F32 rotatio
     g_world->animation[id].prev_anim_frame  = 0;
 
     // Initialize bone matrices to identity
-    for (auto &bone_matrice : g_world->animation[id].bone_matrices) { bone_matrice = MatrixIdentity(); }
-    for (auto &prev_bone_matrice : g_world->animation[id].prev_bone_matrices) { prev_bone_matrice = MatrixIdentity(); }
+    for (auto &bone_matrice : g_animation_bones[id].bone_matrices) { bone_matrice = MatrixIdentity(); }
+    for (auto &prev_bone_matrice : g_animation_bones[id].prev_bone_matrices) { prev_bone_matrice = MatrixIdentity(); }
 
     // Auto-play first animation if model has animations
     if (g_world->animation[id].has_animations) {
@@ -612,8 +612,8 @@ void entity_set_model(EID id, C8 const *model_name) {
     g_world->animation[id].prev_anim_frame  = 0;
 
     // Initialize bone matrices
-    for (auto &bone_matrice : g_world->animation[id].bone_matrices) { bone_matrice = MatrixIdentity(); }
-    for (auto &prev_bone_matrice : g_world->animation[id].prev_bone_matrices) { prev_bone_matrice = MatrixIdentity(); }
+    for (auto &bone_matrice : g_animation_bones[id].bone_matrices) { bone_matrice = MatrixIdentity(); }
+    for (auto &prev_bone_matrice : g_animation_bones[id].prev_bone_matrices) { prev_bone_matrice = MatrixIdentity(); }
 
     // Auto-play first animation if new model has animations
     if (g_world->animation[id].has_animations) {
@@ -636,8 +636,8 @@ void entity_set_animation(EID id, U32 anim_index, BOOL loop, F32 speed) {
     g_world->animation[id].prev_anim_frame  = g_world->animation[id].anim_frame;
 
     // Store current bone matrices as previous state
-    ou_memcpy(g_world->animation[id].prev_bone_matrices,
-              g_world->animation[id].bone_matrices,
+    ou_memcpy(g_animation_bones[id].prev_bone_matrices,
+              g_animation_bones[id].bone_matrices,
               sizeof(Matrix) * ENTITY_MAX_BONES);
 
     // Set new animation

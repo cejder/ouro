@@ -74,7 +74,7 @@ struct World {
     } follower_cache;
 
     struct {
-        EID actors[32];
+        EID actors[MAX_ACTORS_PER_TARGET];
         U8 count;
     } target_trackers[WORLD_MAX_ENTITIES];
 };
