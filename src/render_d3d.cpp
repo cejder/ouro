@@ -396,7 +396,7 @@ void d3d_camera(Camera3D *camera, Color color) {
     DrawSphere(camera->position, size * 0.75F, ColorAlpha(color, 0.75F));
     Vector3 const icon_position =
         Vector3Add(camera->position, Vector3Scale(Vector3Normalize(Vector3Subtract(active_camera->position, camera->position)), size));
-    DrawBillboard(*g_render.cameras.c3d.active_cam, g_render.camera_icon_texture->base, icon_position, size, WHITE);
+    DrawBillboard(*g_render.cameras.c3d.active_cam, asset_get_texture("camera.png")->base, icon_position, size, WHITE);
 }
 
 void d3d_billboard(ATexture *texture, Vector3 position, F32 scale, Color tint) {
@@ -412,7 +412,7 @@ void d3d_gizmo(Vector3 position, F32 rotation, OrientedBoundingBox bbox, Color b
 
     if (has_talker && Vector3Distance(position, g_render.cameras.c3d.default_cam.position) > 1.0F) {
         Vector3 const talker_icon_pos = {position.x + 0.1F, position.y, position.z};
-        DrawBillboard(g_render.cameras.c3d.default_cam, g_render.speaker_icon_texture->base, talker_icon_pos, 0.1F, Fade(WHITE, gizmos_alpha));
+        DrawBillboard(g_render.cameras.c3d.default_cam, asset_get_texture("speaker.png")->base, talker_icon_pos, 0.1F, Fade(WHITE, gizmos_alpha));
     }
 
     if (is_selected) {

@@ -155,11 +155,7 @@ void render_init() {
     rlSetClipPlanes(RENDER_NEAR_PLANE, RENDER_FAR_PLANE);
     rlSetBlendFactorsSeparate(RL_SRC_ALPHA, RL_ONE_MINUS_SRC_ALPHA, RL_ONE, RL_ONE, RL_FUNC_ADD, RL_MAX);
 
-    g_render.speaker_icon_texture = asset_get_texture("speaker.png");
-    g_render.camera_icon_texture  = asset_get_texture("camera.png");
-
-    g_render.default_font      = asset_get_font("GoMono", ui_font_size(RENDER_DEFAULT_FONT_PERC));
-    g_render.default_crosshair = asset_get_texture("cursor_crosshair.png");
+    g_render.default_font = asset_get_font("GoMono", ui_font_size(RENDER_DEFAULT_FONT_PERC));
 
     g_render.initialized = true;
 }

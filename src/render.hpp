@@ -155,9 +155,6 @@ struct Render {
     RenderModeData rmode_data[RMODE_COUNT];
 
     AFont *default_font;
-    ATexture *default_crosshair;
-    ATexture *speaker_icon_texture;
-    ATexture *camera_icon_texture;
 };
 
 extern Render g_render;
