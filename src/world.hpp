@@ -20,7 +20,6 @@ fwd_decl(AModel);
 
 struct World {
     ATerrain *base_terrain;
-    EID selected_id; // Deprecated: kept for backward compatibility, use selected_entities
     U32 active_ent_count;
     U32 entity_type_counts[ENTITY_TYPE_COUNT];
     U32 max_gen;

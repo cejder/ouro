@@ -619,8 +619,8 @@ BOOL con_cmd_e_goto(ConCMD const *cmd) {
         llw("Could not parse entity id");
         return false;
     }
-    if (ou_strcmp(str, "s") == 0) {
-        id = g_world->selected_id;
+    if (ou_strcmp(str, "s") == 0 && g_world->selected_entity_count != 0){
+        id = g_world->selected_entities[0];
     } else {
         if (ou_sscanf(str, "%d", &id) != 1) {
             llw("Could not parse entity id as an integer: %s", str);
@@ -671,8 +671,8 @@ BOOL con_cmd_e_position(ConCMD const *cmd) {
         llw("Could not parse entity id");
         return false;
     }
-    if (ou_strcmp(str, "s") == 0) {
-        id = g_world->selected_id;
+    if (ou_strcmp(str, "s") == 0 && g_world->selected_entity_count != 0){
+        id = g_world->selected_entities[0];
     } else {
         if (ou_sscanf(str, "%d", &id) != 1) {
             llw("Could not parse entity id as an integer: %s", str);
@@ -743,8 +743,8 @@ BOOL con_cmd_e_scale(ConCMD const *cmd) {
         llw("Could not parse entity id");
         return false;
     }
-    if (ou_strcmp(str, "s") == 0) {
-        id = g_world->selected_id;
+    if (ou_strcmp(str, "s") == 0 && g_world->selected_entity_count != 0){
+        id = g_world->selected_entities[0];
     } else {
         if (ou_sscanf(str, "%d", &id) != 1) {
             llw("Could not parse entity id as an integer: %s", str);
@@ -815,8 +815,8 @@ BOOL con_cmd_e_model(ConCMD const *cmd) {
         llw("Could not parse entity id");
         return false;
     }
-    if (ou_strcmp(str, "s") == 0) {
-        id = g_world->selected_id;
+    if (ou_strcmp(str, "s") == 0 && g_world->selected_entity_count != 0){
+        id = g_world->selected_entities[0];
     } else {
         if (ou_sscanf(str, "%d", &id) != 1) {
             llw("Could not parse entity id as an integer: %s", str);
@@ -897,8 +897,8 @@ BOOL con_cmd_e_rotate(ConCMD const *cmd) {
         llw("Could not parse entity id");
         return false;
     }
-    if (ou_strcmp(str, "s") == 0) {
-        id = g_world->selected_id;
+    if (ou_strcmp(str, "s") == 0 && g_world->selected_entity_count != 0){
+        id = g_world->selected_entities[0];
     } else {
         if (ou_sscanf(str, "%d", &id) != 1) {
             llw("Could not parse entity id as an integer: %s", str);

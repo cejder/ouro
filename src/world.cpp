@@ -71,7 +71,6 @@ void world_reset() {
     g_world->active_ent_count      = 0;
     g_world->active_entity_count   = 0;
     g_world->max_gen               = 0;
-    g_world->selected_id           = INVALID_EID;
     g_world->selected_entity_count = 0;
 
     grid_clear();
@@ -467,7 +466,6 @@ void world_set_selected_entity(EID id) {
     // Clear previous selection and select this entity
     g_world->selected_entity_count = 0;
     g_world->selected_entities[g_world->selected_entity_count++] = id;
-    g_world->selected_id = id;
 
     audio_play(ACG_SFX, "selected_0.ogg");
 }
@@ -558,7 +556,6 @@ void world_dump_all_entities() {
 
     lln("active_entities: %u", g_world->active_ent_count);
     lln("max_generation:  %u", g_world->max_gen);
-    lln("selected_entity: %u", g_world->selected_id);
 }
 
 void world_dump_all_entities_cb(void *data) {

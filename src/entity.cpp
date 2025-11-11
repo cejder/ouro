@@ -199,13 +199,6 @@ void entity_destroy(EID id) {
         }
     }
 
-    // Update legacy field
-    if (g_world->selected_id == id) {
-        g_world->selected_id = (g_world->selected_entity_count > 0)
-            ? g_world->selected_entities[g_world->selected_entity_count - 1]
-            : INVALID_EID;
-    }
-
     // If this entity was an actor targeting something, remove it from target tracking
     if (g_world->type[id] == ENTITY_TYPE_NPC) { entity_actor_clear_actor_target(id); }
 

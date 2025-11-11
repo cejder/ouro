@@ -501,7 +501,7 @@ void d2d_healthbar(EID id) {
 
         // Healthbar is at most as wide as entity, minimum 20 pixels
         bar_width = glm::clamp(screen_radius * 2.0F * 0.8F, 20.0F, 200.0F);
-        bar_height = ui_scale_y(1.2F) * zoom_scale;  // Very thin bar
+        bar_height = ui_scale_y(0.6F) * zoom_scale;  // Very thin bar
     } else {
         bar_width = ui_scale_x(8.0F) * zoom_scale;
         bar_height = ui_scale_y(2.30F) * zoom_scale;
@@ -535,20 +535,14 @@ void d2d_healthbar(EID id) {
     Rectangle const bg_rect     = {bar_pos.x, bar_pos.y, bar_width, bar_height};
     Rectangle const fill_rect   = {bar_pos.x, bar_pos.y, bar_width * health_perc, bar_height};
 
-    // Skip shadow for multi-selection (simpler, cleaner look)
-    if (!is_multi_selection) {
-        Rectangle const shadow_rect = {bg_rect.x + 1.5F, bg_rect.y + 1.5F, bg_rect.width, bg_rect.height};
-        d2d_rectangle_rounded_rec(shadow_rect, roundness, segments, Fade(BLACK, 0.25F * alpha));
-    }
+    Rectangle const shadow_rect = {bg_rect.x + 1.5F, bg_rect.y + 1.5F, bg_rect.width, bg_rect.height};
+    d2d_rectangle_rounded_rec(shadow_rect, roundness, segments, Fade(BLACK, 0.25F * alpha));
 
     d2d_rectangle_rounded_rec(bg_rect, roundness, segments, bg_color);
 
     if (health_perc > 0.01F) { d2d_rectangle_rounded_rec(fill_rect, roundness, segments, fill_color); }
 
-    // Skip border for multi-selection (simpler look)
-    if (!is_multi_selection) {
-        d2d_rectangle_rounded_lines_ex(bg_rect, roundness, segments, border_thick, border_color);
-    }
+    d2d_rectangle_rounded_lines_ex(bg_rect, roundness, segments, border_thick, border_color);
 
     // Font size threshold with smooth fade transition
     F32 const font_size_threshold = 16.0F;  // Below this pixel size, text becomes unreadable
@@ -581,6 +575,8 @@ void d2d_healthbar(EID id) {
         DrawTextEx(name_font->base, g_world->name[id], shadow_pos, scaled_font_size, 0.0F, Fade(shadow_color, 0.8F * alpha * font_alpha));
         DrawTextEx(name_font->base, g_world->name[id], name_pos, scaled_font_size, 0.0F, Fade(text_color, alpha * font_alpha));
     }
+
+    if (is_multi_selection) { return; }
 
     SZ const wood_count = g_world->actor[id].behavior.wood_count;
     if (wood_count > 0 && scaled_font_size > 1.0F) {

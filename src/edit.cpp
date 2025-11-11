@@ -23,7 +23,6 @@ EditState static i_state = {};
 
 void static world_clear_selection() {
     g_world->selected_entity_count = 0;
-    g_world->selected_id = INVALID_EID;  // Keep legacy field in sync
 }
 
 void static world_add_to_selection(EID id) {
@@ -37,7 +36,6 @@ void static world_add_to_selection(EID id) {
     // Add to selection
     if (g_world->selected_entity_count < WORLD_MAX_ENTITIES) {
         g_world->selected_entities[g_world->selected_entity_count++] = id;
-        g_world->selected_id = id;  // Keep legacy field pointing to last selected
     }
 }
 
@@ -50,12 +48,6 @@ void static world_remove_from_selection(EID id) {
             }
             g_world->selected_entity_count--;
 
-            // Update legacy field
-            if (g_world->selected_entity_count > 0) {
-                g_world->selected_id = g_world->selected_entities[g_world->selected_entity_count - 1];
-            } else {
-                g_world->selected_id = INVALID_EID;
-            }
             return;
         }
     }
