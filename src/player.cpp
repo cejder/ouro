@@ -15,10 +15,16 @@
 Player g_player = {};
 
 void player_init() {
-    g_player.cameras[SCENE_OVERWORLD].fovy       = 80.0F;
-    g_player.cameras[SCENE_OVERWORLD].position   = PLAYER_POSITION;
-    g_player.cameras[SCENE_OVERWORLD].projection = CAMERA_PERSPECTIVE;
-    g_player.cameras[SCENE_OVERWORLD].target     = PLAYER_LOOK_AT;
+    // g_player.cameras[SCENE_OVERWORLD].fovy       = 80.0F;
+    // g_player.cameras[SCENE_OVERWORLD].position   = PLAYER_POSITION;
+    // g_player.cameras[SCENE_OVERWORLD].projection = CAMERA_PERSPECTIVE;
+    // g_player.cameras[SCENE_OVERWORLD].target     = PLAYER_LOOK_AT;
+    // g_player.cameras[SCENE_OVERWORLD].up         = {0.0F, 1.0F, 0.0F};
+
+    g_player.cameras[SCENE_OVERWORLD].fovy       = 60.0F;
+    g_player.cameras[SCENE_OVERWORLD].position   = {434.4F, 215.0F, 350.0F};
+    g_player.cameras[SCENE_OVERWORLD].projection = CAMERA_ORTHOGRAPHIC;
+    g_player.cameras[SCENE_OVERWORLD].target     = {436.0F, 211.8F, 352.7F};
     g_player.cameras[SCENE_OVERWORLD].up         = {0.0F, 1.0F, 0.0F};
 
     g_player.cameras[SCENE_DUNGEON].fovy       = 80.0F;

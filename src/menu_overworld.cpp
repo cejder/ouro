@@ -34,7 +34,7 @@ SZ menu_extra_overworld_func_get_entry_count() {
     "Noclip",
     "Debug",
     "Skybox",
-    "Day Skybox",
+    "Skybox Night",
     "Sketch",
     "+/- NPC",
     "+/- Vegetation",

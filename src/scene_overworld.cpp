@@ -414,7 +414,7 @@ SCENE_ENTER(overworld) {
 
     s.scene->clear_color = BLACK;
 
-    hud_init(10.0F, 12.5F, 5.0F, 5.0F);
+    hud_init(0.0F, 0.0F, 0.0F, 0.0F);
     player_set_camera(SCENE_OVERWORLD);
 
     lighting_default_lights_setup();
