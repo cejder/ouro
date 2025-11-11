@@ -17,24 +17,27 @@
 Player g_player = {};
 
 void player_init() {
-    // Initialize perspective camera
+    static BOOL first_init = true;
+    BOOL const preserve_projection = first_init ? true : g_player.camera_projection.is_orthographic;
+    first_init = false;
+
     g_player.camera_projection.perspective_camera.fovy       = 80.0F;
     g_player.camera_projection.perspective_camera.position   = PLAYER_POSITION;
     g_player.camera_projection.perspective_camera.projection = CAMERA_PERSPECTIVE;
     g_player.camera_projection.perspective_camera.target     = PLAYER_LOOK_AT;
     g_player.camera_projection.perspective_camera.up         = {0.0F, 1.0F, 0.0F};
 
-    // Initialize orthographic camera (bird's eye view)
     g_player.camera_projection.orthographic_camera.fovy       = 100.0F;
     g_player.camera_projection.orthographic_camera.position   = {303.4F, 515.0F, -40.0F};
     g_player.camera_projection.orthographic_camera.projection = CAMERA_ORTHOGRAPHIC;
     g_player.camera_projection.orthographic_camera.target     = {600.0F, 44.8F, 500.7F};
     g_player.camera_projection.orthographic_camera.up         = {0.0F, 1.0F, 0.0F};
 
-    // Start with orthographic view
-    g_player.camera_projection.is_orthographic = true;
+    g_player.camera_projection.is_orthographic = preserve_projection;
 
-    g_player.cameras[SCENE_OVERWORLD] = g_player.camera_projection.orthographic_camera;
+    g_player.cameras[SCENE_OVERWORLD] = g_player.camera_projection.is_orthographic
+        ? g_player.camera_projection.orthographic_camera
+        : g_player.camera_projection.perspective_camera;
 
     g_player.cameras[SCENE_DUNGEON].fovy       = 80.0F;
     g_player.cameras[SCENE_DUNGEON].position   = PLAYER_POSITION;
@@ -72,10 +75,8 @@ void player_update(F32 dt, F32 dtu) {
 void player_input_update(F32 dt, F32 dtu) {
     unused(dt);
 
-    // Press TAB to toggle camera projection with wipe effect
     BOOL const is_not_overlay = g_scenes.current_overlay_scene_type == SCENE_NONE;
     if (is_not_overlay && !c_console__enabled && is_pressed(IA_TOGGLE_CAMERA_PROJECTION)) {
-        // Save current camera state
         Camera3D *current_cam = c3d_get_ptr();
         if (g_player.camera_projection.is_orthographic) {
             g_player.camera_projection.orthographic_camera = *current_cam;
@@ -83,12 +84,11 @@ void player_input_update(F32 dt, F32 dtu) {
             g_player.camera_projection.perspective_camera = *current_cam;
         }
 
-        // Toggle and apply other camera
         g_player.camera_projection.is_orthographic = !g_player.camera_projection.is_orthographic;
         Camera3D const *target_cam = g_player.camera_projection.is_orthographic ? &g_player.camera_projection.orthographic_camera : &g_player.camera_projection.perspective_camera;
+
         *current_cam = *target_cam;
 
-        // Start wipe effect - direction depends on which mode we're entering
         ScreenFadeType const wipe_direction = g_player.camera_projection.is_orthographic ? SCREEN_FADE_TYPE_WIPE_LEFT_OUT : SCREEN_FADE_TYPE_WIPE_RIGHT_OUT;
         screen_fade_init(wipe_direction, PLAYER_TRANSITION_DURATION, g_render.sketch_shader.minor_color, EASE_IN_OUT_CUBIC, nullptr);
         audio_play(ACG_SFX, "mario_camera_moving.ogg");

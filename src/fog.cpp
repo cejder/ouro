@@ -22,4 +22,8 @@ void fog_update() {
     RenderModelInstancedShader* mis = &g_render.model_instanced_shader;
     SetShaderValue(mis->shader->base, mis->fog.density_loc, &g_fog.density, SHADER_UNIFORM_FLOAT);
     SetShaderValue(mis->shader->base, mis->fog.color_loc, color_f32, SHADER_UNIFORM_VEC4);
+
+    RenderModelAnimatedInstancedShader* mais = &g_render.model_animated_instanced_shader;
+    SetShaderValue(mais->shader->base, mais->fog.density_loc, &g_fog.density, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(mais->shader->base, mais->fog.color_loc, color_f32, SHADER_UNIFORM_VEC4);
 }

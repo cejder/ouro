@@ -342,8 +342,8 @@ set( IA_MOVE_2D_UP,                                     _mn_,               KEY_
 set( IA_MOVE_2D_DOWN,                                   _mn_,               KEY_D,            _kn_,       _mon_,          _gn_,                            _wn_         );
 set( IA_SCROLL_UP,                                      _mn_,               KEY_PAGE_UP,      _kn_,       _mon_,          _gn_,                            _wn_         );
 set( IA_SCROLL_DOWN,                                    _mn_,               KEY_PAGE_DOWN,    _kn_,       _mon_,          _gn_,                            _wn_         );
-set( IA_ZOOM_IN,                                        _mn_,               KEY_Y,            _kn_,       _mon_,          _gn_,                            I_WHEEL_UP   );
-set( IA_ZOOM_OUT,                                       _mn_,               KEY_H,            _kn_,       _mon_,          _gn_,                            I_WHEEL_DOWN );
+set( IA_ZOOM_IN,                                        I_MODIFIER_NONE,    KEY_Y,            _kn_,       _mon_,          _gn_,                            I_WHEEL_UP   );
+set( IA_ZOOM_OUT,                                       I_MODIFIER_NONE,    KEY_H,            _kn_,       _mon_,          _gn_,                            I_WHEEL_DOWN );
 set( IA_EDITOR_MOVE_UP,                                 _mn_,               KEY_E,            _kn_,       _mon_,          _gn_,                            _wn_         );
 set( IA_EDITOR_MOVE_DOWN,                               _mn_,               KEY_D,            _kn_,       _mon_,          _gn_,                            _wn_         );
 set( IA_EDITOR_MOVE_LEFT,                               _mn_,               KEY_S,            _kn_,       _mon_,          _gn_,                            _wn_         );
@@ -896,28 +896,30 @@ void input_camera_input_update(F32 dtu, Camera *camera, F32 move_speed) {
         if (math_abs_f32(y) > GAMEPAD_AXIS_DEADZONE) { movement.y = y * move_speed; }
     }
 
-    // Rotate camera with keyboard.
-    if (is_down(IA_DBG_LOOK_CAMERA_LEFT)) {
-        rotation.x = -1.0F;
-    } else if (is_down(IA_DBG_LOOK_CAMERA_RIGHT)) {
-        rotation.x = 1.0F;
-    }
+    // Rotate camera with keyboard (not possible in ortho)
+    if (camera->projection != CAMERA_ORTHOGRAPHIC) {
+        if (is_down(IA_DBG_LOOK_CAMERA_LEFT)) {
+            rotation.x = -1.0F;
+        } else if (is_down(IA_DBG_LOOK_CAMERA_RIGHT)) {
+            rotation.x = 1.0F;
+        }
 
-    if (is_down(IA_DBG_LOOK_CAMERA_UP)) {
-        rotation.y = -1.0F;
-    } else if (is_down(IA_DBG_LOOK_CAMERA_DOWN)) {
-        rotation.y = 1.0F;
-    }
+        if (is_down(IA_DBG_LOOK_CAMERA_UP)) {
+            rotation.y = -1.0F;
+        } else if (is_down(IA_DBG_LOOK_CAMERA_DOWN)) {
+            rotation.y = 1.0F;
+        }
 
-    if (is_down(IA_DBG_ROLL_CAMERA_LEFT)) {
-        rotation.z = -1.0F;
-    } else if (is_down(IA_DBG_ROLL_CAMERA_RIGHT)) {
-        rotation.z = 1.0F;
-    }
+        if (is_down(IA_DBG_ROLL_CAMERA_LEFT)) {
+            rotation.z = -1.0F;
+        } else if (is_down(IA_DBG_ROLL_CAMERA_RIGHT)) {
+            rotation.z = 1.0F;
+        }
 
-    if (rotation.x != 0.0F || rotation.y != 0.0F || rotation.z != 0.0F) {
-        rotation = Vector3Normalize(rotation);
-        rotation = Vector3Scale(rotation, keyboard_rotation_speed);
+        if (rotation.x != 0.0F || rotation.y != 0.0F || rotation.z != 0.0F) {
+            rotation = Vector3Normalize(rotation);
+            rotation = Vector3Scale(rotation, keyboard_rotation_speed);
+        }
     }
 
     // Handle mouse look when side button is held
@@ -986,17 +988,16 @@ void input_camera_input_update(F32 dtu, Camera *camera, F32 move_speed) {
     F32 static const zoom_ease_speed  = 8.0F;     // Higher = faster easing (recommended: 5-15)
 
     // State tracking
-    F32 static target_fovy = 45.0F;  // Target fovy we're easing towards
-    BOOL static first_zoom_init = true;
+    F32 static target_fovy = 45.0F;
+    F32 static previous_cam_fovy = 45.0F;
 
-    // Initialize target to current camera fovy on first call
-    if (first_zoom_init) {
-        target_fovy = c3d_get_fov();
-        first_zoom_init = false;
+    // Detect camera projection toggle by checking if fovy changed externally
+    F32 const current_fovy = c3d_get_fov();
+    if (glm::abs(current_fovy - previous_cam_fovy) > 5.0F) {
+        target_fovy = current_fovy;
     }
 
     // Handle zoom input - adjust target fovy
-    // Mouse wheel: discrete ticks (use is_pressed for single frame detection)
     if (is_pressed(IA_ZOOM_OUT)) {
         target_fovy += zoom_per_tick;
     }
@@ -1004,7 +1005,6 @@ void input_camera_input_update(F32 dtu, Camera *camera, F32 move_speed) {
         target_fovy -= zoom_per_tick;
     }
 
-    // Keyboard: continuous zoom (use is_down for held keys)
     if (is_down(IA_ZOOM_OUT)) {
         target_fovy += 1.0F * fovy_speed;
     }
@@ -1016,10 +1016,10 @@ void input_camera_input_update(F32 dtu, Camera *camera, F32 move_speed) {
     target_fovy = glm::clamp(target_fovy, CAMERA3D_MIN_FOV, CAMERA3D_MAX_FOV);
 
     // Ease current fovy towards target fovy using exponential smoothing
-    // This provides smooth, natural-feeling easing that handles continuous input well
     F32 const ease_factor = 1.0F - glm::exp(-zoom_ease_speed * dtu);
     F32 const new_fovy = glm::mix(c3d_get_fov(), target_fovy, ease_factor);
     c3d_set_fov(new_fovy);
+    previous_cam_fovy = new_fovy;
 
     UpdateCameraPro(camera, movement, rotation, 0.0F);
 }
