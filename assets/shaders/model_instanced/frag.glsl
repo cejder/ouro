@@ -128,9 +128,11 @@ void main() {
     // Apply dithering
     finalColor = applyDithering(finalColor);
 
-    // Apply selection highlight - pulsing brightness
+    // Apply selection highlight - strong pulsing with green tint
     if (isSelected == 1) {
-        float pulse = sin(time * 3.0) * 0.15 + 0.15; // Pulse between 0.0 and 0.3
-        finalColor.rgb *= (1.0 + pulse); // Brighten by 0-30%
+        float pulse = sin(time * 4.0) * 0.4 + 0.4; // Pulse between 0.0 and 0.8
+        vec3 selectionTint = vec3(0.3, 1.0, 0.3); // Green tint
+        finalColor.rgb = mix(finalColor.rgb, finalColor.rgb * selectionTint, pulse * 0.5); // Blend to green
+        finalColor.rgb *= (1.0 + pulse); // Brighten significantly
     }
 }
