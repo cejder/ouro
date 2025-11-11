@@ -248,6 +248,27 @@ void world_draw_3d() {
 
 // Instanced rendering: map from model name to array of entity IDs
 MAP_DECLARE(InstanceGroupMap, U32, EIDArray, MAP_HASH_U32, MAP_EQUAL_U32);
+
+// Animation state key for grouping animated entities
+struct AnimationStateKey {
+    U32 model_hash;
+    U32 anim_index;
+    U32 anim_frame;
+};
+
+static inline U32 animation_state_key_hash(AnimationStateKey key) {
+    // Simple hash combining the three fields
+    U32 hash = key.model_hash;
+    hash = hash * 31 + key.anim_index;
+    hash = hash * 31 + key.anim_frame;
+    return hash;
+}
+
+static inline BOOL animation_state_key_equal(AnimationStateKey a, AnimationStateKey b) {
+    return a.model_hash == b.model_hash && a.anim_index == b.anim_index && a.anim_frame == b.anim_frame;
+}
+
+MAP_DECLARE(AnimatedInstanceGroupMap, AnimationStateKey, EIDArray, animation_state_key_hash, animation_state_key_equal);
 void world_draw_3d_sketch() {
     F32 const bp_base_scale = BACKPACK_MAX_SCALE*0.5F;
 
@@ -255,13 +276,17 @@ void world_draw_3d_sketch() {
     InstanceGroupMap instance_groups;
     InstanceGroupMap_init(&instance_groups, MEMORY_TYPE_ARENA_TRANSIENT, 32);
 
+    // Group animated entities by animation state for instanced rendering
+    AnimatedInstanceGroupMap animated_instance_groups;
+    AnimatedInstanceGroupMap_init(&animated_instance_groups, MEMORY_TYPE_ARENA_TRANSIENT, 32);
+
     // Collect backpack instances for batch rendering
     MatrixArray backpack_transforms;
     ColorArray backpack_tints;
     array_init(MEMORY_TYPE_ARENA_TRANSIENT, &backpack_transforms, 1024);
     array_init(MEMORY_TYPE_ARENA_TRANSIENT, &backpack_tints, 1024);
 
-    // First pass: Group static entities, draw animated entities immediately
+    // First pass: Group entities by rendering state
     for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
         EID const i = g_world->active_entities[idx];
         if (!ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM)) { continue; }
@@ -273,19 +298,21 @@ void world_draw_3d_sketch() {
 
         // Check if entity has active animation
         if (g_world->animation[i].has_animations) {
-            // Animated entities: draw immediately (no instancing for now)
-            S32 is_selected = world_is_entity_selected(i) ? 1 : 0;
-            SetShaderValue(g_render.model_shader.shader->base, g_render.model_shader.is_selected_loc, &is_selected, SHADER_UNIFORM_INT);
+            // Animated entities: group by animation state (model, anim index, anim frame)
+            AnimationStateKey key = {
+                .model_hash = g_world->model_name_hash[i],
+                .anim_index = g_world->animation[i].anim_index,
+                .anim_frame = g_world->animation[i].anim_frame
+            };
 
-            d3d_model_animated_by_hash(
-                g_world->model_name_hash[i],
-                g_world->position[i],
-                g_world->rotation[i],
-                g_world->scale[i],
-                g_world->tint[i],
-                g_animation_bones[i].bone_matrices,
-                g_world->animation[i].bone_count
-            );
+            EIDArray *group = AnimatedInstanceGroupMap_get(&animated_instance_groups, key);
+            if (!group) {
+                EIDArray new_group = {};
+                array_init(MEMORY_TYPE_ARENA_TRANSIENT, &new_group, 1024);
+                AnimatedInstanceGroupMap_insert(&animated_instance_groups, key, new_group);
+                group = AnimatedInstanceGroupMap_get(&animated_instance_groups, key);
+            }
+            array_push(group, i);
         } else {
             // Static entities: group by model name hash
             U32 const model_name_hash = asset_get_model_by_hash(g_world->model_name_hash[i])->header.name_hash;
@@ -361,7 +388,76 @@ void world_draw_3d_sketch() {
         }
     }
 
-    // Second pass: Batch render static entity groups
+    // Second pass: Batch render animated entity groups
+    AnimationStateKey anim_key = {};
+    EIDArray anim_group = {};
+    MAP_EACH(&animated_instance_groups, anim_key, anim_group) {
+        if (anim_group.count < MIN_INSTANCE_COUNT) {
+            // Not worth instancing for single/few entities - use regular rendering
+            for (SZ j = 0; j < anim_group.count; ++j) {
+                EID const i = anim_group.data[j];
+                S32 is_selected = world_is_entity_selected(i) ? 1 : 0;
+                SetShaderValue(g_render.model_shader.shader->base, g_render.model_shader.is_selected_loc, &is_selected, SHADER_UNIFORM_INT);
+
+                d3d_model_animated_by_hash(
+                    g_world->model_name_hash[i],
+                    g_world->position[i],
+                    g_world->rotation[i],
+                    g_world->scale[i],
+                    g_world->tint[i],
+                    g_animation_bones[i].bone_matrices,
+                    g_world->animation[i].bone_count
+                );
+            }
+        } else {
+            // Build transform and color arrays, split by selection state
+            MatrixArray transforms_selected;
+            ColorArray tints_selected;
+            MatrixArray transforms_unselected;
+            ColorArray tints_unselected;
+            array_init(MEMORY_TYPE_ARENA_TRANSIENT, &transforms_selected, anim_group.count);
+            array_init(MEMORY_TYPE_ARENA_TRANSIENT, &tints_selected, anim_group.count);
+            array_init(MEMORY_TYPE_ARENA_TRANSIENT, &transforms_unselected, anim_group.count);
+            array_init(MEMORY_TYPE_ARENA_TRANSIENT, &tints_unselected, anim_group.count);
+
+            // Get bone matrices from first entity in group (they all share the same animation state)
+            EID const first_entity = anim_group.data[0];
+            Matrix *bone_matrices = g_animation_bones[first_entity].bone_matrices;
+            S32 bone_count = g_world->animation[first_entity].bone_count;
+
+            for (SZ j = 0; j < anim_group.count; ++j) {
+                EID const i = anim_group.data[j];
+                Matrix mat_scale = MatrixScale(g_world->scale[i].x, g_world->scale[i].y, g_world->scale[i].z);
+                Matrix mat_rot = MatrixRotate((Vector3){0, 1, 0}, g_world->rotation[i] * DEG2RAD);
+                Matrix mat_trans = MatrixTranslate(g_world->position[i].x, g_world->position[i].y, g_world->position[i].z);
+                Matrix transform = MatrixMultiply(MatrixMultiply(mat_scale, mat_rot), mat_trans);
+
+                if (world_is_entity_selected(i)) {
+                    array_push(&transforms_selected, transform);
+                    array_push(&tints_selected, g_world->tint[i]);
+                } else {
+                    array_push(&transforms_unselected, transform);
+                    array_push(&tints_unselected, g_world->tint[i]);
+                }
+            }
+
+            // Draw non-selected animated instances
+            if (transforms_unselected.count > 0) {
+                S32 is_selected = 0;
+                SetShaderValue(g_render.model_animated_instanced_shader.shader->base, g_render.model_animated_instanced_shader.is_selected_loc, &is_selected, SHADER_UNIFORM_INT);
+                d3d_model_animated_instanced_by_hash(anim_key.model_hash, transforms_unselected.data, tints_unselected.data, transforms_unselected.count, bone_matrices, bone_count);
+            }
+
+            // Draw selected animated instances
+            if (transforms_selected.count > 0) {
+                S32 is_selected = 1;
+                SetShaderValue(g_render.model_animated_instanced_shader.shader->base, g_render.model_animated_instanced_shader.is_selected_loc, &is_selected, SHADER_UNIFORM_INT);
+                d3d_model_animated_instanced_by_hash(anim_key.model_hash, transforms_selected.data, tints_selected.data, transforms_selected.count, bone_matrices, bone_count);
+            }
+        }
+    }
+
+    // Third pass: Batch render static entity groups
     U32 model_name_hash = 0;
     EIDArray group = {};
     MAP_EACH(&instance_groups, model_name_hash, group) {
@@ -423,7 +519,7 @@ void world_draw_3d_sketch() {
         }
     }
 
-    // Third pass: Batch render all backpacks
+    // Fourth pass: Batch render all backpacks
     if (backpack_transforms.count > 0) {
         d3d_model_instanced("wood.glb", backpack_transforms.data, backpack_tints.data, backpack_transforms.count);
     }
@@ -432,6 +528,7 @@ void world_draw_3d_sketch() {
     S32 is_selected = 0;
     SetShaderValue(g_render.model_shader.shader->base, g_render.model_shader.is_selected_loc, &is_selected, SHADER_UNIFORM_INT);
     SetShaderValue(g_render.model_instanced_shader.shader->base, g_render.model_instanced_shader.is_selected_loc, &is_selected, SHADER_UNIFORM_INT);
+    SetShaderValue(g_render.model_animated_instanced_shader.shader->base, g_render.model_animated_instanced_shader.is_selected_loc, &is_selected, SHADER_UNIFORM_INT);
 }
 
 void world_draw_3d_hud() {

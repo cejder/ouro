@@ -130,6 +130,19 @@ struct RenderModelInstancedShader {
     LightUniforms light[LIGHTS_MAX];
 };
 
+struct RenderModelAnimatedInstancedShader {
+    AShader *shader;
+    S32 mvp_loc;
+    S32 view_pos_loc;
+    S32 ambient_color_loc;
+    S32 instance_tint_loc;
+    S32 is_selected_loc;
+    S32 time_loc;
+
+    FogUniforms fog;
+    LightUniforms light[LIGHTS_MAX];
+};
+
 struct RenderSkyboxShader {
     AShader *shader;
 };
@@ -143,6 +156,7 @@ struct Render {
     RenderSkyboxShader skybox_shader;
     RenderModelShader model_shader;
     RenderModelInstancedShader model_instanced_shader;
+    RenderModelAnimatedInstancedShader model_animated_instanced_shader;
 
     BOOL wireframe_mode;
     F32 aspect_ratio;
@@ -274,6 +288,8 @@ void d3d_model_animated(C8 const *model_name, Vector3 position, F32 rotation, Ve
 void d3d_model_animated_by_hash(U32 model_name_hash, Vector3 position, F32 rotation, Vector3 scale, Color tint, Matrix *bone_matrices, S32 bone_count);
 void d3d_model_instanced(C8 const *model_name, Matrix *transforms, Color *tints, SZ instance_count);
 void d3d_model_instanced_by_hash(U32 model_name_hash, Matrix *transforms, Color *tints, SZ instance_count);
+void d3d_model_animated_instanced(C8 const *model_name, Matrix *transforms, Color *tints, SZ instance_count, Matrix *bone_matrices, S32 bone_count);
+void d3d_model_animated_instanced_by_hash(U32 model_name_hash, Matrix *transforms, Color *tints, SZ instance_count, Matrix *bone_matrices, S32 bone_count);
 void d3d_mesh_rl(Mesh *mesh, Material *material, Matrix *transform);
 void d3d_mesh_rl_instanced(Mesh *mesh, Material *material, Matrix *transforms, SZ instances);
 void d3d_bounding_box(BoundingBox bb, Color color);

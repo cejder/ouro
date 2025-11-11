@@ -132,6 +132,27 @@ void render_init() {
         mis->light[i].outer_cutoff_loc = GetShaderLocation(mis->shader->base, TS("lights[%zu].outer_cutoff", i)->c);
     }
 
+    RenderModelAnimatedInstancedShader *mais = &g_render.model_animated_instanced_shader;
+    mais->shader                             = asset_get_shader(A_MODEL_ANIMATED_INSTANCED_SHADER_NAME);
+    mais->mvp_loc                            = GetShaderLocation(mais->shader->base, "mvp");
+    mais->view_pos_loc                       = GetShaderLocation(mais->shader->base, "viewPos");
+    mais->ambient_color_loc                  = GetShaderLocation(mais->shader->base, "ambient");
+    mais->instance_tint_loc                  = GetShaderLocationAttrib(mais->shader->base, "instanceTint");
+    mais->is_selected_loc                    = GetShaderLocation(mais->shader->base, "isSelected");
+    mais->time_loc                           = GetShaderLocation(mais->shader->base, "time");
+    mais->fog.density_loc                    = GetShaderLocation(mais->shader->base, "fog.density");
+    mais->fog.color_loc                      = GetShaderLocation(mais->shader->base, "fog.color");
+    for (SZ i = 0; i < LIGHTS_MAX; ++i) {
+        mais->light[i].enabled_loc      = GetShaderLocation(mais->shader->base, TS("lights[%zu].enabled", i)->c);
+        mais->light[i].type_loc         = GetShaderLocation(mais->shader->base, TS("lights[%zu].type", i)->c);
+        mais->light[i].position_loc     = GetShaderLocation(mais->shader->base, TS("lights[%zu].position", i)->c);
+        mais->light[i].direction_loc    = GetShaderLocation(mais->shader->base, TS("lights[%zu].direction", i)->c);
+        mais->light[i].color_loc        = GetShaderLocation(mais->shader->base, TS("lights[%zu].color", i)->c);
+        mais->light[i].intensity_loc    = GetShaderLocation(mais->shader->base, TS("lights[%zu].intensity", i)->c);
+        mais->light[i].inner_cutoff_loc = GetShaderLocation(mais->shader->base, TS("lights[%zu].inner_cutoff", i)->c);
+        mais->light[i].outer_cutoff_loc = GetShaderLocation(mais->shader->base, TS("lights[%zu].outer_cutoff", i)->c);
+    }
+
     render_sketch_set_major_color(RENDER_DEFAULT_MAJOR_COLOR);
     render_sketch_set_minor_color(RENDER_DEFAULT_MINOR_COLOR);
     render_set_accent_color(BLACK);
@@ -416,6 +437,7 @@ void static i_set_uniforms() {
     // MODEL SHADERS (for pulsing selection effect)
     SetShaderValue(g_render.model_shader.shader->base, g_render.model_shader.time_loc, &current_time, SHADER_UNIFORM_FLOAT);
     SetShaderValue(g_render.model_instanced_shader.shader->base, g_render.model_instanced_shader.time_loc, &current_time, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(g_render.model_animated_instanced_shader.shader->base, g_render.model_animated_instanced_shader.time_loc, &current_time, SHADER_UNIFORM_FLOAT);
 }
 
 void render_end() {
@@ -563,8 +585,9 @@ void render_set_accent_color(Color color) {
 
 void render_set_ambient_color(Color color) {
     color_to_vec4(color, g_render.ambient_color);
-    SetShaderValue(g_render.model_shader.shader->base,           g_render.model_shader.ambient_color_loc,           g_render.ambient_color, SHADER_UNIFORM_VEC4);
-    SetShaderValue(g_render.model_instanced_shader.shader->base, g_render.model_instanced_shader.ambient_color_loc, g_render.ambient_color, SHADER_UNIFORM_VEC4);
+    SetShaderValue(g_render.model_shader.shader->base,                   g_render.model_shader.ambient_color_loc,                   g_render.ambient_color, SHADER_UNIFORM_VEC4);
+    SetShaderValue(g_render.model_instanced_shader.shader->base,         g_render.model_instanced_shader.ambient_color_loc,         g_render.ambient_color, SHADER_UNIFORM_VEC4);
+    SetShaderValue(g_render.model_animated_instanced_shader.shader->base, g_render.model_animated_instanced_shader.ambient_color_loc, g_render.ambient_color, SHADER_UNIFORM_VEC4);
 }
 
 Color render_get_ambient_color() {

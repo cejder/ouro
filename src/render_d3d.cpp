@@ -182,6 +182,82 @@ void d3d_model_instanced_by_hash(U32 model_name_hash, Matrix *transforms, Color 
     i_d3d_model_instanced_impl(model, transforms, tints, instance_count);
 }
 
+void static inline i_d3d_model_animated_instanced_impl(AModel *model, Matrix *transforms, Color *tints, SZ instance_count, Matrix *bone_matrices, S32 bone_count) {
+    INCREMENT_DRAW_CALL;
+
+    // Set view-projection matrix uniform
+    Matrix mat_view_proj = g_render.cameras.c3d.mat_view_proj;
+    SetShaderValueMatrix(g_render.model_animated_instanced_shader.shader->base, g_render.model_animated_instanced_shader.mvp_loc, mat_view_proj);
+
+    // Upload bone matrices (shared across all instances)
+    if (bone_matrices && bone_count > 0) {
+        S32 bone_matrices_loc = GetShaderLocation(g_render.model_animated_instanced_shader.shader->base, "boneMatrices");
+        if (bone_matrices_loc >= 0) {
+            SetShaderValueMatrix(g_render.model_animated_instanced_shader.shader->base, bone_matrices_loc, bone_matrices[0]);
+            // Upload all bone matrices
+            for (S32 i = 1; i < bone_count && i < 128; ++i) {
+                SetShaderValueMatrix(g_render.model_animated_instanced_shader.shader->base, bone_matrices_loc + i, bone_matrices[i]);
+            }
+        }
+    }
+
+    // Convert colors to F32 array for GPU
+    F32 *instance_colors = mmta(F32 *, instance_count * 4 * sizeof(F32));
+    for (SZ j = 0; j < instance_count; ++j) {
+        instance_colors[(j * 4) + 0] = (F32)tints[j].r / 255.0F;
+        instance_colors[(j * 4) + 1] = (F32)tints[j].g / 255.0F;
+        instance_colors[(j * 4) + 2] = (F32)tints[j].b / 255.0F;
+        instance_colors[(j * 4) + 3] = (F32)tints[j].a / 255.0F;
+    }
+
+    // Draw each mesh with instancing
+    for (S32 i = 0; i < model->base.meshCount; i++) {
+        Mesh *mesh = &model->base.meshes[i];
+        Material *material = &model->base.materials[model->base.meshMaterial[i]];
+
+        // Temporarily assign instanced shader to material
+        Shader original_material_shader = material->shader;
+        material->shader = g_render.model_animated_instanced_shader.shader->base;
+
+        // Use rlgl to draw with custom instance attributes
+        rlEnableShader(material->shader.id);
+
+        // Upload transforms (standard instancing)
+        rlEnableVertexArray(mesh->vaoId);
+
+        // Set up instance color buffer
+        U32 instance_color_buffer = rlLoadVertexBuffer(instance_colors, (S32)(instance_count * 4U) * (S32)sizeof(F32), false);
+        if (g_render.model_animated_instanced_shader.instance_tint_loc >= 0) {
+            rlEnableVertexBuffer(instance_color_buffer);
+            rlSetVertexAttribute((U32)g_render.model_animated_instanced_shader.instance_tint_loc, 4, RL_FLOAT, false, 0, 0);
+            rlSetVertexAttributeDivisor((U32)g_render.model_animated_instanced_shader.instance_tint_loc, 1);  // 1 = per-instance
+            rlEnableVertexAttribute((U32)g_render.model_animated_instanced_shader.instance_tint_loc);
+        }
+
+        // Draw with instancing (using Raylib's built-in transform instancing)
+        DrawMeshInstanced(*mesh, *material, transforms, (S32)instance_count);
+
+        // Cleanup
+        rlDisableVertexAttribute((U32)g_render.model_animated_instanced_shader.instance_tint_loc);
+        rlDisableVertexBuffer();
+        rlDisableVertexArray();
+        rlUnloadVertexBuffer(instance_color_buffer);
+
+        // Restore original shader
+        material->shader = original_material_shader;
+    }
+}
+
+void d3d_model_animated_instanced(C8 const *model_name, Matrix *transforms, Color *tints, SZ instance_count, Matrix *bone_matrices, S32 bone_count) {
+    AModel *model = asset_get_model(model_name);
+    i_d3d_model_animated_instanced_impl(model, transforms, tints, instance_count, bone_matrices, bone_count);
+}
+
+void d3d_model_animated_instanced_by_hash(U32 model_name_hash, Matrix *transforms, Color *tints, SZ instance_count, Matrix *bone_matrices, S32 bone_count) {
+    AModel *model = asset_get_model_by_hash(model_name_hash);
+    i_d3d_model_animated_instanced_impl(model, transforms, tints, instance_count, bone_matrices, bone_count);
+}
+
 void static inline i_d3d_model_animated_impl(AModel *model, Vector3 position, Vector3 scale, F32 rotation, Color tint, Matrix *bone_matrices, S32 bone_count) {
     INCREMENT_DRAW_CALL;
 
