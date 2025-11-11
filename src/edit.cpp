@@ -377,41 +377,40 @@ void edit_update(F32 dt, F32 dtu) {
         // Spawn particles at the click location
         particles3d_add_click_indicator(collision.point, 0.5F, PINK, PURPLE, 5);
 
-        if (ctrl_down) {
-            // Gather command for all selected units
-            for (SZ i = 0; i < g_world->selected_entity_count; ++i) {
-                EID const id = g_world->selected_entities[i];
-                entity_actor_start_looking_for_target(id, ENTITY_TYPE_VEGETATION);
-            }
-            i_print_entity_command_message(g_world->selected_entities[0], "Gathering resources", "#ffaa00ff", MESSAGE_TYPE_WARN);
-        } else {
-            // Check if we clicked on an entity
-            EID const clicked_entity = entity_find_at_mouse();
+        // Check if we clicked on an entity
+        EID const clicked_entity = entity_find_at_mouse();
 
-            if (clicked_entity != INVALID_EID && !world_is_selected(clicked_entity)) {
-                // We clicked on a different entity - attack it if it's an NPC
-                if (g_world->type[clicked_entity] == ENTITY_TYPE_NPC) {
-                    for (SZ i = 0; i < g_world->selected_entity_count; ++i) {
-                        EID const id = g_world->selected_entities[i];
-                        entity_actor_set_attack_target_npc(id, clicked_entity);
-                    }
-                    i_print_entity_command_message_with_target(g_world->selected_entities[0], "Attacking", "#ff3030ff", clicked_entity, MESSAGE_TYPE_ERROR);
-                } else {
-                    // Not an NPC, just move to the position
-                    for (SZ i = 0; i < g_world->selected_entity_count; ++i) {
-                        EID const id = g_world->selected_entities[i];
-                        entity_actor_set_move_target(id, collision.point);
-                    }
-                    i_print_entity_command_message(g_world->selected_entities[0], "Moving to position", "#00ff88ff", MESSAGE_TYPE_INFO);
+        if (clicked_entity != INVALID_EID && !world_is_selected(clicked_entity)) {
+            // We clicked on a different entity
+            if (g_world->type[clicked_entity] == ENTITY_TYPE_VEGETATION) {
+                // Right clicked on vegetation/tree - harvest it
+                for (SZ i = 0; i < g_world->selected_entity_count; ++i) {
+                    EID const id = g_world->selected_entities[i];
+                    entity_actor_start_looking_for_target(id, ENTITY_TYPE_VEGETATION);
                 }
+                i_print_entity_command_message(g_world->selected_entities[0], "Gathering resources", "#ffaa00ff", MESSAGE_TYPE_WARN);
+            } else if (g_world->type[clicked_entity] == ENTITY_TYPE_NPC) {
+                // Right clicked on NPC - attack it
+                for (SZ i = 0; i < g_world->selected_entity_count; ++i) {
+                    EID const id = g_world->selected_entities[i];
+                    entity_actor_set_attack_target_npc(id, clicked_entity);
+                }
+                i_print_entity_command_message_with_target(g_world->selected_entities[0], "Attacking", "#ff3030ff", clicked_entity, MESSAGE_TYPE_ERROR);
             } else {
-                // No entity clicked, or clicked on self - just move to position
+                // Other entity type, just move to the position
                 for (SZ i = 0; i < g_world->selected_entity_count; ++i) {
                     EID const id = g_world->selected_entities[i];
                     entity_actor_set_move_target(id, collision.point);
                 }
                 i_print_entity_command_message(g_world->selected_entities[0], "Moving to position", "#00ff88ff", MESSAGE_TYPE_INFO);
             }
+        } else {
+            // No entity clicked, or clicked on self - just move to position
+            for (SZ i = 0; i < g_world->selected_entity_count; ++i) {
+                EID const id = g_world->selected_entities[i];
+                entity_actor_set_move_target(id, collision.point);
+            }
+            i_print_entity_command_message(g_world->selected_entities[0], "Moving to position", "#00ff88ff", MESSAGE_TYPE_INFO);
         }
     }
 
