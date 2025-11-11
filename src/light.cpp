@@ -91,6 +91,7 @@ void lighting_default_lights_setup() {
 void lighting_update(Camera3D *camera) {
     RenderModelShader *ms           = &g_render.model_shader;
     RenderModelInstancedShader *mis = &g_render.model_instanced_shader;
+    RenderModelAnimatedInstancedShader *mais = &g_render.model_animated_instanced_shader;
 
     for (SZ i = 0; i < LIGHTS_MAX; ++i) {
         Light *light = &g_lighting.lights[i];
@@ -116,11 +117,21 @@ void lighting_update(Camera3D *camera) {
         SetShaderValue(mis->shader->base, mis->light[i].intensity_loc, &light->intensity, SHADER_UNIFORM_FLOAT);
         SetShaderValue(mis->shader->base, mis->light[i].inner_cutoff_loc, &light->inner_cutoff, SHADER_UNIFORM_FLOAT);
         SetShaderValue(mis->shader->base, mis->light[i].outer_cutoff_loc, &light->outer_cutoff, SHADER_UNIFORM_FLOAT);
+
+        SetShaderValue(mais->shader->base, mais->light[i].enabled_loc, &light->enabled, SHADER_UNIFORM_INT);
+        SetShaderValue(mais->shader->base, mais->light[i].type_loc, &light->type, SHADER_UNIFORM_INT);
+        SetShaderValue(mais->shader->base, mais->light[i].position_loc, &light->position, SHADER_UNIFORM_VEC3);
+        SetShaderValue(mais->shader->base, mais->light[i].direction_loc, &light->direction, SHADER_UNIFORM_VEC3);
+        SetShaderValue(mais->shader->base, mais->light[i].color_loc, light->color, SHADER_UNIFORM_VEC4);
+        SetShaderValue(mais->shader->base, mais->light[i].intensity_loc, &light->intensity, SHADER_UNIFORM_FLOAT);
+        SetShaderValue(mais->shader->base, mais->light[i].inner_cutoff_loc, &light->inner_cutoff, SHADER_UNIFORM_FLOAT);
+        SetShaderValue(mais->shader->base, mais->light[i].outer_cutoff_loc, &light->outer_cutoff, SHADER_UNIFORM_FLOAT);
     }
 
     F32 camera_pos[3] = {camera->position.x, camera->position.y, camera->position.z};
     SetShaderValue(ms->shader->base, ms->view_pos_loc, camera_pos, SHADER_UNIFORM_VEC3);
     SetShaderValue(mis->shader->base, mis->view_pos_loc, camera_pos, SHADER_UNIFORM_VEC3);
+    SetShaderValue(mais->shader->base, mais->view_pos_loc, camera_pos, SHADER_UNIFORM_VEC3);
 }
 
 ATexture static *i_get_icon(LightType type) {
