@@ -462,11 +462,7 @@ struct HealthbarBatch {
     Rectangle shadow_rect;
     Color bg_color;
     Color fill_color;
-    Color border_color;
     Color shadow_color;
-    F32 border_thick;
-    F32 roundness;
-    S32 segments;
     BOOL has_fill;
 };
 
@@ -478,27 +474,36 @@ void d2d_healthbar_batch_begin() {
 }
 
 void d2d_healthbar_batch_end() {
-    for (SZ i = 0; i < i_healthbar_batch_count; ++i) {
-        HealthbarBatch const *hb = &i_healthbar_batch[i];
-        d2d_rectangle_rounded_rec(hb->shadow_rect, hb->roundness, hb->segments, hb->shadow_color);
-    }
+    if (i_healthbar_batch_count == 0) { return; }
+
+    rlSetTexture(0);
+    rlBegin(RL_QUADS);
 
     for (SZ i = 0; i < i_healthbar_batch_count; ++i) {
         HealthbarBatch const *hb = &i_healthbar_batch[i];
-        d2d_rectangle_rounded_rec(hb->bg_rect, hb->roundness, hb->segments, hb->bg_color);
-    }
 
-    for (SZ i = 0; i < i_healthbar_batch_count; ++i) {
-        HealthbarBatch const *hb = &i_healthbar_batch[i];
+        rlColor4ub(hb->shadow_color.r, hb->shadow_color.g, hb->shadow_color.b, hb->shadow_color.a);
+        rlVertex2f(hb->shadow_rect.x, hb->shadow_rect.y);
+        rlVertex2f(hb->shadow_rect.x + hb->shadow_rect.width, hb->shadow_rect.y);
+        rlVertex2f(hb->shadow_rect.x + hb->shadow_rect.width, hb->shadow_rect.y + hb->shadow_rect.height);
+        rlVertex2f(hb->shadow_rect.x, hb->shadow_rect.y + hb->shadow_rect.height);
+
+        rlColor4ub(hb->bg_color.r, hb->bg_color.g, hb->bg_color.b, hb->bg_color.a);
+        rlVertex2f(hb->bg_rect.x, hb->bg_rect.y);
+        rlVertex2f(hb->bg_rect.x + hb->bg_rect.width, hb->bg_rect.y);
+        rlVertex2f(hb->bg_rect.x + hb->bg_rect.width, hb->bg_rect.y + hb->bg_rect.height);
+        rlVertex2f(hb->bg_rect.x, hb->bg_rect.y + hb->bg_rect.height);
+
         if (hb->has_fill) {
-            d2d_rectangle_rounded_rec(hb->fill_rect, hb->roundness, hb->segments, hb->fill_color);
+            rlColor4ub(hb->fill_color.r, hb->fill_color.g, hb->fill_color.b, hb->fill_color.a);
+            rlVertex2f(hb->fill_rect.x, hb->fill_rect.y);
+            rlVertex2f(hb->fill_rect.x + hb->fill_rect.width, hb->fill_rect.y);
+            rlVertex2f(hb->fill_rect.x + hb->fill_rect.width, hb->fill_rect.y + hb->fill_rect.height);
+            rlVertex2f(hb->fill_rect.x, hb->fill_rect.y + hb->fill_rect.height);
         }
     }
 
-    for (SZ i = 0; i < i_healthbar_batch_count; ++i) {
-        HealthbarBatch const *hb = &i_healthbar_batch[i];
-        d2d_rectangle_rounded_lines_ex(hb->bg_rect, hb->roundness, hb->segments, hb->border_thick, hb->border_color);
-    }
+    rlEnd();
 
     i_healthbar_batch_count = 0;
 }
@@ -586,11 +591,7 @@ void d2d_healthbar(EID id) {
     batch->shadow_rect = shadow_rect;
     batch->bg_color = bg_color;
     batch->fill_color = fill_color;
-    batch->border_color = border_color;
     batch->shadow_color = Fade(BLACK, 0.25F * alpha);
-    batch->border_thick = border_thick;
-    batch->roundness = roundness;
-    batch->segments = segments;
     batch->has_fill = health_perc > 0.01F;
 
     // Font size threshold with smooth fade transition
