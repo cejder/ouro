@@ -17,24 +17,27 @@
 Player g_player = {};
 
 void player_init() {
-    // Initialize perspective camera
+    static BOOL first_init = true;
+    BOOL const preserve_projection = first_init ? true : g_player.camera_projection.is_orthographic;
+    first_init = false;
+
     g_player.camera_projection.perspective_camera.fovy       = 80.0F;
     g_player.camera_projection.perspective_camera.position   = PLAYER_POSITION;
     g_player.camera_projection.perspective_camera.projection = CAMERA_PERSPECTIVE;
     g_player.camera_projection.perspective_camera.target     = PLAYER_LOOK_AT;
     g_player.camera_projection.perspective_camera.up         = {0.0F, 1.0F, 0.0F};
 
-    // Initialize orthographic camera (bird's eye view)
     g_player.camera_projection.orthographic_camera.fovy       = 100.0F;
     g_player.camera_projection.orthographic_camera.position   = {303.4F, 515.0F, -40.0F};
     g_player.camera_projection.orthographic_camera.projection = CAMERA_ORTHOGRAPHIC;
     g_player.camera_projection.orthographic_camera.target     = {600.0F, 44.8F, 500.7F};
     g_player.camera_projection.orthographic_camera.up         = {0.0F, 1.0F, 0.0F};
 
-    // Start with orthographic view
-    g_player.camera_projection.is_orthographic = true;
+    g_player.camera_projection.is_orthographic = preserve_projection;
 
-    g_player.cameras[SCENE_OVERWORLD] = g_player.camera_projection.orthographic_camera;
+    g_player.cameras[SCENE_OVERWORLD] = g_player.camera_projection.is_orthographic
+        ? g_player.camera_projection.orthographic_camera
+        : g_player.camera_projection.perspective_camera;
 
     g_player.cameras[SCENE_DUNGEON].fovy       = 80.0F;
     g_player.cameras[SCENE_DUNGEON].position   = PLAYER_POSITION;
