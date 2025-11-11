@@ -35,23 +35,28 @@ void static i_exit_if_some(BOOL overlay) {
 void scenes_init() {
     g_scenes.initialized = true;
 
-#define SCENE(NAME, name)                                              \
-    g_scenes.scenes[SCENE_##NAME].type        = SCENE_##NAME;          \
-    g_scenes.scenes[SCENE_##NAME].init        = scene_##name##_init;   \
-    g_scenes.scenes[SCENE_##NAME].enter       = scene_##name##_enter;  \
-    g_scenes.scenes[SCENE_##NAME].resume      = scene_##name##_resume; \
-    g_scenes.scenes[SCENE_##NAME].exit        = scene_##name##_exit;   \
-    g_scenes.scenes[SCENE_##NAME].update      = scene_##name##_update; \
-    g_scenes.scenes[SCENE_##NAME].draw        = scene_##name##_draw;   \
-    g_scenes.scenes[SCENE_##NAME].clear_color = SCENE_DEFAULT_CLEAR_COLOR;
+#define SCENE(NAME, name)                                                   \
+    g_scenes.scenes[SCENE_##NAME].type        = SCENE_##NAME;               \
+    g_scenes.scenes[SCENE_##NAME].init        = scene_##name##_init;        \
+    g_scenes.scenes[SCENE_##NAME].enter       = scene_##name##_enter;       \
+    g_scenes.scenes[SCENE_##NAME].resume      = scene_##name##_resume;      \
+    g_scenes.scenes[SCENE_##NAME].exit        = scene_##name##_exit;        \
+    g_scenes.scenes[SCENE_##NAME].update      = scene_##name##_update;      \
+    g_scenes.scenes[SCENE_##NAME].draw        = scene_##name##_draw;        \
+    g_scenes.scenes[SCENE_##NAME].clear_color = SCENE_DEFAULT_CLEAR_COLOR;  \
+    if (!OURO_IS_DEBUG) {                                                   \
+        g_scenes.scenes[SCENE_##NAME].init(&g_scenes.scenes[SCENE_##NAME]); \
+        g_scenes.scenes[SCENE_##NAME].initialized = true;                   \
+    }
     LIST_OF_SCENES  // NOLINT
 #undef SCENE
+
 }
 
 void scenes_set_scene(SceneType scene_type) {
     Scene *s = &g_scenes.scenes[scene_type];
     if (!g_scenes.initialized_scene[scene_type]) {
-        s->init(s);
+        if (!s->initialized) { s->init(s); }
         g_scenes.initialized_scene[scene_type] = true;
     }
     g_scenes.next_scene_type = scene_type;

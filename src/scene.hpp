@@ -54,6 +54,7 @@ using SceneUpdate = void (*)(F32 dt, F32 dtu);
 using SceneDraw   = void (*)();
 
 struct Scene {
+    BOOL initialized;
     SceneType type;
     SceneInit init;
     SceneEnter enter;
