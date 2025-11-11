@@ -13,7 +13,7 @@
 #define PARTICLES_3D_SPAWN_RATE_HISTORY_SIZE 128
 
 enum Particle3DBillboardMode : U32 { // NOLINT(performance-enum-size)
-    PARTICLE3D_BILLBOARD_CAMERA_FACING    = 0,
+    PARTICLE3D_BILLBOARD_CAMERA_FACING    = 0,  // Spherical billboard - faces camera
     PARTICLE3D_BILLBOARD_VELOCITY_ALIGNED = 1,
     PARTICLE3D_BILLBOARD_Y_AXIS_LOCKED    = 2,
     PARTICLE3D_BILLBOARD_HORIZONTAL       = 3,  // Flat on ground (XZ plane)

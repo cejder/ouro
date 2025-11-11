@@ -1366,7 +1366,7 @@ void particles3d_add_click_indicator(Vector3 position, F32 radius, Color start_c
         rotation_speeds[i] = random_f32(-10.0F, 10.0F);  // Spin as they fly
 
         air_resistances[i] = random_f32(0.01F, 0.03F);  // Some air resistance
-        billboard_modes[i] = PARTICLE3D_BILLBOARD_SPHERICAL;  // Face camera
+        billboard_modes[i] = PARTICLE3D_BILLBOARD_CAMERA_FACING;  // Face camera (spherical billboard)
         stretch_factors[i] = 1.0F;
 
         // Use different textures for each particle
