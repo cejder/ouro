@@ -125,11 +125,12 @@ void main() {
     // Apply dithering
     finalColor = applyDithering(finalColor);
 
-    // Apply selection highlight - strong pulsing with green tint
+    // Apply selection highlight - pulsing rim light
     if (isSelected == 1) {
-        float pulse = sin(time * 4.0) * 0.4 + 0.4; // Pulse between 0.0 and 0.8
-        vec3 selectionTint = vec3(0.3, 1.0, 0.3); // Green tint
-        finalColor.rgb = mix(finalColor.rgb, finalColor.rgb * selectionTint, pulse * 0.5); // Blend to green
-        finalColor.rgb *= (1.0 + pulse); // Brighten significantly
+        float pulse = sin(time * 3.0) * 0.5 + 0.5; // Pulse between 0.0 and 1.0
+        vec3 selectionColor = vec3(0.3, 1.0, 0.4); // Bright RTS green
+        float rimPower = 1.0 - max(dot(normal, viewD), 0.0);
+        rimPower = pow(rimPower, 1.2); // Wide rim
+        finalColor.rgb += selectionColor * rimPower * (1.5 + pulse * 2.0); // Pulse intensity 1.5-3.5
     }
 }

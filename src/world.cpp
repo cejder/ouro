@@ -427,6 +427,11 @@ void world_draw_3d_sketch() {
     if (backpack_transforms.count > 0) {
         d3d_model_instanced("wood.glb", backpack_transforms.data, backpack_tints.data, backpack_transforms.count);
     }
+
+    // Reset isSelected to 0 after entity rendering
+    S32 is_selected = 0;
+    SetShaderValue(g_render.model_shader.shader->base, g_render.model_shader.is_selected_loc, &is_selected, SHADER_UNIFORM_INT);
+    SetShaderValue(g_render.model_instanced_shader.shader->base, g_render.model_instanced_shader.is_selected_loc, &is_selected, SHADER_UNIFORM_INT);
 }
 
 void world_draw_3d_hud() {
