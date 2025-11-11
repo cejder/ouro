@@ -456,11 +456,59 @@ void d2d_gizmo(EID id) {
     render_tooltip_draw(&tt);
 }
 
+struct HealthbarBatch {
+    Rectangle bg_rect;
+    Rectangle fill_rect;
+    Rectangle shadow_rect;
+    Color bg_color;
+    Color fill_color;
+    Color border_color;
+    Color shadow_color;
+    F32 border_thick;
+    F32 roundness;
+    S32 segments;
+    BOOL has_fill;
+};
+
+static HealthbarBatch i_healthbar_batch[ENTITY_MAX];
+static SZ i_healthbar_batch_count = 0;
+
+void d2d_healthbar_batch_begin() {
+    i_healthbar_batch_count = 0;
+}
+
+void d2d_healthbar_batch_end() {
+    for (SZ i = 0; i < i_healthbar_batch_count; ++i) {
+        HealthbarBatch const *hb = &i_healthbar_batch[i];
+        d2d_rectangle_rounded_rec(hb->shadow_rect, hb->roundness, hb->segments, hb->shadow_color);
+    }
+
+    for (SZ i = 0; i < i_healthbar_batch_count; ++i) {
+        HealthbarBatch const *hb = &i_healthbar_batch[i];
+        d2d_rectangle_rounded_rec(hb->bg_rect, hb->roundness, hb->segments, hb->bg_color);
+    }
+
+    for (SZ i = 0; i < i_healthbar_batch_count; ++i) {
+        HealthbarBatch const *hb = &i_healthbar_batch[i];
+        if (hb->has_fill) {
+            d2d_rectangle_rounded_rec(hb->fill_rect, hb->roundness, hb->segments, hb->fill_color);
+        }
+    }
+
+    for (SZ i = 0; i < i_healthbar_batch_count; ++i) {
+        HealthbarBatch const *hb = &i_healthbar_batch[i];
+        d2d_rectangle_rounded_lines_ex(hb->bg_rect, hb->roundness, hb->segments, hb->border_thick, hb->border_color);
+    }
+
+    i_healthbar_batch_count = 0;
+}
+
 void d2d_healthbar(EID id) {
     if (!c_world__actor_healthbar)                                    { return; }
     if (g_world->health[id].max <= 0)                                 { return; }
     if (!ENTITY_HAS_FLAG(g_world->flags[id], ENTITY_FLAG_IN_FRUSTUM)) { return; }
     if (!world_is_entity_selected(id))                                { return; }
+    if (i_healthbar_batch_count >= ENTITY_MAX)                        { return; }
 
     Camera3D *cam                 = c3d_get_ptr();
     Vector2 const render_res      = render_get_render_resolution();
@@ -531,13 +579,19 @@ void d2d_healthbar(EID id) {
     Rectangle const fill_rect   = {bar_pos.x, bar_pos.y, bar_width * health_perc, bar_height};
 
     Rectangle const shadow_rect = {bg_rect.x + 1.5F, bg_rect.y + 1.5F, bg_rect.width, bg_rect.height};
-    d2d_rectangle_rounded_rec(shadow_rect, roundness, segments, Fade(BLACK, 0.25F * alpha));
 
-    d2d_rectangle_rounded_rec(bg_rect, roundness, segments, bg_color);
-
-    if (health_perc > 0.01F) { d2d_rectangle_rounded_rec(fill_rect, roundness, segments, fill_color); }
-
-    d2d_rectangle_rounded_lines_ex(bg_rect, roundness, segments, border_thick, border_color);
+    HealthbarBatch *batch = &i_healthbar_batch[i_healthbar_batch_count++];
+    batch->bg_rect = bg_rect;
+    batch->fill_rect = fill_rect;
+    batch->shadow_rect = shadow_rect;
+    batch->bg_color = bg_color;
+    batch->fill_color = fill_color;
+    batch->border_color = border_color;
+    batch->shadow_color = Fade(BLACK, 0.25F * alpha);
+    batch->border_thick = border_thick;
+    batch->roundness = roundness;
+    batch->segments = segments;
+    batch->has_fill = health_perc > 0.01F;
 
     // Font size threshold with smooth fade transition
     F32 const font_size_threshold = 16.0F;  // Below this pixel size, text becomes unreadable
