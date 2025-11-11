@@ -11,8 +11,8 @@
 #define TREE_COUNT 3750
 #else
 #define LUMBERYARD_COUNT 1
-#define CESIUM_COUNT 1000
-#define TREE_COUNT 7500
+#define CESIUM_COUNT 0
+#define TREE_COUNT 0
 #endif
 #define CESIUM_ANIMATION_SPEED 1.75F
 #define CESIUM_MIN_SCALE 0.7F

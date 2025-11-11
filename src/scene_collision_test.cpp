@@ -441,7 +441,7 @@ SCENE_ENTER(collision_test) {
     time_set_delta_mod(dtmod);
     mqf("Time Delta Modifier set to %.2f", dtmod);
 
-    entity_spawn_random_npc_around_camera(1000, false);
+    entity_spawn_npc(1000, false);
     // TODO: Draw slider on this screen to adjust delta time mod.
 }
 

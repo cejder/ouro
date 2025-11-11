@@ -4,6 +4,7 @@
 #include "color.hpp"
 #include "entity.hpp"
 #include "entity_actor.hpp"
+#include "input.hpp"
 #include "message.hpp"
 #include "render.hpp"
 #include "scene.hpp"
@@ -183,24 +184,17 @@ void entity_cb_despawn_random_vegetation(void *data) {
     entity_despawn_random_vegetation(1, false);
 }
 
-void entity_spawn_random_npc_around_camera(SZ count, BOOL notify) {
-    Camera3D const camera = c3d_get();
+void entity_spawn_npc(SZ count, BOOL notify) {
+    Vector2 const mouse_pos = input_get_mouse_position_screen();
+    Ray const ray           = GetScreenToWorldRay(mouse_pos, g_player.cameras[g_scenes.current_scene_type]);
+    RayCollision collision  = GetRayCollisionMesh(ray, g_world->base_terrain->mesh, g_world->base_terrain->transform);
+    Vector3 const position  = collision.point;
 
     for (SZ i = 0; i < count; ++i) {
         if (g_world->active_ent_count >= WORLD_MAX_ENTITIES) {
             mwod("Could not spawn entity, world is full.", ORANGE, 5.0F);
             return;
         }
-        // Generate random point in a filled sphere
-        F32 const radius = random_f32(0.0F, 50.0F);                 // Random radius for filled sphere
-        F32 const theta  = random_f32(0.0F, 2.0F * glm::pi<F32>()); // Azimuthal angle
-        F32 const phi    = math_acos_f32(random_f32(-1.0F, 1.0F));  // Polar angle (for 3D distribution)
-
-        Vector3 const position = {
-            (math_sin_f32(phi) * math_cos_f32(theta) * radius) + camera.position.x,
-            (math_sin_f32(phi) * math_sin_f32(theta) * radius) + camera.position.y,
-            (math_cos_f32(phi) * radius) + camera.position.z,
-        };
 
         Color const tint      = color_random_vibrant();
         F32 const rotation    = random_f32(0.0F, 360.0F);
@@ -259,7 +253,7 @@ void entity_spawn_random_npc_around_camera(SZ count, BOOL notify) {
     }
 }
 
-void entity_despawn_random_npc_around_camera(SZ count, BOOL notify) {
+void entity_despawn_npc(SZ count, BOOL notify) {
     for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
         EID const i = g_world->active_entities[idx];
         if (g_world->type[i] != ENTITY_TYPE_NPC) { continue; }
@@ -273,16 +267,16 @@ void entity_despawn_random_npc_around_camera(SZ count, BOOL notify) {
     }
 }
 
-void entity_cb_spawn_random_npc_around_camera(void *data) {
+void entity_cb_spawn_npc(void *data) {
     unused(data);
 
-    entity_spawn_random_npc_around_camera(1, true);
+    entity_spawn_npc(1, true);
 }
 
-void entity_cb_despawn_random_npc_around_camera(void *data) {
+void entity_cb_despawn_npc(void *data) {
     unused(data);
 
-    entity_despawn_random_npc_around_camera(1, true);
+    entity_despawn_npc(1, true);
 }
 
 void entity_spawn_test_overworld_set(EntityTestOverworldSet *set) {
