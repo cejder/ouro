@@ -129,9 +129,9 @@ void main() {
 
     // Apply selection highlight
     if (isSelected == 1) {
-        vec3 selectionColor = vec3(0.2, 1.0, 0.3); // RTS green
+        vec3 selectionColor = vec3(0.3, 1.0, 0.4); // Bright RTS green
         float rimPower = 1.0 - max(dot(normal, viewD), 0.0);
-        rimPower = pow(rimPower, 2.0);
-        finalColor.rgb += selectionColor * rimPower * 0.5;
+        rimPower = pow(rimPower, 1.5); // Wider rim (lower power = wider)
+        finalColor.rgb += selectionColor * rimPower * 1.2; // Much brighter
     }
 }
