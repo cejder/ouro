@@ -192,12 +192,12 @@ case IA_MOVE_2D_UP:                         return "MOVE 2D UP";
 case IA_MOVE_2D_DOWN:                       return "MOVE 2D DOWN";
 case IA_SCROLL_UP:                          return "SCROLL UP";
 case IA_SCROLL_DOWN:                        return "SCROLL DOWN";
+case IA_ZOOM_IN:                            return "ZOOM IN";
+case IA_ZOOM_OUT:                           return "ZOOM OUT";
 case IA_EDITOR_MOVE_UP:                     return "EDITOR UP";
 case IA_EDITOR_MOVE_DOWN:                   return "EDITOR DOWN";
 case IA_EDITOR_MOVE_LEFT:                   return "EDITOR LEFT";
 case IA_EDITOR_MOVE_RIGHT:                  return "EDITOR RIGHT";
-case IA_EDITOR_ZOOM_IN:                     return "ZOOM IN";
-case IA_EDITOR_ZOOM_OUT:                    return "ZOOM OUT";
 case IA_EDITOR_BIG_PREVIEW_TOGGLE:          return "TOGGLE PREVIEW";
 case IA_EDITOR_SKYBOX_TOGGLE:               return "TOGGLE SKYBOX";
 case IA_EDITOR_DELETE:                      return "DELETE";
@@ -222,8 +222,6 @@ case IA_CONSOLE_PASTE:                      return "PASTE";
 case IA_DBG_RESET_WINDOWS:                  return "RESET WINDOWS";
 case IA_DBG_TOGGLE_PAUSE_TIME:              return "PAUSE TIME";
 case IA_DBG_TOGGLE_CONSOLE_FULLSCREEN:      return "CONSOLE FULLSCREEN";
-case IA_DBG_INCREASE_CAMERA_FOVY:           return "CAM FOV +";
-case IA_DBG_DECREASE_CAMERA_FOVY:           return "CAM FOV -";
 case IA_DBG_LOOK_CAMERA_UP:                 return "CAM LOOK UP";
 case IA_DBG_LOOK_CAMERA_DOWN:               return "CAM LOOK DOWN";
 case IA_DBG_LOOK_CAMERA_LEFT:               return "CAM LOOK LEFT";
@@ -335,12 +333,12 @@ set( IA_MOVE_2D_UP,                                     _mn_,               KEY_
 set( IA_MOVE_2D_DOWN,                                   _mn_,               KEY_D,            _kn_,       _mon_,          _gn_                            );
 set( IA_SCROLL_UP,                                      _mn_,               KEY_PAGE_UP,      _kn_,       _mon_,          _gn_                            );
 set( IA_SCROLL_DOWN,                                    _mn_,               KEY_PAGE_DOWN,    _kn_,       _mon_,          _gn_                            );
+set( IA_ZOOM_IN,                                        _mn_,               KEY_Y,            _kn_,       _mon_,          _gn_                            );
+set( IA_ZOOM_OUT,                                       _mn_,               KEY_H,            _kn_,       _mon_,          _gn_                            );
 set( IA_EDITOR_MOVE_UP,                                 _mn_,               KEY_E,            _kn_,       _mon_,          _gn_                            );
 set( IA_EDITOR_MOVE_DOWN,                               _mn_,               KEY_D,            _kn_,       _mon_,          _gn_                            );
 set( IA_EDITOR_MOVE_LEFT,                               _mn_,               KEY_S,            _kn_,       _mon_,          _gn_                            );
 set( IA_EDITOR_MOVE_RIGHT,                              _mn_,               KEY_F,            _kn_,       _mon_,          _gn_                            );
-set( IA_EDITOR_ZOOM_IN,                                 _mn_,               KEY_Y,            _kn_,       _mon_,          _gn_                            );
-set( IA_EDITOR_ZOOM_OUT,                                _mn_,               KEY_H,            _kn_,       _mon_,          _gn_                            );
 set( IA_EDITOR_BIG_PREVIEW_TOGGLE,                      _mn_,               KEY_V,            _kn_,       _mon_,          _gn_                            );
 set( IA_EDITOR_SKYBOX_TOGGLE,                           _mn_,               KEY_P,            _kn_,       _mon_,          _gn_                            );
 set( IA_EDITOR_DELETE,                                  _mn_,               KEY_BACKSPACE,    _kn_,       _mon_,          _gn_                            );
@@ -365,8 +363,6 @@ set( IA_CONSOLE_PASTE,                                  I_MODIFIER_CTRL,    KEY_
 set( IA_DBG_RESET_WINDOWS,                              I_MODIFIER_SHIFT,   KEY_F4,           _kn_,       _mon_,          _gn_                            );
 set( IA_DBG_TOGGLE_PAUSE_TIME,                          I_MODIFIER_NONE,    KEY_F1,           _kn_,       _mon_,          _gn_                            );
 set( IA_DBG_TOGGLE_CONSOLE_FULLSCREEN,                  I_MODIFIER_SHIFT,   KEY_END,          _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_INCREASE_CAMERA_FOVY,                       _mn_,               KEY_Y,            _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_DECREASE_CAMERA_FOVY,                       _mn_,               KEY_H,            _kn_,       _mon_,          _gn_                            );
 set( IA_DBG_LOOK_CAMERA_UP,                             _mn_,               KEY_I,            _kn_,       _mon_,          _gn_                            );
 set( IA_DBG_LOOK_CAMERA_DOWN,                           _mn_,               KEY_K,            _kn_,       _mon_,          _gn_                            );
 set( IA_DBG_LOOK_CAMERA_LEFT,                           _mn_,               KEY_J,            _kn_,       _mon_,          _gn_                            );
@@ -912,10 +908,10 @@ void input_camera_input_update(F32 dtu, Camera *camera, F32 move_speed) {
         if (math_abs_f32(y) > GAMEPAD_AXIS_DEADZONE) { rotation.y = y * gamepad_rotation_speed; }
     }
 
-    // Change camera fovy with keyboard.
-    if (is_down(IA_DBG_INCREASE_CAMERA_FOVY)) {
+    // Change camera fovy/zoom
+    if (is_down(IA_ZOOM_OUT)) {
         camera->fovy += 1.0F * fovy_speed;
-    } else if (is_down(IA_DBG_DECREASE_CAMERA_FOVY)) {
+    } else if (is_down(IA_ZOOM_IN)) {
         camera->fovy -= 1.0F * fovy_speed;
     }
 

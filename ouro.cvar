@@ -31,10 +31,10 @@ bone_label_font_size         : 24
 camera_info                  : false
 cursor_info                  : false
 dungeon_info                 : true
-enabled                      : false
+enabled                      : true
 gizmo_info                   : false
 grid_info                    : false
-keybindings_info             : false
+keybindings_info             : true
 large_font                   : GoMono
 large_font_size              : 20
 light_info                   : true
@@ -48,7 +48,7 @@ profiler_tracks              : true
 radius_info                  : false
 small_font                   : GoMono
 small_font_size              : 16
-terrain_info                 : true
+terrain_info                 : false
 texture_widget_dark_bg       : true
 windows_sticky               : false
 
@@ -75,7 +75,7 @@ skybox_night                 : false
 tboy                         : true
 
 [video]
-fps_info                     : true
+fps_info                     : false
 fps_max                      : 60
 render_resolution_height     : 2160
 render_resolution_width      : 3840
