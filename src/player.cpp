@@ -21,7 +21,7 @@ void player_init() {
     // g_player.cameras[SCENE_OVERWORLD].target     = PLAYER_LOOK_AT;
     // g_player.cameras[SCENE_OVERWORLD].up         = {0.0F, 1.0F, 0.0F};
 
-    g_player.cameras[SCENE_OVERWORLD].fovy       = 60.0F;
+    g_player.cameras[SCENE_OVERWORLD].fovy       = 100.0F;
     g_player.cameras[SCENE_OVERWORLD].position   = {303.4F, 515.0F, -40.0F};
     g_player.cameras[SCENE_OVERWORLD].projection = CAMERA_ORTHOGRAPHIC;
     g_player.cameras[SCENE_OVERWORLD].target     = {600.0F, 44.8F, 500.7F};
