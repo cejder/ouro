@@ -23,8 +23,8 @@
 #define CAMERA2D_MIN_ZOOM 0.1F
 #define CAMERA2D_MAX_ZOOM 10.0F
 #define CAMERA3D_DEFAULT_FOV 65.0F
-#define CAMERA3D_MIN_FOV 1.0F
-#define CAMERA3D_MAX_FOV 120.0F
+#define CAMERA3D_MIN_FOV 20.0F
+#define CAMERA3D_MAX_FOV 200.0F
 
 fwd_decl(String);
 fwd_decl(Loading);
