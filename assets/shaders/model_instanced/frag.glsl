@@ -38,6 +38,7 @@ uniform vec4 ambient;
 uniform vec3 viewPos;
 uniform Fog fog;
 uniform int isSelected;
+uniform float time;
 
 vec3 calculateLighting(vec3 normal, vec3 viewD, vec3 fragPosition) {
     vec3 diffuse = vec3(0.0);
@@ -127,11 +128,9 @@ void main() {
     // Apply dithering
     finalColor = applyDithering(finalColor);
 
-    // Apply selection highlight
+    // Apply selection highlight - pulsing brightness
     if (isSelected == 1) {
-        vec3 selectionColor = vec3(0.3, 1.0, 0.4); // Bright RTS green
-        float rimPower = 1.0 - max(dot(normal, viewD), 0.0);
-        rimPower = pow(rimPower, 1.5); // Wider rim (lower power = wider)
-        finalColor.rgb += selectionColor * rimPower * 1.2; // Much brighter
+        float pulse = sin(time * 3.0) * 0.15 + 0.15; // Pulse between 0.0 and 0.3
+        finalColor.rgb *= (1.0 + pulse); // Brighten by 0-30%
     }
 }
