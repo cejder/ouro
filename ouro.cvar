@@ -18,9 +18,9 @@ volume_sfx                   : 0.00000000
 volume_voice                 : 0.00000000
 
 [console]
-enabled                      : false
+enabled                      : true
 font                         : GoMono
-font_size                    : 26
+font_size                    : 39
 fullscreen                   : false
 
 [debug]
@@ -72,7 +72,7 @@ overworld_fog_density        : 0.00050000
 sketch                       : true
 skybox                       : true
 skybox_night                 : true
-tboy                         : true
+tboy                         : false
 
 [video]
 fps_info                     : true
