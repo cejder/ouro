@@ -1300,8 +1300,6 @@ void particles3d_add_harvest_active(Vector3 center, Color start_color, Color end
     particles3d_add(positions, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, count);
 }
 
-// Removed: particles3d_add_selection_indicator - now handled by dedicated selection_indicators system
-
 void particles3d_add_click_indicator(Vector3 position, F32 radius, Color start_color, Color end_color, SZ count) {
     // Large spinning light circles for ground click indicators
     C8 const* click_texture_names[] = {

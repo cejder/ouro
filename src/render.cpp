@@ -230,8 +230,6 @@ void render_update(F32 dt) {
     } else {
         render_set_ambient_color(scenes_get_clear_color());
     }
-
-    // INDICATORS
 }
 
 void render_update_window_resolution(Vector2 new_res) {
