@@ -482,8 +482,7 @@ void d2d_healthbar(EID id) {
     F32 const alpha      = ease_out_quart(1.0F - distance_t, 0.0F, 1.0F, 1.0F);
 
     // World-scale zoom handling: scale UI elements based on camera FOV
-    F32 const default_fov = 45.0F;  // Reference FOV for original UI scale
-    F32 const zoom_scale  = default_fov / c3d_get_fov();
+    F32 const zoom_scale = CAMERA3D_DEFAULT_FOV / c3d_get_fov();
 
     F32 const health_perc  = glm::clamp((F32)g_world->health[id].current / (F32)g_world->health[id].max, 0.0F, 1.0F);
 
@@ -526,8 +525,8 @@ void d2d_healthbar(EID id) {
     d2d_rectangle_rounded_lines_ex(bg_rect, roundness, segments, border_thick, border_color);
 
     // Font size threshold with smooth fade transition
-    F32 const font_size_threshold = 12.0F;  // Below this pixel size, text becomes unreadable
-    F32 const fade_range          = 8.0F;   // Smooth transition range (12-20 pixels)
+    F32 const font_size_threshold = 16.0F;  // Below this pixel size, text becomes unreadable
+    F32 const fade_range          = 12.0F;  // Smooth transition range (16-28 pixels)
 
     // Use fixed font object, but scale the fontSize when rendering for smooth scaling
     S32 const base_font_size   = ui_font_size(2.0F);
