@@ -28,6 +28,7 @@ enum IWheel : U8 {
 fwd_decl(MouseTape);
 
 #define GAMEPAD_AXIS_DEADZONE 0.1F
+#define CAMERA_ORTHO_PAN_SPEED 0.1F
 
 fwd_decl(AFont);
 fwd_decl(Render);

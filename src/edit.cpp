@@ -372,9 +372,6 @@ void edit_update(F32 dt, F32 dtu) {
         }
     }
 
-    // Clear selection with middle mouse
-    if (mouse_middle_pressed) { world_clear_selection(); }
-
     // Right click commands on selected entities (apply to ALL selected)
     if (mouse_right_pressed && g_world->selected_entity_count > 0 && collision.hit) {
         // Spawn particles at the click location

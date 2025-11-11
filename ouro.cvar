@@ -10,7 +10,7 @@ pan_voice                    : 0.00000000
 pitch_ambience               : 1.00000000
 pitch_music                  : 1.00000000
 pitch_sfx                    : 1.00000000
-pitch_voice                  : 1.00000000
+pitch_voice                  : 1.34000003
 rolloff_scale                : 1.00000000
 volume_ambience              : 0.00000000
 volume_music                 : 0.00000000
@@ -75,11 +75,11 @@ skybox_night                 : false
 tboy                         : true
 
 [video]
-fps_info                     : true
-fps_max                      : 0
+fps_info                     : false
+fps_max                      : 60
 render_resolution_height     : 2160
 render_resolution_width      : 3840
-vsync                        : false
+vsync                        : true
 window_resolution_height     : 2160
 window_resolution_width      : 3840
 

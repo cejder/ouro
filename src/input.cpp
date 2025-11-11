@@ -9,6 +9,7 @@
 #include "log.hpp"
 #include "math.hpp"
 #include "message.hpp"
+#include "player.hpp"
 #include "profiler.hpp"
 #include "render.hpp"
 #include "scene.hpp"
@@ -937,6 +938,38 @@ void input_camera_input_update(F32 dtu, Camera *camera, F32 move_speed) {
         if (mouse_delta.x != 0.0F) { rotation.x = mouse_delta.x * mouse_rotation_speed; }
         if (mouse_delta.y != 0.0F) { rotation.y = mouse_delta.y * mouse_rotation_speed; }
     }
+
+    // Handle RTS-style pan with middle mouse in orthographic mode
+    BOOL static was_middle_down = false;
+    BOOL const is_middle_down   = is_mouse_down(I_MOUSE_MIDDLE);
+
+    if (camera->projection == CAMERA_ORTHOGRAPHIC) {
+        if (is_middle_down && !was_middle_down) {
+            DisableCursor();  // Lock and hide cursor when button is first pressed
+        } else if (!is_middle_down && was_middle_down) {
+            EnableCursor();  // Restore cursor when button is released
+        }
+
+        if (is_middle_down) {
+            Vector2 const mouse_delta = input_get_mouse_delta();
+            F32 const pan_speed = CAMERA_ORTHO_PAN_SPEED * (camera->fovy / 100.0F);  // Scale with zoom level
+
+            // Calculate camera forward and right vectors
+            Vector3 const forward = Vector3Normalize(Vector3Subtract(camera->target, camera->position));
+            Vector3 const right = Vector3Normalize(Vector3CrossProduct(forward, camera->up));
+            Vector3 const up = Vector3CrossProduct(right, forward);
+
+            // Apply pan movement (inverted for natural feel)
+            Vector3 const pan_offset = Vector3Add(
+                Vector3Scale(right, -mouse_delta.x * pan_speed),
+                Vector3Scale(up, mouse_delta.y * pan_speed)
+            );
+
+            camera->position = Vector3Add(camera->position, pan_offset);
+            camera->target = Vector3Add(camera->target, pan_offset);
+        }
+    }
+    was_middle_down = is_middle_down;
 
     // If we did not rotate with the keyboard, we check the gamepad but we ignore roll.
     if (rotation.x == 0.0F && rotation.y == 0.0F) {
