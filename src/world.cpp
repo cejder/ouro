@@ -250,22 +250,29 @@ void world_draw_3d() {
 MAP_DECLARE(InstanceGroupMap, U32, EIDArray, MAP_HASH_U32, MAP_EQUAL_U32);
 
 // Animation state key for grouping animated entities
+// NOTE: We group by animation index and bone count, NOT by frame
+// This allows entities playing the same animation to batch together
+// even if they're on different frames (they'll share bone matrices from one representative)
 struct AnimationStateKey {
     U32 model_hash;
     U32 anim_index;
-    U32 anim_frame;
+    S32 bone_count;
 };
 
 static inline U32 animation_state_key_hash(AnimationStateKey key) {
-    // Simple hash combining the three fields
-    U32 hash = key.model_hash;
-    hash = hash * 31 + key.anim_index;
-    hash = hash * 31 + key.anim_frame;
+    // FNV-1a hash for better distribution
+    U32 hash = 2166136261u; // FNV offset basis
+    hash ^= key.model_hash;
+    hash *= 16777619u; // FNV prime
+    hash ^= key.anim_index;
+    hash *= 16777619u;
+    hash ^= (U32)key.bone_count;
+    hash *= 16777619u;
     return hash;
 }
 
 static inline BOOL animation_state_key_equal(AnimationStateKey a, AnimationStateKey b) {
-    return a.model_hash == b.model_hash && a.anim_index == b.anim_index && a.anim_frame == b.anim_frame;
+    return a.model_hash == b.model_hash && a.anim_index == b.anim_index && a.bone_count == b.bone_count;
 }
 
 MAP_DECLARE(AnimatedInstanceGroupMap, AnimationStateKey, EIDArray, animation_state_key_hash, animation_state_key_equal);
@@ -298,32 +305,42 @@ void world_draw_3d_sketch() {
 
         // Check if entity has active animation
         if (g_world->animation[i].has_animations) {
-            // Animated entities: group by animation state (model, anim index, anim frame)
+            // Animated entities: group by animation state (model, anim index, bone count)
+            // NOTE: We don't group by frame - all entities playing same animation batch together
+            // and use bone matrices from one representative entity
             AnimationStateKey key = {
                 .model_hash = g_world->model_name_hash[i],
                 .anim_index = g_world->animation[i].anim_index,
-                .anim_frame = g_world->animation[i].anim_frame
+                .bone_count = g_world->animation[i].bone_count
             };
 
             EIDArray *group = AnimatedInstanceGroupMap_get(&animated_instance_groups, key);
             if (!group) {
                 EIDArray new_group = {};
-                array_init(MEMORY_TYPE_ARENA_TRANSIENT, &new_group, 1024);
+                array_init(MEMORY_TYPE_ARENA_TRANSIENT, &new_group, 64); // Reduced from 1024
                 AnimatedInstanceGroupMap_insert(&animated_instance_groups, key, new_group);
                 group = AnimatedInstanceGroupMap_get(&animated_instance_groups, key);
             }
-            array_push(group, i);
+
+            // Validate group was retrieved successfully
+            if (group) {
+                array_push(group, i);
+            }
         } else {
             // Static entities: group by model name hash
             U32 const model_name_hash = asset_get_model_by_hash(g_world->model_name_hash[i])->header.name_hash;
             EIDArray *group = InstanceGroupMap_get(&instance_groups, model_name_hash);
             if (!group) {
                 EIDArray new_group = {};
-                array_init(MEMORY_TYPE_ARENA_TRANSIENT, &new_group, 1024);
+                array_init(MEMORY_TYPE_ARENA_TRANSIENT, &new_group, 64); // Reduced from 1024
                 InstanceGroupMap_insert(&instance_groups, model_name_hash, new_group);
                 group = InstanceGroupMap_get(&instance_groups, model_name_hash);
             }
-            array_push(group, i);
+
+            // Validate group was retrieved successfully
+            if (group) {
+                array_push(group, i);
+            }
         }
 
         // Draw carried resources on actor's back
@@ -392,6 +409,9 @@ void world_draw_3d_sketch() {
     AnimationStateKey anim_key = {};
     EIDArray anim_group = {};
     MAP_EACH(&animated_instance_groups, anim_key, anim_group) {
+        // Validate group has data and count before processing
+        if (!anim_group.data || anim_group.count == 0) { continue; }
+
         if (anim_group.count < MIN_INSTANCE_COUNT) {
             // Not worth instancing for single/few entities - use regular rendering
             for (SZ j = 0; j < anim_group.count; ++j) {
@@ -441,15 +461,15 @@ void world_draw_3d_sketch() {
                 }
             }
 
-            // Draw non-selected animated instances
-            if (transforms_unselected.count > 0) {
+            // Draw non-selected animated instances (with NULL check)
+            if (transforms_unselected.count > 0 && transforms_unselected.data && tints_unselected.data) {
                 S32 is_selected = 0;
                 SetShaderValue(g_render.model_animated_instanced_shader.shader->base, g_render.model_animated_instanced_shader.is_selected_loc, &is_selected, SHADER_UNIFORM_INT);
                 d3d_model_animated_instanced_by_hash(anim_key.model_hash, transforms_unselected.data, tints_unselected.data, transforms_unselected.count, bone_matrices, bone_count);
             }
 
-            // Draw selected animated instances
-            if (transforms_selected.count > 0) {
+            // Draw selected animated instances (with NULL check)
+            if (transforms_selected.count > 0 && transforms_selected.data && tints_selected.data) {
                 S32 is_selected = 1;
                 SetShaderValue(g_render.model_animated_instanced_shader.shader->base, g_render.model_animated_instanced_shader.is_selected_loc, &is_selected, SHADER_UNIFORM_INT);
                 d3d_model_animated_instanced_by_hash(anim_key.model_hash, transforms_selected.data, tints_selected.data, transforms_selected.count, bone_matrices, bone_count);
@@ -461,6 +481,9 @@ void world_draw_3d_sketch() {
     U32 model_name_hash = 0;
     EIDArray group = {};
     MAP_EACH(&instance_groups, model_name_hash, group) {
+        // Validate group has data and count before processing
+        if (!group.data || group.count == 0) { continue; }
+
         if (group.count < MIN_INSTANCE_COUNT) {
             // Not worth instancing for single/few entities - use regular rendering
             for (SZ j = 0; j < group.count; ++j) {
@@ -503,15 +526,15 @@ void world_draw_3d_sketch() {
                 }
             }
 
-            // Draw non-selected instances
-            if (transforms_unselected.count > 0) {
+            // Draw non-selected instances (with NULL check)
+            if (transforms_unselected.count > 0 && transforms_unselected.data && tints_unselected.data) {
                 S32 is_selected = 0;
                 SetShaderValue(g_render.model_instanced_shader.shader->base, g_render.model_instanced_shader.is_selected_loc, &is_selected, SHADER_UNIFORM_INT);
                 d3d_model_instanced_by_hash(model_name_hash, transforms_unselected.data, tints_unselected.data, transforms_unselected.count);
             }
 
-            // Draw selected instances
-            if (transforms_selected.count > 0) {
+            // Draw selected instances (with NULL check)
+            if (transforms_selected.count > 0 && transforms_selected.data && tints_selected.data) {
                 S32 is_selected = 1;
                 SetShaderValue(g_render.model_instanced_shader.shader->base, g_render.model_instanced_shader.is_selected_loc, &is_selected, SHADER_UNIFORM_INT);
                 d3d_model_instanced_by_hash(model_name_hash, transforms_selected.data, tints_selected.data, transforms_selected.count);

@@ -189,18 +189,6 @@ void static inline i_d3d_model_animated_instanced_impl(AModel *model, Matrix *tr
     Matrix mat_view_proj = g_render.cameras.c3d.mat_view_proj;
     SetShaderValueMatrix(g_render.model_animated_instanced_shader.shader->base, g_render.model_animated_instanced_shader.mvp_loc, mat_view_proj);
 
-    // Upload bone matrices (shared across all instances)
-    if (bone_matrices && bone_count > 0) {
-        S32 bone_matrices_loc = GetShaderLocation(g_render.model_animated_instanced_shader.shader->base, "boneMatrices");
-        if (bone_matrices_loc >= 0) {
-            SetShaderValueMatrix(g_render.model_animated_instanced_shader.shader->base, bone_matrices_loc, bone_matrices[0]);
-            // Upload all bone matrices
-            for (S32 i = 1; i < bone_count && i < 128; ++i) {
-                SetShaderValueMatrix(g_render.model_animated_instanced_shader.shader->base, bone_matrices_loc + i, bone_matrices[i]);
-            }
-        }
-    }
-
     // Convert colors to F32 array for GPU
     F32 *instance_colors = mmta(F32 *, instance_count * 4 * sizeof(F32));
     for (SZ j = 0; j < instance_count; ++j) {
@@ -214,6 +202,15 @@ void static inline i_d3d_model_animated_instanced_impl(AModel *model, Matrix *tr
     for (S32 i = 0; i < model->base.meshCount; i++) {
         Mesh *mesh = &model->base.meshes[i];
         Material *material = &model->base.materials[model->base.meshMaterial[i]];
+
+        // Temporarily set bone matrices on mesh (raylib will upload them automatically)
+        Matrix *original_bone_matrices = mesh->boneMatrices;
+        S32 original_bone_count = mesh->boneCount;
+
+        if (bone_matrices && mesh->boneIds && mesh->boneWeights) {
+            mesh->boneMatrices = bone_matrices;
+            mesh->boneCount = bone_count;
+        }
 
         // Temporarily assign instanced shader to material
         Shader original_material_shader = material->shader;
@@ -234,7 +231,7 @@ void static inline i_d3d_model_animated_instanced_impl(AModel *model, Matrix *tr
             rlEnableVertexAttribute((U32)g_render.model_animated_instanced_shader.instance_tint_loc);
         }
 
-        // Draw with instancing (using Raylib's built-in transform instancing)
+        // Draw with instancing (using Raylib's built-in transform instancing and bone matrix upload)
         DrawMeshInstanced(*mesh, *material, transforms, (S32)instance_count);
 
         // Cleanup
@@ -243,8 +240,10 @@ void static inline i_d3d_model_animated_instanced_impl(AModel *model, Matrix *tr
         rlDisableVertexArray();
         rlUnloadVertexBuffer(instance_color_buffer);
 
-        // Restore original shader
+        // Restore original shader and bone matrices
         material->shader = original_material_shader;
+        mesh->boneMatrices = original_bone_matrices;
+        mesh->boneCount = original_bone_count;
     }
 }
 
