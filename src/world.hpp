@@ -20,10 +20,13 @@ fwd_decl(AModel);
 
 struct World {
     ATerrain *base_terrain;
-    EID selected_id;
     U32 active_ent_count;
     U32 entity_type_counts[ENTITY_TYPE_COUNT];
     U32 max_gen;
+
+    // Multi-selection support
+    EID selected_entities[WORLD_MAX_ENTITIES];
+    SZ selected_entity_count;
 
     // Active entity optimization: array of active entity IDs for fast iteration
     EID active_entities[WORLD_MAX_ENTITIES];
@@ -127,3 +130,4 @@ void world_mark_follower_cache_dirty();
 void world_target_tracker_add(EID target_id, EID actor_id);
 void world_target_tracker_remove(EID target_id, EID actor_id);
 void world_notify_actors_target_destroyed(EID destroyed_target_id);
+BOOL world_is_entity_selected(EID id);

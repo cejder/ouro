@@ -450,7 +450,14 @@ SCENE_UPDATE(overworld) {
     if (c_console__enabled) { goto SKIP_OTHER_INPUT;  } // Early skip for console
 
     if (is_pressed(IA_DBG_RESET_CAMERA))                   { player_init();                                                                               }
-    if (is_pressed(IA_DBG_TOGGLE_NOCLIP))                  { MenuExtraToggleData toggle_data = { &c_debug__noclip, "Noclip" }; i_toggle_fn(&toggle_data); }
+    if (is_pressed(IA_DBG_TOGGLE_NOCLIP)) {
+        if (g_player.camera_projection.is_orthographic) {
+            mwf(ORANGE, "Noclip not supported in orthographic view");
+        } else {
+            MenuExtraToggleData toggle_data = { &c_debug__noclip, "Noclip" };
+            i_toggle_fn(&toggle_data);
+        }
+    }
     if (is_pressed(IA_DBG_TOGGLE_CAMERA))                  { i_toggle_camera(nullptr);                                                                    }
     if (is_pressed(IA_DBG_PULL_DEFAULT_CAM_TO_PLAYER_CAM)) { c3d_pull_default_to_other(&g_player.cameras[SCENE_OVERWORLD]);                                        }
     if (is_pressed(IA_OPEN_OVERLAY_MENU))                  { scenes_push_overlay_scene(SCENE_OVERLAY_MENU);                                               }

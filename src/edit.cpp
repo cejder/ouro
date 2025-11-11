@@ -13,8 +13,76 @@
 #include "world.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
+#include <raymath.h>
 
 EditState static i_state = {};
+
+// ============================================================================
+// Multi-selection helper functions
+// ============================================================================
+
+void static world_clear_selection() {
+    g_world->selected_entity_count = 0;
+}
+
+void static world_add_to_selection(EID id) {
+    // Check if already selected
+    for (SZ i = 0; i < g_world->selected_entity_count; ++i) {
+        if (g_world->selected_entities[i] == id) {
+            return; // Already selected
+        }
+    }
+
+    // Add to selection
+    if (g_world->selected_entity_count < WORLD_MAX_ENTITIES) {
+        g_world->selected_entities[g_world->selected_entity_count++] = id;
+    }
+}
+
+void static world_remove_from_selection(EID id) {
+    for (SZ i = 0; i < g_world->selected_entity_count; ++i) {
+        if (g_world->selected_entities[i] == id) {
+            // Shift remaining elements
+            for (SZ j = i; j < g_world->selected_entity_count - 1; ++j) {
+                g_world->selected_entities[j] = g_world->selected_entities[j + 1];
+            }
+            g_world->selected_entity_count--;
+
+            return;
+        }
+    }
+}
+
+BOOL static world_is_selected(EID id) {
+    for (SZ i = 0; i < g_world->selected_entity_count; ++i) {
+        if (g_world->selected_entities[i] == id) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void static world_set_single_selection(EID id) {
+    world_clear_selection();
+    world_add_to_selection(id);
+}
+
+void static world_toggle_selection(EID id) {
+    if (world_is_selected(id)) {
+        world_remove_from_selection(id);
+    } else {
+        world_add_to_selection(id);
+    }
+}
+
+// Check if entity position is inside screen-space rectangle
+BOOL static is_entity_in_screen_rect(EID id, Vector2 rect_min, Vector2 rect_max, Camera camera) {
+    Vector3 const world_pos = g_world->position[id];
+    Vector2 const screen_pos = GetWorldToScreen(world_pos, camera);
+
+    return (screen_pos.x >= rect_min.x && screen_pos.x <= rect_max.x &&
+            screen_pos.y >= rect_min.y && screen_pos.y <= rect_max.y);
+}
 
 // Helper function to print entity command messages with entity name
 void static i_print_entity_command_message(EID id, C8 const *command_text, C8 const *command_color, MessageType type) {
@@ -72,11 +140,15 @@ void static i_handle_selected_entity_input(EID id, F32 dtu, BOOL mouse_left_down
     Vector3 position     = g_world->position[id];
     Vector3 const scale  = g_world->scale[id];
 
-    // Keyboard rotation
-    if (is_down(IA_DBG_ROTATE_ENTITY_NEG)) { entity_set_rotation(id, rotation - rot_speed); }
-    if (is_down(IA_DBG_ROTATE_ENTITY_POS)) { entity_set_rotation(id, rotation + rot_speed); }
+    // Keyboard rotation - apply rotation delta to this entity
+    F32 rotation_delta = 0.0F;
+    if (is_down(IA_DBG_ROTATE_ENTITY_NEG)) { rotation_delta -= rot_speed; }
+    if (is_down(IA_DBG_ROTATE_ENTITY_POS)) { rotation_delta += rot_speed; }
+    if (rotation_delta != 0.0F) {
+        entity_set_rotation(id, rotation + rotation_delta);
+    }
 
-    // Keyboard movement
+    // Keyboard movement - apply same movement to this entity
     if (is_down(IA_DBG_MOVE_ENTITY_UP))       { entity_add_position(id, {0,  move_speed, 0}); }
     if (is_down(IA_DBG_MOVE_ENTITY_DOWN))     { entity_add_position(id, {0, -move_speed, 0}); }
     if (is_down(IA_DBG_MOVE_ENTITY_LEFT))     { entity_move(id, MOVE_LEFT,     move_speed);   }
@@ -90,26 +162,30 @@ void static i_handle_selected_entity_input(EID id, F32 dtu, BOOL mouse_left_down
         if (terrain_collision.hit) {
             position.y = terrain_collision.point.y;
             entity_set_position(id, position);
-            i_state.mouse_click_location = terrain_collision.point;
+            if (id == g_world->selected_entities[0]) {  // Only update click location for primary
+                i_state.mouse_click_location = terrain_collision.point;
+            }
         }
     }
 
     // Mouse interactions (only if collision is valid)
+    // NOTE: For multi-entity operations, only the first entity's position/scale matters,
+    // and we apply the same delta to all selected entities
     if (mouse_left_down && collision.hit) {
-        // Mouse rotation with Alt
+        // Mouse rotation with Alt - apply rotation delta to this entity
         if (is_mod(I_MODIFIER_ALT)) {
             Vector2 const mouse_delta = input_get_mouse_delta();
             entity_set_rotation(id, rotation + (mouse_delta.x * 0.5F));
             *left_click_consumed = true;
         }
-        // Mouse dragging with Ctrl
-        else if (is_mod(I_MODIFIER_CTRL)) {
+        // Mouse dragging with Ctrl (but not Ctrl+Shift, which is scaling)
+        else if (is_mod(I_MODIFIER_CTRL) && !is_mod(I_MODIFIER_SHIFT)) {
             entity_set_position(id, collision.point);
             collision.point.y   += 1.0F;
             *left_click_consumed = true;
         }
-        // Mouse scaling with Shift
-        else if (is_mod(I_MODIFIER_SHIFT)) {
+        // Mouse scaling with Ctrl+Shift - scale this entity by the same factor
+        else if (is_mod(I_MODIFIER_SHIFT) && is_mod(I_MODIFIER_CTRL)) {
             Vector2 const mouse_delta = input_get_mouse_delta();
             F32 t = scale.x;
 
@@ -122,7 +198,7 @@ void static i_handle_selected_entity_input(EID id, F32 dtu, BOOL mouse_left_down
         }
     }
 
-    // Mouse wheel for vertical movement (with Ctrl modifier)
+    // Mouse wheel for vertical movement (with Ctrl modifier) - apply to this entity
     if (is_mod(I_MODIFIER_CTRL)) {
         F32 const wheel = input_get_mouse_wheel();
         if (wheel != 0.0F) {
@@ -131,11 +207,7 @@ void static i_handle_selected_entity_input(EID id, F32 dtu, BOOL mouse_left_down
         }
     }
 
-    // Delete entity
-    if (is_pressed(IA_DBG_DELETE_ENTITY)) {
-        // HACK: REMOVE THIS
-        entity_destroy(id);
-    }
+    // Delete entity - handled separately for multi-selection to avoid array modification during iteration
 }
 
 void edit_update(F32 dt, F32 dtu) {
@@ -166,19 +238,124 @@ void edit_update(F32 dt, F32 dtu) {
         audio_play(ACG_SFX, "ting.ogg");
 
         // Spawn indicator particles at click location (only if no entity is selected, otherwise handled in command section)
-        if (g_world->selected_id == INVALID_EID) {
+        if (g_world->selected_entity_count == 0) {
             particles3d_add_click_indicator(collision.point, 0.5F, PINK, PURPLE, 5);
         }
     }
 
+    // Rectangle selection (left mouse drag)
+    BOOL const shift_down = is_mod(I_MODIFIER_SHIFT);
+
     // Entity manipulation (only if entity is selected)
-    if (g_world->selected_id != INVALID_EID) { i_handle_selected_entity_input(g_world->selected_id, dtu, mouse_left_down, collision, &left_click_consumed); }
+    // Allow manipulation unless Shift-only is held (reserved for selection)
+    // Ctrl+Shift is allowed for entity scaling
+    if (g_world->selected_entity_count > 0 && (!shift_down || ctrl_down)) {
+        // For multi-entity selection with Ctrl+drag, maintain relative positions
+        BOOL const is_multi_selection = g_world->selected_entity_count > 1;
+        Vector3 position_offset = {0.0F, 0.0F, 0.0F};
 
-    // Entity selection (only if click wasn't consumed)
+        // Calculate position offset from first entity if doing Ctrl+drag
+        if (is_multi_selection && mouse_left_down && collision.hit &&
+            is_mod(I_MODIFIER_CTRL) && !is_mod(I_MODIFIER_SHIFT) && !is_mod(I_MODIFIER_ALT)) {
+            EID const first_id = g_world->selected_entities[0];
+            Vector3 const old_pos = g_world->position[first_id];
+            position_offset = Vector3Subtract(collision.point, old_pos);
+        }
+
+        // Apply manipulation to all selected entities
+        for (SZ i = 0; i < g_world->selected_entity_count; ++i) {
+            EID const id = g_world->selected_entities[i];
+
+            // For Ctrl+drag with multiple entities, apply offset instead of direct position
+            if (is_multi_selection && mouse_left_down && collision.hit &&
+                is_mod(I_MODIFIER_CTRL) && !is_mod(I_MODIFIER_SHIFT) && !is_mod(I_MODIFIER_ALT)) {
+                // Apply the same offset to maintain relative positions
+                Vector3 new_pos = Vector3Add(g_world->position[id], position_offset);
+                entity_set_position(id, new_pos);
+                left_click_consumed = true;
+            } else {
+                // Regular handling for other operations
+                i_handle_selected_entity_input(id, dtu, mouse_left_down, collision, &left_click_consumed);
+            }
+        }
+
+        // Delete all selected entities (done after iteration to avoid modifying array during loop)
+        if (is_pressed(IA_DBG_DELETE_ENTITY)) {
+            // Copy selected entities to temporary array since entity_destroy modifies selection
+            EID entities_to_delete[WORLD_MAX_ENTITIES];
+            SZ delete_count = g_world->selected_entity_count;
+            for (SZ i = 0; i < delete_count; ++i) {
+                entities_to_delete[i] = g_world->selected_entities[i];
+            }
+            // Now delete all of them
+            for (SZ i = 0; i < delete_count; ++i) {
+                entity_destroy(entities_to_delete[i]);
+            }
+        }
+    }
+
     if (!left_click_consumed && !mouse_look && mouse_left_pressed) {
-        EID const entity_id = c_debug__enabled ? entity_find_at_mouse() : entity_find_at_mouse_with_type(ENTITY_TYPE_NPC);
+        // Start potential rectangle selection
+        i_state.is_selecting_rect = true;
+        i_state.selection_rect_start = input_get_mouse_position_screen();
+        i_state.selection_rect_end = i_state.selection_rect_start;
+    }
 
-        if (entity_id != INVALID_EID) { world_set_selected_entity(entity_id); }
+    if (i_state.is_selecting_rect && mouse_left_down) {
+        // Update rectangle end point
+        i_state.selection_rect_end = input_get_mouse_position_screen();
+    }
+
+    if (i_state.is_selecting_rect && !mouse_left_down) {
+        // Finish rectangle selection
+        Vector2 const rect_start = i_state.selection_rect_start;
+        Vector2 const rect_end = i_state.selection_rect_end;
+        F32 const drag_distance = Vector2Distance(rect_start, rect_end);
+        F32 const min_drag_threshold = 5.0F; // Minimum pixels to count as rectangle selection
+
+        if (drag_distance > min_drag_threshold) {
+            // Rectangle selection - select all entities in rectangle
+            Vector2 rect_min = {glm::min(rect_start.x, rect_end.x), glm::min(rect_start.y, rect_end.y)};
+            Vector2 rect_max = {glm::max(rect_start.x, rect_end.x), glm::max(rect_start.y, rect_end.y)};
+
+            // Clear selection if not holding shift
+            if (!shift_down) {
+                world_clear_selection();
+            }
+
+            // Select all entities in rectangle
+            Camera const current_camera = g_player.cameras[g_scenes.current_scene_type];
+            for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
+                EID const id = g_world->active_entities[idx];
+
+                // Only select NPCs (unless debug mode)
+                if (!c_debug__enabled && g_world->type[id] != ENTITY_TYPE_NPC) {
+                    continue;
+                }
+
+                if (is_entity_in_screen_rect(id, rect_min, rect_max, current_camera)) {
+                    world_add_to_selection(id);
+                }
+            }
+        } else {
+            // Single click selection
+            EID const entity_id = c_debug__enabled ? entity_find_at_mouse() : entity_find_at_mouse_with_type(ENTITY_TYPE_NPC);
+
+            if (entity_id != INVALID_EID) {
+                if (shift_down) {
+                    // Shift+click: toggle selection
+                    world_toggle_selection(entity_id);
+                } else {
+                    // Normal click: replace selection
+                    world_set_single_selection(entity_id);
+                }
+            } else if (!shift_down) {
+                // Clicked empty space without shift: clear selection
+                world_clear_selection();
+            }
+        }
+
+        i_state.is_selecting_rect = false;
     }
 
     // Center screen selection (mouse look or hotkey)
@@ -186,52 +363,73 @@ void edit_update(F32 dt, F32 dtu) {
         EID const entity_id = c_debug__enabled ? entity_find_at_screen_point(render_get_center_of_render())
                                          : entity_find_at_screen_point_with_type(render_get_center_of_render(), ENTITY_TYPE_NPC);
 
-        if (entity_id != INVALID_EID) { world_set_selected_entity(entity_id); }
-    }
-
-    // Clear selection with middle mouse
-    if (mouse_middle_pressed) { g_world->selected_id = INVALID_EID; }
-
-    // Right click commands on selected entity
-    if (mouse_right_pressed && g_world->selected_id != INVALID_EID && collision.hit) {
-        // Spawn particles at the click location
-        particles3d_add_click_indicator(collision.point, 0.5F, PINK, PURPLE, 5);
-
-        if (ctrl_down) {
-            entity_actor_start_looking_for_target(g_world->selected_id, ENTITY_TYPE_VEGETATION);
-            i_print_entity_command_message(g_world->selected_id, "Gathering resources", "#ffaa00ff", MESSAGE_TYPE_WARN);
-        } else {
-            // Check if we clicked on an entity
-            EID const clicked_entity = entity_find_at_mouse();
-
-            if (clicked_entity != INVALID_EID && clicked_entity != g_world->selected_id) {
-                // We clicked on a different entity - attack it if it's an NPC
-                if (g_world->type[clicked_entity] == ENTITY_TYPE_NPC) {
-                    entity_actor_set_attack_target_npc(g_world->selected_id, clicked_entity);
-                    i_print_entity_command_message_with_target(g_world->selected_id, "Attacking", "#ff3030ff", clicked_entity, MESSAGE_TYPE_ERROR);
-                } else {
-                    // Not an NPC, just move to the position
-                    entity_actor_set_move_target(g_world->selected_id, collision.point);
-                    i_print_entity_command_message(g_world->selected_id, "Moving to position", "#00ff88ff", MESSAGE_TYPE_INFO);
-                }
+        if (entity_id != INVALID_EID) {
+            if (shift_down) {
+                world_toggle_selection(entity_id);
             } else {
-                // No entity clicked, or clicked on self - just move to position
-                entity_actor_set_move_target(g_world->selected_id, collision.point);
-                i_print_entity_command_message(g_world->selected_id, "Moving to position", "#00ff88ff", MESSAGE_TYPE_INFO);
+                world_set_single_selection(entity_id);
             }
         }
     }
 
-    // Spawn selection indicator particles for the selected entity (frame-rate independent)
-    if (g_world->selected_id != INVALID_EID) {
-        Vector3 const position  = g_world->position[g_world->selected_id];
-        F32 const radius        = g_world->radius[g_world->selected_id];
+    // Clear selection with middle mouse
+    if (mouse_middle_pressed) { world_clear_selection(); }
 
+    // Right click commands on selected entities (apply to ALL selected)
+    if (mouse_right_pressed && g_world->selected_entity_count > 0 && collision.hit) {
+        // Spawn particles at the click location
+        particles3d_add_click_indicator(collision.point, 0.5F, PINK, PURPLE, 5);
+
+        if (ctrl_down) {
+            // Gather command for all selected units
+            for (SZ i = 0; i < g_world->selected_entity_count; ++i) {
+                EID const id = g_world->selected_entities[i];
+                entity_actor_start_looking_for_target(id, ENTITY_TYPE_VEGETATION);
+            }
+            i_print_entity_command_message(g_world->selected_entities[0], "Gathering resources", "#ffaa00ff", MESSAGE_TYPE_WARN);
+        } else {
+            // Check if we clicked on an entity
+            EID const clicked_entity = entity_find_at_mouse();
+
+            if (clicked_entity != INVALID_EID && !world_is_selected(clicked_entity)) {
+                // We clicked on a different entity - attack it if it's an NPC
+                if (g_world->type[clicked_entity] == ENTITY_TYPE_NPC) {
+                    for (SZ i = 0; i < g_world->selected_entity_count; ++i) {
+                        EID const id = g_world->selected_entities[i];
+                        entity_actor_set_attack_target_npc(id, clicked_entity);
+                    }
+                    i_print_entity_command_message_with_target(g_world->selected_entities[0], "Attacking", "#ff3030ff", clicked_entity, MESSAGE_TYPE_ERROR);
+                } else {
+                    // Not an NPC, just move to the position
+                    for (SZ i = 0; i < g_world->selected_entity_count; ++i) {
+                        EID const id = g_world->selected_entities[i];
+                        entity_actor_set_move_target(id, collision.point);
+                    }
+                    i_print_entity_command_message(g_world->selected_entities[0], "Moving to position", "#00ff88ff", MESSAGE_TYPE_INFO);
+                }
+            } else {
+                // No entity clicked, or clicked on self - just move to position
+                for (SZ i = 0; i < g_world->selected_entity_count; ++i) {
+                    EID const id = g_world->selected_entities[i];
+                    entity_actor_set_move_target(id, collision.point);
+                }
+                i_print_entity_command_message(g_world->selected_entities[0], "Moving to position", "#00ff88ff", MESSAGE_TYPE_INFO);
+            }
+        }
+    }
+
+    // Spawn selection indicator particles for all selected entities (frame-rate independent)
+    if (g_world->selected_entity_count > 0) {
         // Frame-rate independent particle spawning
         F32 const spawn_interval = 1.0F / EDIT_SELECTION_INDICATOR_PARTICLES_PER_SECOND;
         i_state.selection_indicator_timer += dt;
         while (i_state.selection_indicator_timer >= spawn_interval) {
-            particles3d_add_selection_indicator(position, radius, GREEN, LIME, EDIT_SELECTION_INDICATOR_PARTICLE_COUNT);
+            for (SZ i = 0; i < g_world->selected_entity_count; ++i) {
+                EID const id = g_world->selected_entities[i];
+                Vector3 const position = g_world->position[id];
+                F32 const radius = g_world->radius[id];
+                particles3d_add_selection_indicator(position, radius, GREEN, LIME, EDIT_SELECTION_INDICATOR_PARTICLE_COUNT);
+            }
             i_state.selection_indicator_timer -= spawn_interval;
         }
     } else {
@@ -240,6 +438,28 @@ void edit_update(F32 dt, F32 dtu) {
     }
 }
 
+
+void edit_draw_2d_hud() {
+    // Draw selection rectangle while dragging
+    if (i_state.is_selecting_rect) {
+        Vector2 const start = i_state.selection_rect_start;
+        Vector2 const end = i_state.selection_rect_end;
+
+        // Calculate rectangle bounds
+        F32 const x = glm::min(start.x, end.x);
+        F32 const y = glm::min(start.y, end.y);
+        F32 const width = glm::abs(end.x - start.x);
+        F32 const height = glm::abs(end.y - start.y);
+
+        // Draw filled rectangle with transparency
+        Color const fill_color = {100, 200, 100, 50};  // Semi-transparent green
+        DrawRectangle((S32)x, (S32)y, (S32)width, (S32)height, fill_color);
+
+        // Draw border
+        Color const border_color = {100, 255, 100, 200};  // Bright green border
+        DrawRectangleLines((S32)x, (S32)y, (S32)width, (S32)height, border_color);
+    }
+}
 
 Vector3 edit_get_last_click_world_position() {
     return i_state.mouse_click_location;

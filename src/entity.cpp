@@ -187,8 +187,17 @@ EID entity_create(EntityType type, C8 const *name, Vector3 position, F32 rotatio
 }
 
 void entity_destroy(EID id) {
-    // The entity we destroy might be the one selected.
-    if (g_world->selected_id == id) { g_world->selected_id = INVALID_EID; };
+    // The entity we destroy might be in the selection - remove it
+    for (SZ i = 0; i < g_world->selected_entity_count; ++i) {
+        if (g_world->selected_entities[i] == id) {
+            // Shift remaining elements
+            for (SZ j = i; j < g_world->selected_entity_count - 1; ++j) {
+                g_world->selected_entities[j] = g_world->selected_entities[j + 1];
+            }
+            g_world->selected_entity_count--;
+            break;
+        }
+    }
 
     // If this entity was an actor targeting something, remove it from target tracking
     if (g_world->type[id] == ENTITY_TYPE_NPC) { entity_actor_clear_actor_target(id); }

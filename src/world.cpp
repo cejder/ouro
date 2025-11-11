@@ -68,10 +68,10 @@ void world_reset() {
         g_world->name[i][0]        = '\0';
     }
 
-    g_world->active_ent_count    = 0;
-    g_world->active_entity_count = 0;
-    g_world->max_gen             = 0;
-    g_world->selected_id         = INVALID_EID;
+    g_world->active_ent_count      = 0;
+    g_world->active_entity_count   = 0;
+    g_world->max_gen               = 0;
+    g_world->selected_entity_count = 0;
 
     grid_clear();
 }
@@ -194,6 +194,8 @@ void world_draw_2d_hud() {
             d2d_healthbar(i);
         }
     }
+
+    edit_draw_2d_hud();
 }
 
 void world_draw_2d_dbg() {
@@ -210,7 +212,14 @@ void world_draw_2d_dbg() {
             if (dungeon_is_entity_occluded(i)) { continue; }
         }
 
-        BOOL const is_selected = (g_world->selected_id == i);
+        // Check if entity is in selection
+        BOOL is_selected = false;
+        for (SZ sel_idx = 0; sel_idx < g_world->selected_entity_count; ++sel_idx) {
+            if (g_world->selected_entities[sel_idx] == i) {
+                is_selected = true;
+                break;
+            }
+        }
 
         if (c_debug__gizmo_info && is_selected) { d2d_gizmo(i); }
 
@@ -413,7 +422,7 @@ void world_draw_3d_dbg() {
         }
 
         F32 gizmos_alpha       = 1.0F;
-        BOOL const is_selected = g_world->selected_id == i;
+        BOOL const is_selected = world_is_entity_selected(i);
         Color const obb_color  = is_selected ? color_sync_blinking_regular(SALMON, PERSIMMON) : entity_type_to_color(g_world->type[i]);
 
         // We only do this fading by distance if the entity is not selected.
@@ -454,8 +463,20 @@ void world_set_selected_entity(EID id) {
         if (g_world->type[id] != ENTITY_TYPE_NPC) { return; }
     }
 
-    g_world->selected_id = id;
+    // Clear previous selection and select this entity
+    g_world->selected_entity_count = 0;
+    g_world->selected_entities[g_world->selected_entity_count++] = id;
+
     audio_play(ACG_SFX, "selected_0.ogg");
+}
+
+BOOL world_is_entity_selected(EID id) {
+    for (SZ i = 0; i < g_world->selected_entity_count; ++i) {
+        if (g_world->selected_entities[i] == id) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void world_vegetation_collision() {
@@ -535,7 +556,6 @@ void world_dump_all_entities() {
 
     lln("active_entities: %u", g_world->active_ent_count);
     lln("max_generation:  %u", g_world->max_gen);
-    lln("selected_entity: %u", g_world->selected_id);
 }
 
 void world_dump_all_entities_cb(void *data) {

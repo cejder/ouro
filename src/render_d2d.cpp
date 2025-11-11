@@ -460,6 +460,7 @@ void d2d_healthbar(EID id) {
     if (!c_world__actor_healthbar)                                    { return; }
     if (g_world->health[id].max <= 0)                                 { return; }
     if (!ENTITY_HAS_FLAG(g_world->flags[id], ENTITY_FLAG_IN_FRUSTUM)) { return; }
+    if (!world_is_entity_selected(id))                                { return; }
 
     Camera3D *cam                 = c3d_get_ptr();
     Vector2 const render_res      = render_get_render_resolution();
@@ -471,24 +472,35 @@ void d2d_healthbar(EID id) {
 
     if (screen_pos.x < -150 || screen_pos.x > render_res.x + 150 || screen_pos.y < -150 || screen_pos.y > render_res.y + 150) { return; }
 
-    F32 distance = Vector3Distance(position, cam->position);
-    if (g_world->selected_id == id) { distance = 0.0F; } // If this is the selected entity, we do not care about distance.
-    F32 const max_distance = 10.0F + g_world->radius[id];
-    F32 const fade_start   = max_distance * 0.75F;
-
-    if (distance > max_distance) { return; }
-
-    F32 const distance_t = glm::clamp((distance - fade_start) / (max_distance - fade_start), 0.0F, 1.0F);
-    F32 const alpha      = ease_out_quart(1.0F - distance_t, 0.0F, 1.0F, 1.0F);
+    F32 const alpha = 1.0F;
 
     // World-scale zoom handling: scale UI elements based on camera FOV
     F32 const zoom_scale = CAMERA3D_DEFAULT_FOV / c3d_get_fov();
 
     F32 const health_perc  = glm::clamp((F32)g_world->health[id].current / (F32)g_world->health[id].max, 0.0F, 1.0F);
 
-    F32 const bar_width    = ui_scale_x(8.0F) * zoom_scale;
-    F32 const bar_height   = ui_scale_y(2.30F) * zoom_scale;
-    F32 const border_thick = ui_scale_x(0.20F) * zoom_scale;
+    // Use minimal healthbar style when multiple units are selected
+    BOOL const is_multi_selection = g_world->selected_entity_count > 1 && world_is_entity_selected(id);
+
+    F32 bar_width, bar_height;
+    if (is_multi_selection) {
+        // For multi-selection: make bar width based on entity size (at most as wide as entity)
+        // Project entity radius to screen space
+        F32 const entity_radius = g_world->radius[id];
+        Vector3 const radius_point = Vector3Add(position, {entity_radius, 0.0F, 0.0F});
+        Vector2 const center_screen = GetWorldToScreenEx(position, *cam, (S32)render_res.x, (S32)render_res.y);
+        Vector2 const radius_screen = GetWorldToScreenEx(radius_point, *cam, (S32)render_res.x, (S32)render_res.y);
+        F32 const screen_radius = glm::abs(radius_screen.x - center_screen.x);
+
+        // Healthbar is at most as wide as entity, minimum 20 pixels
+        bar_width = glm::clamp(screen_radius * 2.0F * 0.8F, 20.0F, 200.0F);
+        bar_height = ui_scale_y(0.6F) * zoom_scale;  // Very thin bar
+    } else {
+        bar_width = ui_scale_x(8.0F) * zoom_scale;
+        bar_height = ui_scale_y(2.30F) * zoom_scale;
+    }
+
+    F32 const border_thick = is_multi_selection ? 0.0F : ui_scale_x(0.20F) * zoom_scale;  // No border for multi
     F32 const roundness    = 0.5F;
     S32 const segments     = 10;
 
@@ -515,9 +527,10 @@ void d2d_healthbar(EID id) {
     Vector2 const bar_pos       = {screen_pos.x - (bar_width * 0.5F), screen_pos.y - (bar_height * 0.5F)};
     Rectangle const bg_rect     = {bar_pos.x, bar_pos.y, bar_width, bar_height};
     Rectangle const fill_rect   = {bar_pos.x, bar_pos.y, bar_width * health_perc, bar_height};
-    Rectangle const shadow_rect = {bg_rect.x + 1.5F, bg_rect.y + 1.5F, bg_rect.width, bg_rect.height};
 
+    Rectangle const shadow_rect = {bg_rect.x + 1.5F, bg_rect.y + 1.5F, bg_rect.width, bg_rect.height};
     d2d_rectangle_rounded_rec(shadow_rect, roundness, segments, Fade(BLACK, 0.25F * alpha));
+
     d2d_rectangle_rounded_rec(bg_rect, roundness, segments, bg_color);
 
     if (health_perc > 0.01F) { d2d_rectangle_rounded_rec(fill_rect, roundness, segments, fill_color); }
@@ -536,8 +549,8 @@ void d2d_healthbar(EID id) {
     F32 const font_fade_t = glm::clamp((scaled_font_size - font_size_threshold) / fade_range, 0.0F, 1.0F);
     F32 const font_alpha  = ease_out_quad(font_fade_t, 0.0F, 1.0F, 1.0F);  // Smooth easing
 
-    // Only draw text if it's visible enough
-    if (font_alpha > 0.01F && scaled_font_size > 1.0F) {
+    // Only draw text if it's visible enough (and not in minimal multi-selection mode)
+    if (font_alpha > 0.01F && scaled_font_size > 1.0F && !is_multi_selection) {
         // Use fixed font but render at scaled size for smooth scaling (no jitter from integer font sizes)
         AFont *name_font = asset_get_font("GoMono", base_font_size);
 
@@ -555,6 +568,8 @@ void d2d_healthbar(EID id) {
         DrawTextEx(name_font->base, g_world->name[id], shadow_pos, scaled_font_size, 0.0F, Fade(shadow_color, 0.8F * alpha * font_alpha));
         DrawTextEx(name_font->base, g_world->name[id], name_pos, scaled_font_size, 0.0F, Fade(text_color, alpha * font_alpha));
     }
+
+    if (is_multi_selection) { return; }
 
     SZ const wood_count = g_world->actor[id].behavior.wood_count;
     if (wood_count > 0 && scaled_font_size > 1.0F) {

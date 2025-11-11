@@ -1128,7 +1128,7 @@ C8 const *entity_actor_movement_goal_to_cstr(EntityMovementGoal goal) {
 void entity_actor_draw_2d_hud(EID id) {
     if (!c_world__actor_info) { return; }
 
-    BOOL const is_selected = g_world->selected_id == id;
+    BOOL const is_selected = world_is_entity_selected(id);
     if (!is_selected) {
         if (!ENTITY_HAS_FLAG(g_world->flags[id], ENTITY_FLAG_IN_FRUSTUM)) { return; }
         if (g_world->type[id] != ENTITY_TYPE_NPC) { return; }
