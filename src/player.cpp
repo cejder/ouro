@@ -115,14 +115,26 @@ void player_step() {
 }
 
 void player_dump_cameras() {
+    // Find the longest scene name for proper column alignment
+    SZ max_scene_name_len = 0;
     for (SZ i = 0; i < SCENE_COUNT; ++i) {
-        llw("%s: %.0f %.0f %.0f    %.0f",
+        SZ const len = strlen(scenes_to_cstr((SceneType)i));
+        if (len > max_scene_name_len) { max_scene_name_len = len; }
+    }
+
+    // Print header
+    lli("%-*s  %8s %8s %8s  %8s", (int)max_scene_name_len, "Scene", "Pos X", "Pos Y", "Pos Z", "FOV");
+    lli("%-*s  %8s %8s %8s  %8s", (int)max_scene_name_len, "-----", "-----", "-----", "-----", "---");
+
+    // Print each camera's data
+    for (SZ i = 0; i < SCENE_COUNT; ++i) {
+        lli("%-*s  %8.2f %8.2f %8.2f  %8.2f",
+            (int)max_scene_name_len,
             scenes_to_cstr((SceneType)i),
             g_player.cameras[i].position.x,
             g_player.cameras[i].position.y,
             g_player.cameras[i].position.z,
             g_player.cameras[i].fovy
-           );
+        );
     }
-    printf("\n");
 }
