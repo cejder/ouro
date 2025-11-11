@@ -11,12 +11,15 @@
 SelectionIndicators g_selection_indicators = {};
 
 void selection_indicators_init() {
+    lli("Initializing selection indicators system...");
+
     // Load shader
     g_selection_indicators.shader = asset_get_shader("selection_indicators");
     if (!g_selection_indicators.shader) {
         lle("Failed to load selection_indicators shader!");
         return;
     }
+    lli("Selection indicators shader loaded successfully");
 
     // Cache uniform locations
     g_selection_indicators.view_proj_loc = GetShaderLocation(g_selection_indicators.shader->base, "u_view_proj");
@@ -31,6 +34,7 @@ void selection_indicators_init() {
         lle("Failed to load selection indicator texture!");
         return;
     }
+    lli("Selection indicators texture loaded successfully");
 
     // Set indicator color - nice RTS green with some alpha
     g_selection_indicators.indicator_color = {0.2F, 1.0F, 0.3F, 0.8F};
@@ -122,6 +126,8 @@ void selection_indicators_draw() {
         return;
     }
 
+    lli("Drawing %zu selection indicators", g_selection_indicators.active_count);
+
     // Build instance data from active indicators
     SelectionIndicatorInstanceData instance_data[SELECTION_INDICATOR_MAX_COUNT];
     SZ instance_count = 0;
@@ -211,8 +217,11 @@ void selection_indicators_clear() {
 
 void selection_indicators_add(EID entity_id) {
     if (!entity_is_valid(entity_id)) {
+        llw("Attempted to add selection indicator for invalid entity");
         return;
     }
+
+    lli("Adding selection indicator for entity");
 
     // Check if indicator already exists for this entity
     for (SZ i = 0; i < SELECTION_INDICATOR_MAX_COUNT; ++i) {
