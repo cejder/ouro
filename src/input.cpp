@@ -896,28 +896,30 @@ void input_camera_input_update(F32 dtu, Camera *camera, F32 move_speed) {
         if (math_abs_f32(y) > GAMEPAD_AXIS_DEADZONE) { movement.y = y * move_speed; }
     }
 
-    // Rotate camera with keyboard.
-    if (is_down(IA_DBG_LOOK_CAMERA_LEFT)) {
-        rotation.x = -1.0F;
-    } else if (is_down(IA_DBG_LOOK_CAMERA_RIGHT)) {
-        rotation.x = 1.0F;
-    }
+    // Rotate camera with keyboard (not possible in ortho)
+    if (camera->projection != CAMERA_ORTHOGRAPHIC) {
+        if (is_down(IA_DBG_LOOK_CAMERA_LEFT)) {
+            rotation.x = -1.0F;
+        } else if (is_down(IA_DBG_LOOK_CAMERA_RIGHT)) {
+            rotation.x = 1.0F;
+        }
 
-    if (is_down(IA_DBG_LOOK_CAMERA_UP)) {
-        rotation.y = -1.0F;
-    } else if (is_down(IA_DBG_LOOK_CAMERA_DOWN)) {
-        rotation.y = 1.0F;
-    }
+        if (is_down(IA_DBG_LOOK_CAMERA_UP)) {
+            rotation.y = -1.0F;
+        } else if (is_down(IA_DBG_LOOK_CAMERA_DOWN)) {
+            rotation.y = 1.0F;
+        }
 
-    if (is_down(IA_DBG_ROLL_CAMERA_LEFT)) {
-        rotation.z = -1.0F;
-    } else if (is_down(IA_DBG_ROLL_CAMERA_RIGHT)) {
-        rotation.z = 1.0F;
-    }
+        if (is_down(IA_DBG_ROLL_CAMERA_LEFT)) {
+            rotation.z = -1.0F;
+        } else if (is_down(IA_DBG_ROLL_CAMERA_RIGHT)) {
+            rotation.z = 1.0F;
+        }
 
-    if (rotation.x != 0.0F || rotation.y != 0.0F || rotation.z != 0.0F) {
-        rotation = Vector3Normalize(rotation);
-        rotation = Vector3Scale(rotation, keyboard_rotation_speed);
+        if (rotation.x != 0.0F || rotation.y != 0.0F || rotation.z != 0.0F) {
+            rotation = Vector3Normalize(rotation);
+            rotation = Vector3Scale(rotation, keyboard_rotation_speed);
+        }
     }
 
     // Handle mouse look when side button is held
