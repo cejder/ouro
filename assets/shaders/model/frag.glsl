@@ -36,6 +36,7 @@ uniform Light lights[LIGHTS_MAX];
 uniform vec4 ambient;
 uniform vec3 viewPos;
 uniform Fog fog;
+uniform int isSelected;
 
 vec3 calculateLighting(vec3 normal, vec3 viewD, vec3 fragPosition) {
     vec3 diffuse = vec3(0.0);
@@ -122,4 +123,12 @@ void main() {
     finalColor = applyFog(finalColor, viewPos, fragPosition, fog);
     // Apply dithering
     finalColor = applyDithering(finalColor);
+
+    // Apply selection highlight
+    if (isSelected == 1) {
+        vec3 selectionColor = vec3(0.2, 1.0, 0.3); // RTS green
+        float rimPower = 1.0 - max(dot(normal, viewD), 0.0);
+        rimPower = pow(rimPower, 2.0);
+        finalColor.rgb += selectionColor * rimPower * 0.5;
+    }
 }

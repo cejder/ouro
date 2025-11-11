@@ -130,14 +130,6 @@ struct RenderSkyboxShader {
     AShader *shader;
 };
 
-struct RenderSelectionIndicatorsShader {
-    AShader *shader;
-    S32 view_proj_loc;
-    S32 camera_pos_loc;
-    S32 camera_right_loc;
-    S32 camera_up_loc;
-};
-
 struct Render {
     BOOL initialized;
 
@@ -147,7 +139,6 @@ struct Render {
     RenderSkyboxShader skybox_shader;
     RenderModelShader model_shader;
     RenderModelInstancedShader model_instanced_shader;
-    RenderSelectionIndicatorsShader selection_indicators_shader;
 
     BOOL wireframe_mode;
     F32 aspect_ratio;

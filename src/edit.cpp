@@ -10,7 +10,6 @@
 #include "particles_3d.hpp"
 #include "render.hpp"
 #include "scene.hpp"
-#include "selection_indicators.hpp"
 #include "world.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
@@ -24,7 +23,6 @@ EditState static i_state = {};
 
 void static world_clear_selection() {
     g_world->selected_entity_count = 0;
-    selection_indicators_clear();
 }
 
 void static world_add_to_selection(EID id) {
@@ -38,7 +36,6 @@ void static world_add_to_selection(EID id) {
     // Add to selection
     if (g_world->selected_entity_count < WORLD_MAX_ENTITIES) {
         g_world->selected_entities[g_world->selected_entity_count++] = id;
-        selection_indicators_add(id);
     }
 }
 
@@ -50,7 +47,6 @@ void static world_remove_from_selection(EID id) {
                 g_world->selected_entities[j] = g_world->selected_entities[j + 1];
             }
             g_world->selected_entity_count--;
-            selection_indicators_remove(id);
 
             return;
         }
@@ -422,7 +418,6 @@ void edit_update(F32 dt, F32 dtu) {
         }
     }
 
-    // Selection indicators are now handled by the dedicated selection_indicators system
 }
 
 

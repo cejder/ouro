@@ -16,7 +16,6 @@
 #include "profiler.hpp"
 #include "render.hpp"
 #include "scene.hpp"
-#include "selection_indicators.hpp"
 #include "string.hpp"
 #include "test.hpp"
 #include "time.hpp"

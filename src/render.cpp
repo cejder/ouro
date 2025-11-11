@@ -10,7 +10,6 @@
 #include "profiler.hpp"
 #include "render_tooltip.hpp"
 #include "scene.hpp"
-#include "selection_indicators.hpp"
 #include "string.hpp"
 #include "time.hpp"
 #include "world.hpp"
@@ -129,7 +128,6 @@ void render_init() {
         mis->light[i].outer_cutoff_loc = GetShaderLocation(mis->shader->base, TS("lights[%zu].outer_cutoff", i)->c);
     }
 
-    RenderSelectionIndicatorsShader *sis = &g_render.selection_indicators_shader;
     sis->shader                          = asset_get_shader("selection_indicators");
     sis->view_proj_loc                   = GetShaderLocation(sis->shader->base, "u_view_proj");
     sis->camera_pos_loc                  = GetShaderLocation(sis->shader->base, "u_camera_pos");
@@ -146,7 +144,6 @@ void render_init() {
 
     particles2d_init();
     particles3d_init();
-    selection_indicators_init();
 
     c3d_reset();
     c2d_reset();
@@ -241,7 +238,6 @@ void render_update(F32 dt) {
     }
 
     // INDICATORS
-    selection_indicators_update(dt);
 }
 
 void render_update_window_resolution(Vector2 new_res) {
@@ -379,7 +375,6 @@ void render_end_render_mode() {
         case RMODE_3D:
         case RMODE_3D_SKETCH:
         case RMODE_3D_HUD:
-            selection_indicators_draw();
         case RMODE_3D_HUD_SKETCH:
         case RMODE_3D_DBG: {
             EndMode3D();

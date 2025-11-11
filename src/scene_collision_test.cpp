@@ -20,7 +20,6 @@
 #include "profiler.hpp"
 #include "render.hpp"
 #include "scene.hpp"
-#include "selection_indicators.hpp"
 #include "scene_constants.hpp"
 #include "string.hpp"
 #include "talk.hpp"
@@ -613,7 +612,6 @@ SCENE_DRAW(collision_test) {
 
         world_draw_3d_sketch();
         particles3d_draw();
-        selection_indicators_draw();
     } RMODE_END;
 
 
@@ -621,7 +619,6 @@ SCENE_DRAW(collision_test) {
         if (!g_player.non_player_camera) { player_draw_3d_hud(); }
 
         world_draw_3d_hud();
-        selection_indicators_draw();
     } RMODE_END;
 
     RMODE_BEGIN(RMODE_3D_HUD) {
