@@ -470,7 +470,7 @@ struct HealthbarBatch {
     BOOL has_fill;
 };
 
-static HealthbarBatch i_healthbar_batch[ENTITY_MAX];
+static HealthbarBatch i_healthbar_batch[WORLD_MAX_ENTITIES];
 static SZ i_healthbar_batch_count = 0;
 
 void d2d_healthbar_batch_begin() {
@@ -508,7 +508,7 @@ void d2d_healthbar(EID id) {
     if (g_world->health[id].max <= 0)                                 { return; }
     if (!ENTITY_HAS_FLAG(g_world->flags[id], ENTITY_FLAG_IN_FRUSTUM)) { return; }
     if (!world_is_entity_selected(id))                                { return; }
-    if (i_healthbar_batch_count >= ENTITY_MAX)                        { return; }
+    if (i_healthbar_batch_count >= WORLD_MAX_ENTITIES)                { return; }
 
     Camera3D *cam                 = c3d_get_ptr();
     Vector2 const render_res      = render_get_render_resolution();
