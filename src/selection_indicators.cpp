@@ -1,6 +1,7 @@
 #include "selection_indicators.hpp"
 #include "asset.hpp"
 #include "math.hpp"
+#include "memory.hpp"
 #include "render.hpp"
 #include "scene.hpp"
 
@@ -13,20 +14,7 @@ SelectionIndicators g_selection_indicators = {};
 void selection_indicators_init() {
     lli("Initializing selection indicators system...");
 
-    // Load shader
-    g_selection_indicators.shader = asset_get_shader("selection_indicators");
-    if (!g_selection_indicators.shader) {
-        lle("Failed to load selection_indicators shader!");
-        return;
-    }
-    lli("Selection indicators shader loaded successfully");
-
-    // Cache uniform locations
-    g_selection_indicators.view_proj_loc = GetShaderLocation(g_selection_indicators.shader->base, "u_view_proj");
-    g_selection_indicators.camera_pos_loc = GetShaderLocation(g_selection_indicators.shader->base, "u_camera_pos");
-    g_selection_indicators.camera_right_loc = GetShaderLocation(g_selection_indicators.shader->base, "u_camera_right");
-    g_selection_indicators.camera_up_loc = GetShaderLocation(g_selection_indicators.shader->base, "u_camera_up");
-
+    // Shader is loaded and cached in render_init()
     // Set indicator color - nice RTS green with some alpha
     g_selection_indicators.indicator_color = {0.2F, 1.0F, 0.3F, 0.8F};
 
@@ -109,16 +97,17 @@ void selection_indicators_update(F32 dt) {
 }
 
 void selection_indicators_draw() {
-    if (!g_selection_indicators.shader) {
-        return;
-    }
-
     if (g_selection_indicators.active_count == 0) {
         return;
     }
 
-    // Build instance data from active indicators
-    SelectionIndicatorInstanceData instance_data[SELECTION_INDICATOR_MAX_COUNT];
+    RenderSelectionIndicatorsShader* shader = &g_render.selection_indicators_shader;
+    if (!shader->shader) {
+        return;
+    }
+
+    // Allocate temporary instance data buffer (avoid huge stack allocation)
+    auto* instance_data = mcta(SelectionIndicatorInstanceData*, g_selection_indicators.active_count, sizeof(SelectionIndicatorInstanceData));
     SZ instance_count = 0;
 
     for (SZ i = 0; i < SELECTION_INDICATOR_MAX_COUNT; ++i) {
@@ -146,7 +135,7 @@ void selection_indicators_draw() {
         // Fill instance data
         instance_data[instance_count].position = position;
         instance_data[instance_count].rotation = g_selection_indicators.indicators[i].rotation;
-        instance_data[instance_count].size = radius * 2.0F;  // Same sizing as old particle system
+        instance_data[instance_count].size = radius * 2.0F;
         instance_data[instance_count].terrain_normal_x = terrain_normal.x;
         instance_data[instance_count].terrain_normal_y = terrain_normal.y;
         instance_data[instance_count].terrain_normal_z = terrain_normal.z;
@@ -175,22 +164,22 @@ void selection_indicators_draw() {
     glDepthMask(GL_FALSE);
     glDepthFunc(GL_LEQUAL);
 
-    BeginShaderMode(g_selection_indicators.shader->base);
+    BeginShaderMode(shader->shader->base);
 
     // Get matrices from Raylib's matrix stack (same as particles)
     Matrix const view_matrix = rlGetMatrixModelview();
     Matrix const proj_matrix = rlGetMatrixProjection();
     Matrix const view_proj   = MatrixMultiply(view_matrix, proj_matrix);
-    SetShaderValueMatrix(g_selection_indicators.shader->base, g_selection_indicators.view_proj_loc, view_proj);
+    SetShaderValueMatrix(shader->shader->base, shader->view_proj_loc, view_proj);
 
     // Calculate camera right and up vectors for billboarding (same as particles)
     Vector3 const forward = Vector3Normalize(Vector3Subtract(camera->target, camera->position));
     Vector3 right = Vector3Normalize(Vector3CrossProduct(forward, camera->up));
     Vector3 up = Vector3CrossProduct(right, forward);
 
-    SetShaderValue(g_selection_indicators.shader->base, g_selection_indicators.camera_pos_loc, &camera->position, SHADER_UNIFORM_VEC3);
-    SetShaderValue(g_selection_indicators.shader->base, g_selection_indicators.camera_right_loc, &right, SHADER_UNIFORM_VEC3);
-    SetShaderValue(g_selection_indicators.shader->base, g_selection_indicators.camera_up_loc, &up, SHADER_UNIFORM_VEC3);
+    SetShaderValue(shader->shader->base, shader->camera_pos_loc, &camera->position, SHADER_UNIFORM_VEC3);
+    SetShaderValue(shader->shader->base, shader->camera_right_loc, &right, SHADER_UNIFORM_VEC3);
+    SetShaderValue(shader->shader->base, shader->camera_up_loc, &up, SHADER_UNIFORM_VEC3);
 
     // Draw instanced
     glBindVertexArray(g_selection_indicators.vao);

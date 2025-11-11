@@ -36,17 +36,12 @@ struct SelectionIndicators {
     SelectionIndicator indicators[SELECTION_INDICATOR_MAX_COUNT];
     SZ active_count;
 
-    // Rendering resources
+    // Rendering resources (OpenGL buffers)
     U32 vao;
     U32 vbo;  // Instance data VBO
     U32 quad_vbo;  // Quad vertex positions
-    AShader* shader;
 
-    // Cached uniform locations
-    S32 view_proj_loc;
-    S32 camera_pos_loc;
-    S32 camera_right_loc;
-    S32 camera_up_loc;
+    // Shader is in g_render.selection_indicators_shader
 
     // Color configuration
     ColorF indicator_color;

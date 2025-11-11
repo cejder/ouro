@@ -129,6 +129,13 @@ void render_init() {
         mis->light[i].outer_cutoff_loc = GetShaderLocation(mis->shader->base, TS("lights[%zu].outer_cutoff", i)->c);
     }
 
+    RenderSelectionIndicatorsShader *sis = &g_render.selection_indicators_shader;
+    sis->shader            = asset_get_shader("selection_indicators");
+    sis->view_proj_loc     = GetShaderLocation(sis->shader->base, "u_view_proj");
+    sis->camera_pos_loc    = GetShaderLocation(sis->shader->base, "u_camera_pos");
+    sis->camera_right_loc  = GetShaderLocation(sis->shader->base, "u_camera_right");
+    sis->camera_up_loc     = GetShaderLocation(sis->shader->base, "u_camera_up");
+
     render_sketch_set_major_color(RENDER_DEFAULT_MAJOR_COLOR);
     render_sketch_set_minor_color(RENDER_DEFAULT_MINOR_COLOR);
     render_set_accent_color(BLACK);
