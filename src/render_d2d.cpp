@@ -486,8 +486,12 @@ void d2d_healthbar(EID id) {
 
     F32 const health_perc  = glm::clamp((F32)g_world->health[id].current / (F32)g_world->health[id].max, 0.0F, 1.0F);
 
-    F32 const bar_width    = ui_scale_x(8.0F) * zoom_scale;
-    F32 const bar_height   = ui_scale_y(2.30F) * zoom_scale;
+    // Use minimal healthbar style when multiple units are selected
+    BOOL const is_multi_selection = g_world->selected_entity_count > 1 && world_is_entity_selected(id);
+    F32 const size_scale = is_multi_selection ? 0.5F : 1.0F;  // Smaller for multi-selection
+
+    F32 const bar_width    = ui_scale_x(8.0F) * zoom_scale * size_scale;
+    F32 const bar_height   = ui_scale_y(2.30F) * zoom_scale * size_scale;
     F32 const border_thick = ui_scale_x(0.20F) * zoom_scale;
     F32 const roundness    = 0.5F;
     S32 const segments     = 10;
@@ -536,8 +540,8 @@ void d2d_healthbar(EID id) {
     F32 const font_fade_t = glm::clamp((scaled_font_size - font_size_threshold) / fade_range, 0.0F, 1.0F);
     F32 const font_alpha  = ease_out_quad(font_fade_t, 0.0F, 1.0F, 1.0F);  // Smooth easing
 
-    // Only draw text if it's visible enough
-    if (font_alpha > 0.01F && scaled_font_size > 1.0F) {
+    // Only draw text if it's visible enough (and not in minimal multi-selection mode)
+    if (font_alpha > 0.01F && scaled_font_size > 1.0F && !is_multi_selection) {
         // Use fixed font but render at scaled size for smooth scaling (no jitter from integer font sizes)
         AFont *name_font = asset_get_font("GoMono", base_font_size);
 
