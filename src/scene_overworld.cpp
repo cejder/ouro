@@ -613,6 +613,7 @@ SCENE_DRAW(overworld) {
 
         world_draw_3d_sketch();
         particles3d_draw();
+        selection_indicators_draw();
     } RMODE_END;
 
     RMODE_BEGIN(RMODE_3D_HUD_SKETCH) {

@@ -97,14 +97,14 @@ void selection_indicators_update(F32 dt) {
 }
 
 void selection_indicators_draw() {
-    if (g_selection_indicators.active_count == 0) {
+    if (g_selection_indicators.active_count == 0 || g_world->selected_entity_count == 0) {
         return;
     }
 
     RenderSelectionIndicatorsShader* shader = &g_render.selection_indicators_shader;
 
-    // Allocate temporary instance data buffer (avoid huge stack allocation)
-    auto* instance_data = mcta(SelectionIndicatorInstanceData*, g_selection_indicators.active_count, sizeof(SelectionIndicatorInstanceData));
+    // Allocate based on world selection count (safe upper bound)
+    auto* instance_data = mcta(SelectionIndicatorInstanceData*, g_world->selected_entity_count, sizeof(SelectionIndicatorInstanceData));
     SZ instance_count = 0;
 
     for (auto &indicator : g_selection_indicators.indicators) {
@@ -159,6 +159,10 @@ void selection_indicators_draw() {
     glDepthMask(GL_FALSE);
     glDepthFunc(GL_LEQUAL);
 
+    // Use polygon offset to prevent z-fighting with terrain
+    glEnable(GL_POLYGON_OFFSET_FILL);
+    glPolygonOffset(-1.0F, -1.0F);  // Push slightly away from camera
+
     BeginShaderMode(shader->shader->base);
 
     // Get matrices from Raylib's matrix stack (same as particles)
@@ -184,6 +188,7 @@ void selection_indicators_draw() {
     EndShaderMode();
 
     // Restore OpenGL state
+    glDisable(GL_POLYGON_OFFSET_FILL);
     glEnable(GL_CULL_FACE);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDepthMask(GL_TRUE);
