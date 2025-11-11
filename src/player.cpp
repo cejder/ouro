@@ -72,10 +72,8 @@ void player_update(F32 dt, F32 dtu) {
 void player_input_update(F32 dt, F32 dtu) {
     unused(dt);
 
-    // Press TAB to toggle camera projection with wipe effect
     BOOL const is_not_overlay = g_scenes.current_overlay_scene_type == SCENE_NONE;
     if (is_not_overlay && !c_console__enabled && is_pressed(IA_TOGGLE_CAMERA_PROJECTION)) {
-        // Save current camera state
         Camera3D *current_cam = c3d_get_ptr();
         if (g_player.camera_projection.is_orthographic) {
             g_player.camera_projection.orthographic_camera = *current_cam;
@@ -83,12 +81,13 @@ void player_input_update(F32 dt, F32 dtu) {
             g_player.camera_projection.perspective_camera = *current_cam;
         }
 
-        // Toggle and apply other camera
         g_player.camera_projection.is_orthographic = !g_player.camera_projection.is_orthographic;
         Camera3D const *target_cam = g_player.camera_projection.is_orthographic ? &g_player.camera_projection.orthographic_camera : &g_player.camera_projection.perspective_camera;
-        *current_cam = *target_cam;
 
-        // Start wipe effect - direction depends on which mode we're entering
+        F32 const preserve_fov = current_cam->fovy;
+        *current_cam = *target_cam;
+        current_cam->fovy = preserve_fov;
+
         ScreenFadeType const wipe_direction = g_player.camera_projection.is_orthographic ? SCREEN_FADE_TYPE_WIPE_LEFT_OUT : SCREEN_FADE_TYPE_WIPE_RIGHT_OUT;
         screen_fade_init(wipe_direction, PLAYER_TRANSITION_DURATION, g_render.sketch_shader.minor_color, EASE_IN_OUT_CUBIC, nullptr);
         audio_play(ACG_SFX, "mario_camera_moving.ogg");
