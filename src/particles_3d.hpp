@@ -120,7 +120,6 @@ void particles3d_add_chaos_stress_test   (Vector3 center, F32 radius, SZ count);
 void particles3d_add_harvest_impact      (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count);
 void particles3d_add_harvest_active      (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count);
 void particles3d_add_harvest_complete    (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count);
-void particles3d_add_selection_indicator (Vector3 position, F32 radius, Color start_color, Color end_color, SZ count);
 void particles3d_add_click_indicator     (Vector3 position, F32 radius, Color start_color, Color end_color, SZ count);
 void particles3d_add_blood_hit           (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count);
 void particles3d_add_blood_death         (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count);

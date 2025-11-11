@@ -16,6 +16,7 @@
 #include "profiler.hpp"
 #include "render.hpp"
 #include "scene.hpp"
+#include "selection_indicators.hpp"
 #include "string.hpp"
 #include "test.hpp"
 #include "time.hpp"
@@ -176,6 +177,7 @@ void core_update() {
     PP(render_update(dt));
     PP(particles2d_update(dt));
     PP(particles3d_update(dt));
+    PP(selection_indicators_update(dt));
     PP(math_update());
     PP(scenes_update(dt, dtu));
     PP(messages_update(dtu));

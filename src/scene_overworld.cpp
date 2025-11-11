@@ -20,6 +20,7 @@
 #include "profiler.hpp"
 #include "render.hpp"
 #include "scene.hpp"
+#include "selection_indicators.hpp"
 #include "scene_constants.hpp"
 #include "string.hpp"
 #include "talk.hpp"
@@ -612,6 +613,7 @@ SCENE_DRAW(overworld) {
 
         world_draw_3d_sketch();
         particles3d_draw();
+        selection_indicators_draw();
     } RMODE_END;
 
     RMODE_BEGIN(RMODE_3D_HUD_SKETCH) {

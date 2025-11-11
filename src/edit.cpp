@@ -10,6 +10,7 @@
 #include "particles_3d.hpp"
 #include "render.hpp"
 #include "scene.hpp"
+#include "selection_indicators.hpp"
 #include "world.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
@@ -23,6 +24,7 @@ EditState static i_state = {};
 
 void static world_clear_selection() {
     g_world->selected_entity_count = 0;
+    selection_indicators_clear();
 }
 
 void static world_add_to_selection(EID id) {
@@ -36,6 +38,7 @@ void static world_add_to_selection(EID id) {
     // Add to selection
     if (g_world->selected_entity_count < WORLD_MAX_ENTITIES) {
         g_world->selected_entities[g_world->selected_entity_count++] = id;
+        selection_indicators_add(id);
     }
 }
 
@@ -47,6 +50,7 @@ void static world_remove_from_selection(EID id) {
                 g_world->selected_entities[j] = g_world->selected_entities[j + 1];
             }
             g_world->selected_entity_count--;
+            selection_indicators_remove(id);
 
             return;
         }
@@ -418,24 +422,7 @@ void edit_update(F32 dt, F32 dtu) {
         }
     }
 
-    // Spawn selection indicator particles for all selected entities (frame-rate independent)
-    if (g_world->selected_entity_count > 0) {
-        // Frame-rate independent particle spawning
-        F32 const spawn_interval = 1.0F / EDIT_SELECTION_INDICATOR_PARTICLES_PER_SECOND;
-        i_state.selection_indicator_timer += dt;
-        while (i_state.selection_indicator_timer >= spawn_interval) {
-            for (SZ i = 0; i < g_world->selected_entity_count; ++i) {
-                EID const id = g_world->selected_entities[i];
-                Vector3 const position = g_world->position[id];
-                F32 const radius = g_world->radius[id];
-                particles3d_add_selection_indicator(position, radius, GREEN, LIME, EDIT_SELECTION_INDICATOR_PARTICLE_COUNT);
-            }
-            i_state.selection_indicator_timer -= spawn_interval;
-        }
-    } else {
-        // Reset timer when no entity is selected
-        i_state.selection_indicator_timer = 0.0F;
-    }
+    // Selection indicators are now handled by the dedicated selection_indicators system
 }
 
 

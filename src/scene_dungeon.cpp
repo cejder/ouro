@@ -22,6 +22,7 @@
 #include "profiler.hpp"
 #include "render.hpp"
 #include "scene.hpp"
+#include "selection_indicators.hpp"
 #include "scene_constants.hpp"
 #include "string.hpp"
 #include "talk.hpp"
@@ -221,6 +222,7 @@ SCENE_DRAW(dungeon) {
         dungeon_draw_3d_sketch();
         world_draw_3d_sketch();
         particles3d_draw();
+        selection_indicators_draw();
     }
     RMODE_END;
 

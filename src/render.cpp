@@ -10,6 +10,7 @@
 #include "profiler.hpp"
 #include "render_tooltip.hpp"
 #include "scene.hpp"
+#include "selection_indicators.hpp"
 #include "string.hpp"
 #include "time.hpp"
 #include "world.hpp"
@@ -138,6 +139,7 @@ void render_init() {
 
     particles2d_init();
     particles3d_init();
+    selection_indicators_init();
 
     c3d_reset();
     c2d_reset();
