@@ -57,10 +57,10 @@ void selection_indicators_init() {
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
     // Initialize indicator array
-    for (SZ i = 0; i < SELECTION_INDICATOR_MAX_COUNT; ++i) {
-        g_selection_indicators.indicators[i].entity_id = {};
-        g_selection_indicators.indicators[i].rotation = 0.0F;
-        g_selection_indicators.indicators[i].active = false;
+    for (auto &indicator : g_selection_indicators.indicators) {
+        indicator.entity_id = {};
+        indicator.rotation = 0.0F;
+        indicator.active = false;
     }
     g_selection_indicators.active_count = 0;
 
@@ -84,13 +84,13 @@ void selection_indicators_shutdown() {
 
 void selection_indicators_update(F32 dt) {
     // Update rotations for all active indicators
-    for (SZ i = 0; i < SELECTION_INDICATOR_MAX_COUNT; ++i) {
-        if (g_selection_indicators.indicators[i].active) {
-            g_selection_indicators.indicators[i].rotation += SELECTION_INDICATOR_ROTATION_SPEED * dt;
+    for (auto &indicator : g_selection_indicators.indicators) {
+        if (indicator.active) {
+            indicator.rotation += SELECTION_INDICATOR_ROTATION_SPEED * dt;
 
             // Keep rotation in [0, 2PI] range
-            if (g_selection_indicators.indicators[i].rotation > 6.28318530718F) {
-                g_selection_indicators.indicators[i].rotation -= 6.28318530718F;
+            if (indicator.rotation > 6.28318530718F) {
+                indicator.rotation -= 6.28318530718F;
             }
         }
     }
@@ -102,23 +102,20 @@ void selection_indicators_draw() {
     }
 
     RenderSelectionIndicatorsShader* shader = &g_render.selection_indicators_shader;
-    if (!shader->shader) {
-        return;
-    }
 
     // Allocate temporary instance data buffer (avoid huge stack allocation)
     auto* instance_data = mcta(SelectionIndicatorInstanceData*, g_selection_indicators.active_count, sizeof(SelectionIndicatorInstanceData));
     SZ instance_count = 0;
 
-    for (SZ i = 0; i < SELECTION_INDICATOR_MAX_COUNT; ++i) {
-        if (!g_selection_indicators.indicators[i].active) {
+    for (auto &indicator : g_selection_indicators.indicators) {
+        if (!indicator.active) {
             continue;
         }
 
-        EID id = g_selection_indicators.indicators[i].entity_id;
+        EID id = indicator.entity_id;
         if (!entity_is_valid(id)) {
             // Entity no longer valid, deactivate indicator
-            g_selection_indicators.indicators[i].active = false;
+            indicator.active = false;
             g_selection_indicators.active_count--;
             continue;
         }
@@ -134,7 +131,7 @@ void selection_indicators_draw() {
 
         // Fill instance data
         instance_data[instance_count].position = position;
-        instance_data[instance_count].rotation = g_selection_indicators.indicators[i].rotation;
+        instance_data[instance_count].rotation = indicator.rotation;
         instance_data[instance_count].size = radius * 2.0F;
         instance_data[instance_count].terrain_normal_x = terrain_normal.x;
         instance_data[instance_count].terrain_normal_y = terrain_normal.y;
@@ -146,14 +143,12 @@ void selection_indicators_draw() {
         instance_count++;
     }
 
-    if (instance_count == 0) {
-        return;
-    }
+    if (instance_count == 0) { return; }
 
     // Upload instance data to GPU
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, g_selection_indicators.vbo);
     glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0,
-                    instance_count * sizeof(SelectionIndicatorInstanceData),
+                    (GLsizeiptr)(instance_count * sizeof(SelectionIndicatorInstanceData)),
                     instance_data);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, g_selection_indicators.vbo);
 
@@ -199,9 +194,9 @@ void selection_indicators_draw() {
 }
 
 void selection_indicators_clear() {
-    for (SZ i = 0; i < SELECTION_INDICATOR_MAX_COUNT; ++i) {
-        g_selection_indicators.indicators[i].active = false;
-        g_selection_indicators.indicators[i].rotation = 0.0F;
+    for (auto &indicator : g_selection_indicators.indicators) {
+        indicator.active = false;
+        indicator.rotation = 0.0F;
     }
     g_selection_indicators.active_count = 0;
 }
@@ -212,19 +207,19 @@ void selection_indicators_add(EID entity_id) {
     }
 
     // Check if indicator already exists for this entity
-    for (SZ i = 0; i < SELECTION_INDICATOR_MAX_COUNT; ++i) {
-        if (g_selection_indicators.indicators[i].active &&
-            g_selection_indicators.indicators[i].entity_id == entity_id) {
+    for (auto &indicator : g_selection_indicators.indicators) {
+        if (indicator.active &&
+            indicator.entity_id == entity_id) {
             return; // Already has an indicator
         }
     }
 
     // Find first inactive slot
-    for (SZ i = 0; i < SELECTION_INDICATOR_MAX_COUNT; ++i) {
-        if (!g_selection_indicators.indicators[i].active) {
-            g_selection_indicators.indicators[i].entity_id = entity_id;
-            g_selection_indicators.indicators[i].rotation = 0.0F;
-            g_selection_indicators.indicators[i].active = true;
+    for (auto &indicator : g_selection_indicators.indicators) {
+        if (!indicator.active) {
+            indicator.entity_id = entity_id;
+            indicator.rotation = 0.0F;
+            indicator.active = true;
             g_selection_indicators.active_count++;
             return;
         }
@@ -232,10 +227,10 @@ void selection_indicators_add(EID entity_id) {
 }
 
 void selection_indicators_remove(EID entity_id) {
-    for (SZ i = 0; i < SELECTION_INDICATOR_MAX_COUNT; ++i) {
-        if (g_selection_indicators.indicators[i].active &&
-            g_selection_indicators.indicators[i].entity_id == entity_id) {
-            g_selection_indicators.indicators[i].active = false;
+    for (auto &indicator : g_selection_indicators.indicators) {
+        if (indicator.active &&
+            indicator.entity_id == entity_id) {
+            indicator.active = false;
             g_selection_indicators.active_count--;
             return;
         }

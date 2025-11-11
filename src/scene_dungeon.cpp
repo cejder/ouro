@@ -22,7 +22,6 @@
 #include "profiler.hpp"
 #include "render.hpp"
 #include "scene.hpp"
-#include "selection_indicators.hpp"
 #include "scene_constants.hpp"
 #include "string.hpp"
 #include "talk.hpp"
@@ -236,7 +235,6 @@ SCENE_DRAW(dungeon) {
         if (!g_player.non_player_camera) { player_draw_3d_hud(); }
 
         world_draw_3d_hud();
-        selection_indicators_draw();  // Draw in HUD layer to avoid z-fighting
     }
     RMODE_END;
 
