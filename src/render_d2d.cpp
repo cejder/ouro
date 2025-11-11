@@ -476,14 +476,83 @@ void d2d_healthbar_batch_begin() {
 void d2d_healthbar_batch_end() {
     if (i_healthbar_batch_count == 0) { return; }
 
+    Mesh mesh = {};
+    SZ quad_count = 0;
+    for (SZ i = 0; i < i_healthbar_batch_count; ++i) {
+        quad_count += 2;
+        if (i_healthbar_batch[i].has_fill) quad_count++;
+    }
+
+    mesh.vertexCount = (S32)(quad_count * 4);
+    mesh.triangleCount = (S32)(quad_count * 2);
+    mesh.vertices = (F32 *)RL_MALLOC((SZ)mesh.vertexCount * 3 * sizeof(F32));
+    mesh.colors = (U8 *)RL_MALLOC((SZ)mesh.vertexCount * 4 * sizeof(U8));
+    mesh.indices = (U16 *)RL_MALLOC((SZ)mesh.triangleCount * 3 * sizeof(U16));
+
+    S32 vertex_idx = 0;
+    S32 index_idx = 0;
+
     for (SZ i = 0; i < i_healthbar_batch_count; ++i) {
         HealthbarBatch const *hb = &i_healthbar_batch[i];
-        DrawRectangleRec(hb->shadow_rect, hb->shadow_color);
-        DrawRectangleRec(hb->bg_rect, hb->bg_color);
-        if (hb->has_fill) {
-            DrawRectangleRec(hb->fill_rect, hb->fill_color);
+
+        Rectangle rects[3] = {hb->shadow_rect, hb->bg_rect, hb->fill_rect};
+        Color colors[3] = {hb->shadow_color, hb->bg_color, hb->fill_color};
+        SZ rect_count = hb->has_fill ? 3 : 2;
+
+        for (SZ r = 0; r < rect_count; ++r) {
+            Rectangle rec = rects[r];
+            Color col = colors[r];
+
+            S32 base = vertex_idx;
+
+            mesh.vertices[vertex_idx * 3 + 0] = rec.x;
+            mesh.vertices[vertex_idx * 3 + 1] = rec.y;
+            mesh.vertices[vertex_idx * 3 + 2] = 0.0F;
+            mesh.colors[vertex_idx * 4 + 0] = col.r;
+            mesh.colors[vertex_idx * 4 + 1] = col.g;
+            mesh.colors[vertex_idx * 4 + 2] = col.b;
+            mesh.colors[vertex_idx * 4 + 3] = col.a;
+            vertex_idx++;
+
+            mesh.vertices[vertex_idx * 3 + 0] = rec.x + rec.width;
+            mesh.vertices[vertex_idx * 3 + 1] = rec.y;
+            mesh.vertices[vertex_idx * 3 + 2] = 0.0F;
+            mesh.colors[vertex_idx * 4 + 0] = col.r;
+            mesh.colors[vertex_idx * 4 + 1] = col.g;
+            mesh.colors[vertex_idx * 4 + 2] = col.b;
+            mesh.colors[vertex_idx * 4 + 3] = col.a;
+            vertex_idx++;
+
+            mesh.vertices[vertex_idx * 3 + 0] = rec.x + rec.width;
+            mesh.vertices[vertex_idx * 3 + 1] = rec.y + rec.height;
+            mesh.vertices[vertex_idx * 3 + 2] = 0.0F;
+            mesh.colors[vertex_idx * 4 + 0] = col.r;
+            mesh.colors[vertex_idx * 4 + 1] = col.g;
+            mesh.colors[vertex_idx * 4 + 2] = col.b;
+            mesh.colors[vertex_idx * 4 + 3] = col.a;
+            vertex_idx++;
+
+            mesh.vertices[vertex_idx * 3 + 0] = rec.x;
+            mesh.vertices[vertex_idx * 3 + 1] = rec.y + rec.height;
+            mesh.vertices[vertex_idx * 3 + 2] = 0.0F;
+            mesh.colors[vertex_idx * 4 + 0] = col.r;
+            mesh.colors[vertex_idx * 4 + 1] = col.g;
+            mesh.colors[vertex_idx * 4 + 2] = col.b;
+            mesh.colors[vertex_idx * 4 + 3] = col.a;
+            vertex_idx++;
+
+            mesh.indices[index_idx++] = (U16)base;
+            mesh.indices[index_idx++] = (U16)(base + 1);
+            mesh.indices[index_idx++] = (U16)(base + 2);
+            mesh.indices[index_idx++] = (U16)base;
+            mesh.indices[index_idx++] = (U16)(base + 2);
+            mesh.indices[index_idx++] = (U16)(base + 3);
         }
     }
+
+    UploadMesh(&mesh, false);
+    DrawMesh(mesh, g_render.default_material, MatrixIdentity());
+    UnloadMesh(mesh);
 
     i_healthbar_batch_count = 0;
 }
