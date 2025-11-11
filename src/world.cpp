@@ -274,12 +274,18 @@ void world_draw_3d_sketch() {
         // Check if entity has active animation
         if (g_world->animation[i].has_animations) {
             // Animated entities: draw immediately (no instancing for now)
+            // Encode selection state in alpha channel
+            Color tint = g_world->tint[i];
+            if (world_is_entity_selected(i)) {
+                // Alpha in (1.0, 2.0] means selected, actual alpha = alpha - 1.0
+                tint.a = (U8)glm::min(255, (S32)tint.a + 255);
+            }
             d3d_model_animated_by_hash(
                 g_world->model_name_hash[i],
                 g_world->position[i],
                 g_world->rotation[i],
                 g_world->scale[i],
-                g_world->tint[i],
+                tint,
                 g_animation_bones[i].bone_matrices,
                 g_world->animation[i].bone_count
             );
@@ -366,12 +372,18 @@ void world_draw_3d_sketch() {
             // Not worth instancing for single/few entities - use regular rendering
             for (SZ j = 0; j < group.count; ++j) {
                 EID const i = group.data[j];
+                // Encode selection state in alpha channel
+                Color tint = g_world->tint[i];
+                if (world_is_entity_selected(i)) {
+                    // Alpha in (1.0, 2.0] means selected, actual alpha = alpha - 1.0
+                    tint.a = (U8)glm::min(255, (S32)tint.a + 255);
+                }
                 d3d_model_by_hash(
                     model_name_hash,
                     g_world->position[i],
                     g_world->rotation[i],
                     g_world->scale[i],
-                    g_world->tint[i]
+                    tint
                 );
             }
         } else {
@@ -388,7 +400,14 @@ void world_draw_3d_sketch() {
                 Matrix mat_trans = MatrixTranslate(g_world->position[i].x, g_world->position[i].y, g_world->position[i].z);
                 Matrix transform = MatrixMultiply(MatrixMultiply(mat_scale, mat_rot), mat_trans);
                 array_push(&transforms, transform);
-                array_push(&tints, g_world->tint[i]);
+
+                // Encode selection state in alpha channel
+                Color tint = g_world->tint[i];
+                if (world_is_entity_selected(i)) {
+                    // Alpha in (1.0, 2.0] means selected, actual alpha = alpha - 1.0
+                    tint.a = (U8)glm::min(255, (S32)tint.a + 255);
+                }
+                array_push(&tints, tint);
             }
 
             // Draw all instances with a single draw call!

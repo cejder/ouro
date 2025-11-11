@@ -36,7 +36,6 @@ uniform Light lights[LIGHTS_MAX];
 uniform vec4 ambient;
 uniform vec3 viewPos;
 uniform Fog fog;
-uniform int isSelected;
 
 vec3 calculateLighting(vec3 normal, vec3 viewD, vec3 fragPosition) {
     vec3 diffuse = vec3(0.0);
@@ -109,6 +108,12 @@ vec4 applyDithering(vec4 color) {
 }
 
 void main() {
+    // Decode selection state from alpha channel
+    // Alpha in (1.0, 2.0] means selected, actual alpha = alpha - 1.0
+    bool isSelected = colDiffuse.a > 1.0 && colDiffuse.a <= 2.0;
+    float actualAlpha = isSelected ? colDiffuse.a - 1.0 : colDiffuse.a;
+    vec4 diffuseColor = vec4(colDiffuse.rgb, actualAlpha);
+
     // Texel color fetching from texture sampler
     vec4 texelColor = texture(texture0, fragTexCoord);
     vec3 normal = normalize(fragNormal);
@@ -116,7 +121,7 @@ void main() {
     // Calculate lighting using improved model
     vec3 lightResult = calculateLighting(normal, viewD, fragPosition);
     // Combine texture color, diffuse color, and lighting
-    finalColor = texelColor * vec4(lightResult, 1.0) * colDiffuse;
+    finalColor = texelColor * vec4(lightResult, 1.0) * diffuseColor;
     // Add ambient light
     finalColor += texelColor * ambient * 0.2;
     // Apply fog
@@ -125,7 +130,7 @@ void main() {
     finalColor = applyDithering(finalColor);
 
     // Apply selection highlight
-    if (isSelected == 1) {
+    if (isSelected) {
         vec3 selectionColor = vec3(0.2, 1.0, 0.3); // RTS green
         float rimPower = 1.0 - max(dot(normal, viewD), 0.0);
         rimPower = pow(rimPower, 2.0);
