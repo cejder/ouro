@@ -10,7 +10,7 @@ pan_voice                    : 0.00000000
 pitch_ambience               : 1.00000000
 pitch_music                  : 1.00000000
 pitch_sfx                    : 1.00000000
-pitch_voice                  : 1.00000000
+pitch_voice                  : 0.75000000
 rolloff_scale                : 1.00000000
 volume_ambience              : 0.00000000
 volume_music                 : 0.00000000
@@ -41,7 +41,7 @@ light_info                   : true
 medium_font                  : GoMono
 medium_font_size             : 18
 menu_info                    : false
-noclip                       : true
+noclip                       : false
 noclip_move_speed            : 50.00000000
 profiler_hide_trivial_tracks : true
 profiler_tracks              : true
@@ -53,7 +53,7 @@ texture_widget_dark_bg       : true
 windows_sticky               : false
 
 [profiler]
-flame_graph_enabled          : false
+flame_graph_enabled          : true
 flame_graph_font             : GoMono
 flame_graph_font_size        : 18
 flame_graph_position_y       : 0.81166267
@@ -84,6 +84,6 @@ window_resolution_height     : 2160
 window_resolution_width      : 3840
 
 [world]
-actor_healthbar              : true
+actor_healthbar              : false
 actor_info                   : false
 verbose_actors               : false

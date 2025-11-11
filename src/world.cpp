@@ -94,6 +94,7 @@ void world_update(F32 dt, F32 dtu) {
         g_world->lifetime[i] += dt;
         g_world->entity_type_counts[g_world->type[i]]++;
 
+        // TODO: Do we really need to check here if they are instanced?
         c3d_is_obb_in_frustum(g_world->obb[i]) ? ENTITY_SET_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM)
                                               : ENTITY_CLEAR_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM);
 
@@ -115,6 +116,7 @@ void world_update(F32 dt, F32 dtu) {
         if (ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_USE)) { g_world->active_entities[g_world->active_entity_count++] = i; }
     }
 
+    // TODO: Multithread or compute shader? Compute shader would mean that we cannot run this on modern Apple devices though
     // Update all entity animations
     for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
         EID const id = g_world->active_entities[idx];
