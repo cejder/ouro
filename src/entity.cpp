@@ -64,6 +64,12 @@ EID entity_create(EntityType type, C8 const *name, Vector3 position, F32 rotatio
         }
     }
 
+    // If no free entity slots are available, return error
+    if (id == INVALID_EID) {
+        llw("Failed to create entity, no more space in world");
+        return id;
+    }
+
     // Initialize animation state
     // WARN: Since some stuff relies on a model being defined (like OBB etc.) we need to do this first
     // We did not have to do this first since we used to store the model_name and getting the model
