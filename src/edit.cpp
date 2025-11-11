@@ -178,14 +178,14 @@ void static i_handle_selected_entity_input(EID id, F32 dtu, BOOL mouse_left_down
             entity_set_rotation(id, rotation + (mouse_delta.x * 0.5F));
             *left_click_consumed = true;
         }
-        // Mouse dragging with Ctrl
-        else if (is_mod(I_MODIFIER_CTRL)) {
+        // Mouse dragging with Ctrl (but not Ctrl+Shift, which is scaling)
+        else if (is_mod(I_MODIFIER_CTRL) && !is_mod(I_MODIFIER_SHIFT)) {
             entity_set_position(id, collision.point);
             collision.point.y   += 1.0F;
             *left_click_consumed = true;
         }
-        // Mouse scaling with Shift
-        else if (is_mod(I_MODIFIER_SHIFT)) {
+        // Mouse scaling with Ctrl+Shift
+        else if (is_mod(I_MODIFIER_SHIFT) && is_mod(I_MODIFIER_CTRL)) {
             Vector2 const mouse_delta = input_get_mouse_delta();
             F32 t = scale.x;
 
@@ -242,19 +242,21 @@ void edit_update(F32 dt, F32 dtu) {
         audio_play(ACG_SFX, "ting.ogg");
 
         // Spawn indicator particles at click location (only if no entity is selected, otherwise handled in command section)
-        if (g_world->selected_id == INVALID_EID) {
+        if (g_world->selected_entity_count == 0) {
             particles3d_add_click_indicator(collision.point, 0.5F, PINK, PURPLE, 5);
         }
     }
 
-    // Entity manipulation (only if entity is selected) - manipulate first selected entity only
-    if (g_world->selected_entity_count > 0) {
+    // Rectangle selection (left mouse drag)
+    BOOL const shift_down = is_mod(I_MODIFIER_SHIFT);
+
+    // Entity manipulation (only if entity is selected)
+    // Allow manipulation unless Shift-only is held (reserved for selection)
+    // Ctrl+Shift is allowed for entity scaling
+    if (g_world->selected_entity_count > 0 && (!shift_down || ctrl_down)) {
         EID const first_selected = g_world->selected_entities[0];
         i_handle_selected_entity_input(first_selected, dtu, mouse_left_down, collision, &left_click_consumed);
     }
-
-    // Rectangle selection (left mouse drag)
-    BOOL const shift_down = is_mod(I_MODIFIER_SHIFT);
 
     if (!left_click_consumed && !mouse_look && mouse_left_pressed) {
         // Start potential rectangle selection
