@@ -26,15 +26,6 @@ void selection_indicators_init() {
     g_selection_indicators.camera_pos_loc = GetShaderLocation(g_selection_indicators.shader->base, "u_camera_pos");
     g_selection_indicators.camera_right_loc = GetShaderLocation(g_selection_indicators.shader->base, "u_camera_right");
     g_selection_indicators.camera_up_loc = GetShaderLocation(g_selection_indicators.shader->base, "u_camera_up");
-    g_selection_indicators.texture_loc = GetShaderLocation(g_selection_indicators.shader->base, "u_texture");
-
-    // Load texture - using a nice circle texture
-    g_selection_indicators.texture = asset_get_texture("particle_circle_04.png");
-    if (!g_selection_indicators.texture) {
-        lle("Failed to load selection indicator texture!");
-        return;
-    }
-    lli("Selection indicators texture loaded successfully");
 
     // Set indicator color - nice RTS green with some alpha
     g_selection_indicators.indicator_color = {0.2F, 1.0F, 0.3F, 0.8F};
@@ -118,7 +109,7 @@ void selection_indicators_update(F32 dt) {
 }
 
 void selection_indicators_draw() {
-    if (!g_selection_indicators.shader || !g_selection_indicators.texture) {
+    if (!g_selection_indicators.shader) {
         return;
     }
 
@@ -200,9 +191,6 @@ void selection_indicators_draw() {
     SetShaderValue(g_selection_indicators.shader->base, g_selection_indicators.camera_pos_loc, &camera->position, SHADER_UNIFORM_VEC3);
     SetShaderValue(g_selection_indicators.shader->base, g_selection_indicators.camera_right_loc, &right, SHADER_UNIFORM_VEC3);
     SetShaderValue(g_selection_indicators.shader->base, g_selection_indicators.camera_up_loc, &up, SHADER_UNIFORM_VEC3);
-
-    // Bind texture
-    SetShaderValueTexture(g_selection_indicators.shader->base, g_selection_indicators.texture_loc, g_selection_indicators.texture->base);
 
     // Draw instanced
     glBindVertexArray(g_selection_indicators.vao);

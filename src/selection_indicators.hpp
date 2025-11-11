@@ -11,7 +11,7 @@
 
 #define SELECTION_INDICATOR_MAX_COUNT WORLD_MAX_ENTITIES
 #define SELECTION_INDICATOR_ROTATION_SPEED 0.524F  // ~30 degrees/second in radians
-#define SELECTION_INDICATOR_Y_OFFSET 0.15F
+#define SELECTION_INDICATOR_Y_OFFSET 0.5F  // Higher offset to prevent z-fighting
 
 // GPU-aligned instance data for selection indicators (must match shader)
 struct SelectionIndicatorInstanceData {
@@ -41,15 +41,12 @@ struct SelectionIndicators {
     U32 vbo;  // Instance data VBO
     U32 quad_vbo;  // Quad vertex positions
     AShader* shader;
-    U32 texture_index;
-    ATexture* texture;
 
     // Cached uniform locations
     S32 view_proj_loc;
     S32 camera_pos_loc;
     S32 camera_right_loc;
     S32 camera_up_loc;
-    S32 texture_loc;
 
     // Color configuration
     ColorF indicator_color;
