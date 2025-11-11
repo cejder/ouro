@@ -476,34 +476,14 @@ void d2d_healthbar_batch_begin() {
 void d2d_healthbar_batch_end() {
     if (i_healthbar_batch_count == 0) { return; }
 
-    rlSetTexture(0);
-    rlBegin(RL_QUADS);
-
     for (SZ i = 0; i < i_healthbar_batch_count; ++i) {
         HealthbarBatch const *hb = &i_healthbar_batch[i];
-
-        rlColor4ub(hb->shadow_color.r, hb->shadow_color.g, hb->shadow_color.b, hb->shadow_color.a);
-        rlVertex2f(hb->shadow_rect.x, hb->shadow_rect.y);
-        rlVertex2f(hb->shadow_rect.x + hb->shadow_rect.width, hb->shadow_rect.y);
-        rlVertex2f(hb->shadow_rect.x + hb->shadow_rect.width, hb->shadow_rect.y + hb->shadow_rect.height);
-        rlVertex2f(hb->shadow_rect.x, hb->shadow_rect.y + hb->shadow_rect.height);
-
-        rlColor4ub(hb->bg_color.r, hb->bg_color.g, hb->bg_color.b, hb->bg_color.a);
-        rlVertex2f(hb->bg_rect.x, hb->bg_rect.y);
-        rlVertex2f(hb->bg_rect.x + hb->bg_rect.width, hb->bg_rect.y);
-        rlVertex2f(hb->bg_rect.x + hb->bg_rect.width, hb->bg_rect.y + hb->bg_rect.height);
-        rlVertex2f(hb->bg_rect.x, hb->bg_rect.y + hb->bg_rect.height);
-
+        DrawRectangleRec(hb->shadow_rect, hb->shadow_color);
+        DrawRectangleRec(hb->bg_rect, hb->bg_color);
         if (hb->has_fill) {
-            rlColor4ub(hb->fill_color.r, hb->fill_color.g, hb->fill_color.b, hb->fill_color.a);
-            rlVertex2f(hb->fill_rect.x, hb->fill_rect.y);
-            rlVertex2f(hb->fill_rect.x + hb->fill_rect.width, hb->fill_rect.y);
-            rlVertex2f(hb->fill_rect.x + hb->fill_rect.width, hb->fill_rect.y + hb->fill_rect.height);
-            rlVertex2f(hb->fill_rect.x, hb->fill_rect.y + hb->fill_rect.height);
+            DrawRectangleRec(hb->fill_rect, hb->fill_color);
         }
     }
-
-    rlEnd();
 
     i_healthbar_batch_count = 0;
 }
