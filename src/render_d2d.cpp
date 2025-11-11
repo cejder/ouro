@@ -456,113 +456,11 @@ void d2d_gizmo(EID id) {
     render_tooltip_draw(&tt);
 }
 
-struct HealthbarBatch {
-    Rectangle bg_rect;
-    Rectangle fill_rect;
-    Rectangle shadow_rect;
-    Color bg_color;
-    Color fill_color;
-    Color shadow_color;
-    BOOL has_fill;
-};
-
-static HealthbarBatch i_healthbar_batch[WORLD_MAX_ENTITIES];
-static SZ i_healthbar_batch_count = 0;
-
-void d2d_healthbar_batch_begin() {
-    i_healthbar_batch_count = 0;
-}
-
-void d2d_healthbar_batch_end() {
-    if (i_healthbar_batch_count == 0) { return; }
-
-    Mesh mesh = {};
-    SZ quad_count = 0;
-    for (SZ i = 0; i < i_healthbar_batch_count; ++i) {
-        quad_count += 2;
-        if (i_healthbar_batch[i].has_fill) quad_count++;
-    }
-
-    mesh.vertexCount = (S32)(quad_count * 4);
-    mesh.triangleCount = (S32)(quad_count * 2);
-    mesh.vertices = (F32 *)RL_MALLOC((SZ)mesh.vertexCount * 3 * sizeof(F32));
-    mesh.colors = (U8 *)RL_MALLOC((SZ)mesh.vertexCount * 4 * sizeof(U8));
-    mesh.indices = (U16 *)RL_MALLOC((SZ)mesh.triangleCount * 3 * sizeof(U16));
-
-    S32 vertex_idx = 0;
-    S32 index_idx = 0;
-
-    for (SZ i = 0; i < i_healthbar_batch_count; ++i) {
-        HealthbarBatch const *hb = &i_healthbar_batch[i];
-
-        Rectangle rects[3] = {hb->shadow_rect, hb->bg_rect, hb->fill_rect};
-        Color colors[3] = {hb->shadow_color, hb->bg_color, hb->fill_color};
-        SZ rect_count = hb->has_fill ? 3 : 2;
-
-        for (SZ r = 0; r < rect_count; ++r) {
-            Rectangle rec = rects[r];
-            Color col = colors[r];
-
-            S32 base = vertex_idx;
-
-            mesh.vertices[vertex_idx * 3 + 0] = rec.x;
-            mesh.vertices[vertex_idx * 3 + 1] = rec.y;
-            mesh.vertices[vertex_idx * 3 + 2] = 0.0F;
-            mesh.colors[vertex_idx * 4 + 0] = col.r;
-            mesh.colors[vertex_idx * 4 + 1] = col.g;
-            mesh.colors[vertex_idx * 4 + 2] = col.b;
-            mesh.colors[vertex_idx * 4 + 3] = col.a;
-            vertex_idx++;
-
-            mesh.vertices[vertex_idx * 3 + 0] = rec.x + rec.width;
-            mesh.vertices[vertex_idx * 3 + 1] = rec.y;
-            mesh.vertices[vertex_idx * 3 + 2] = 0.0F;
-            mesh.colors[vertex_idx * 4 + 0] = col.r;
-            mesh.colors[vertex_idx * 4 + 1] = col.g;
-            mesh.colors[vertex_idx * 4 + 2] = col.b;
-            mesh.colors[vertex_idx * 4 + 3] = col.a;
-            vertex_idx++;
-
-            mesh.vertices[vertex_idx * 3 + 0] = rec.x + rec.width;
-            mesh.vertices[vertex_idx * 3 + 1] = rec.y + rec.height;
-            mesh.vertices[vertex_idx * 3 + 2] = 0.0F;
-            mesh.colors[vertex_idx * 4 + 0] = col.r;
-            mesh.colors[vertex_idx * 4 + 1] = col.g;
-            mesh.colors[vertex_idx * 4 + 2] = col.b;
-            mesh.colors[vertex_idx * 4 + 3] = col.a;
-            vertex_idx++;
-
-            mesh.vertices[vertex_idx * 3 + 0] = rec.x;
-            mesh.vertices[vertex_idx * 3 + 1] = rec.y + rec.height;
-            mesh.vertices[vertex_idx * 3 + 2] = 0.0F;
-            mesh.colors[vertex_idx * 4 + 0] = col.r;
-            mesh.colors[vertex_idx * 4 + 1] = col.g;
-            mesh.colors[vertex_idx * 4 + 2] = col.b;
-            mesh.colors[vertex_idx * 4 + 3] = col.a;
-            vertex_idx++;
-
-            mesh.indices[index_idx++] = (U16)base;
-            mesh.indices[index_idx++] = (U16)(base + 1);
-            mesh.indices[index_idx++] = (U16)(base + 2);
-            mesh.indices[index_idx++] = (U16)base;
-            mesh.indices[index_idx++] = (U16)(base + 2);
-            mesh.indices[index_idx++] = (U16)(base + 3);
-        }
-    }
-
-    UploadMesh(&mesh, false);
-    DrawMesh(mesh, g_render.default_material, MatrixIdentity());
-    UnloadMesh(mesh);
-
-    i_healthbar_batch_count = 0;
-}
-
 void d2d_healthbar(EID id) {
     if (!c_world__actor_healthbar)                                    { return; }
     if (g_world->health[id].max <= 0)                                 { return; }
     if (!ENTITY_HAS_FLAG(g_world->flags[id], ENTITY_FLAG_IN_FRUSTUM)) { return; }
     if (!world_is_entity_selected(id))                                { return; }
-    if (i_healthbar_batch_count >= WORLD_MAX_ENTITIES)                { return; }
 
     Camera3D *cam                 = c3d_get_ptr();
     Vector2 const render_res      = render_get_render_resolution();
@@ -596,12 +494,10 @@ void d2d_healthbar(EID id) {
 
         // Healthbar is at most as wide as entity, minimum 20 pixels
         bar_width = glm::clamp(screen_radius * 2.0F * 0.8F, 20.0F, 200.0F);
-        bar_height = bar_width * 0.20F;
-
-
+        bar_height = ui_scale_y(0.6F) * zoom_scale;  // Very thin bar
     } else {
         bar_width = ui_scale_x(8.0F) * zoom_scale;
-        bar_height = bar_width * 0.20F;
+        bar_height = ui_scale_y(2.30F) * zoom_scale;
     }
 
     F32 const border_thick = is_multi_selection ? 0.0F : ui_scale_x(0.20F) * zoom_scale;  // No border for multi
@@ -633,15 +529,13 @@ void d2d_healthbar(EID id) {
     Rectangle const fill_rect   = {bar_pos.x, bar_pos.y, bar_width * health_perc, bar_height};
 
     Rectangle const shadow_rect = {bg_rect.x + 1.5F, bg_rect.y + 1.5F, bg_rect.width, bg_rect.height};
+    d2d_rectangle_rounded_rec(shadow_rect, roundness, segments, Fade(BLACK, 0.25F * alpha));
 
-    HealthbarBatch *batch = &i_healthbar_batch[i_healthbar_batch_count++];
-    batch->bg_rect = bg_rect;
-    batch->fill_rect = fill_rect;
-    batch->shadow_rect = shadow_rect;
-    batch->bg_color = bg_color;
-    batch->fill_color = fill_color;
-    batch->shadow_color = Fade(BLACK, 0.25F * alpha);
-    batch->has_fill = health_perc > 0.01F;
+    d2d_rectangle_rounded_rec(bg_rect, roundness, segments, bg_color);
+
+    if (health_perc > 0.01F) { d2d_rectangle_rounded_rec(fill_rect, roundness, segments, fill_color); }
+
+    d2d_rectangle_rounded_lines_ex(bg_rect, roundness, segments, border_thick, border_color);
 
     // Font size threshold with smooth fade transition
     F32 const font_size_threshold = 16.0F;  // Below this pixel size, text becomes unreadable

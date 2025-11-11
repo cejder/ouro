@@ -176,8 +176,6 @@ void world_draw_2d() {
 void world_draw_2d_hud() {
     world_recorder_draw_2d_hud();
 
-    d2d_healthbar_batch_begin();
-
     for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
         EID const i = g_world->active_entities[idx];
 
@@ -196,8 +194,6 @@ void world_draw_2d_hud() {
             d2d_healthbar(i);
         }
     }
-
-    d2d_healthbar_batch_end();
 
     edit_draw_2d_hud();
 }
