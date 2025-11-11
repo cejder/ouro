@@ -1301,7 +1301,7 @@ void particles3d_add_harvest_active(Vector3 center, Color start_color, Color end
 }
 
 void particles3d_add_click_indicator(Vector3 position, F32 radius, Color start_color, Color end_color, SZ count) {
-    // Large spinning light circles for ground click indicators
+    // Fountain effect particles shooting upward
     C8 const* click_texture_names[] = {
         "particle_light_03.png",
         "particle_light_02.png",
@@ -1314,8 +1314,8 @@ void particles3d_add_click_indicator(Vector3 position, F32 radius, Color start_c
         textures[i] = asset_get_texture(click_texture_names[i]);
     }
 
-    // Force count to be 2-4 particles max for big spinning circles
-    SZ const actual_count = glm::min(count, (SZ)4);
+    // More particles for fountain effect
+    SZ const actual_count = glm::min(count, (SZ)20);
 
     auto *positions_arr     = mcta(Vector3*, actual_count, sizeof(Vector3));
     auto *velocities        = mcta(Vector3*, actual_count, sizeof(Vector3));
@@ -1335,31 +1335,38 @@ void particles3d_add_click_indicator(Vector3 position, F32 radius, Color start_c
     F32 y_offset           = 0.15F * (1.0F - terrain_normal.y);
 
     for (SZ i = 0; i < actual_count; ++i) {
-        // All particles at the same position - centered at click location
+        // Start at ground level, slightly offset randomly
+        F32 const radial_offset = random_f32(0.0F, radius * 0.5F);
+        F32 const angle = random_f32(0.0F, 2.0F * glm::pi<F32>());
+
         positions_arr[i] = {
-            position.x,
-            position.y + y_offset,  // Raised higher to prevent clipping into ground
-            position.z
+            position.x + radial_offset * math_cos_f32(angle),
+            position.y + y_offset,
+            position.z + radial_offset * math_sin_f32(angle)
         };
 
-        // NO velocity - particles stay stationary, only rotate in place
-        velocities[i]      = {0.0F, 0.0F, 0.0F};
+        // Fountain: shoot upward with slight outward velocity
+        F32 const upward_speed = random_f32(3.0F, 6.0F);
+        F32 const outward_speed = random_f32(0.5F, 1.5F);
+        velocities[i] = {
+            outward_speed * math_cos_f32(angle),
+            upward_speed,
+            outward_speed * math_sin_f32(angle)
+        };
         accelerations[i]   = {0.0F, 0.0F, 0.0F};
 
-        // Vibrant, mystical colors
+        // Vibrant colors
         start_colors[i]    = color_variation(start_color, 15);
         end_colors[i]      = color_variation(end_color, 15);
 
-        lives[i]           = random_f32(0.8F, 1.2F);  // Shorter lived than selection indicator
-        sizes[i]           = radius * random_f32(2.5F, 3.75F);  // BIG particles scaled to radius! (25% wider)
-        gravities[i]       = 0.0F;  // No gravity
+        lives[i]           = random_f32(0.6F, 1.0F);  // Shorter life for fountain
+        sizes[i]           = radius * random_f32(0.8F, 1.5F);  // Smaller particles
+        gravities[i]       = random_f32(8.0F, 12.0F);  // Gravity pulls them down
 
-        // Alternate rotation direction for counter-rotating effect
-        F32 const rotation_direction = (i % 2 == 0) ? 1.0F : -1.0F;
-        rotation_speeds[i] = random_f32(4.0F, 7.0F) * rotation_direction;  // Slightly faster spin for clicks
+        rotation_speeds[i] = random_f32(-10.0F, 10.0F);  // Spin as they fly
 
-        air_resistances[i] = 0.0F;  // No air resistance
-        billboard_modes[i] = PARTICLE3D_BILLBOARD_HORIZONTAL;  // Flat on ground!
+        air_resistances[i] = random_f32(0.01F, 0.03F);  // Some air resistance
+        billboard_modes[i] = PARTICLE3D_BILLBOARD_SPHERICAL;  // Face camera
         stretch_factors[i] = 1.0F;
 
         // Use different textures for each particle
