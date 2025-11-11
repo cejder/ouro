@@ -126,8 +126,6 @@ void selection_indicators_draw() {
         return;
     }
 
-    lli("Drawing %zu selection indicators", g_selection_indicators.active_count);
-
     // Build instance data from active indicators
     SelectionIndicatorInstanceData instance_data[SELECTION_INDICATOR_MAX_COUNT];
     SZ instance_count = 0;
@@ -179,18 +177,29 @@ void selection_indicators_draw() {
                     instance_data);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, g_selection_indicators.vbo);
 
-    // Set shader uniforms
+    // Set OpenGL state for transparent rendering (match particle system)
+    Camera3D* camera = g_render.cameras.c3d.active_cam;
+    glDisable(GL_CULL_FACE);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDepthMask(GL_FALSE);
+    glDepthFunc(GL_LEQUAL);
+
     BeginShaderMode(g_selection_indicators.shader->base);
 
-    Camera3D camera = c3d_get();
-    Matrix view_proj = g_render.cameras.c3d.mat_view_proj;
-    Vector3 camera_right = Vector3Normalize(Vector3{view_proj.m0, view_proj.m4, view_proj.m8});
-    Vector3 camera_up = Vector3Normalize(Vector3{view_proj.m1, view_proj.m5, view_proj.m9});
-
+    // Get matrices from Raylib's matrix stack (same as particles)
+    Matrix const view_matrix = rlGetMatrixModelview();
+    Matrix const proj_matrix = rlGetMatrixProjection();
+    Matrix const view_proj   = MatrixMultiply(view_matrix, proj_matrix);
     SetShaderValueMatrix(g_selection_indicators.shader->base, g_selection_indicators.view_proj_loc, view_proj);
-    SetShaderValue(g_selection_indicators.shader->base, g_selection_indicators.camera_pos_loc, &camera.position, SHADER_UNIFORM_VEC3);
-    SetShaderValue(g_selection_indicators.shader->base, g_selection_indicators.camera_right_loc, &camera_right, SHADER_UNIFORM_VEC3);
-    SetShaderValue(g_selection_indicators.shader->base, g_selection_indicators.camera_up_loc, &camera_up, SHADER_UNIFORM_VEC3);
+
+    // Calculate camera right and up vectors for billboarding (same as particles)
+    Vector3 const forward = Vector3Normalize(Vector3Subtract(camera->target, camera->position));
+    Vector3 right = Vector3Normalize(Vector3CrossProduct(forward, camera->up));
+    Vector3 up = Vector3CrossProduct(right, forward);
+
+    SetShaderValue(g_selection_indicators.shader->base, g_selection_indicators.camera_pos_loc, &camera->position, SHADER_UNIFORM_VEC3);
+    SetShaderValue(g_selection_indicators.shader->base, g_selection_indicators.camera_right_loc, &right, SHADER_UNIFORM_VEC3);
+    SetShaderValue(g_selection_indicators.shader->base, g_selection_indicators.camera_up_loc, &up, SHADER_UNIFORM_VEC3);
 
     // Bind texture
     SetShaderValueTexture(g_selection_indicators.shader->base, g_selection_indicators.texture_loc, g_selection_indicators.texture->base);
@@ -201,6 +210,11 @@ void selection_indicators_draw() {
     glBindVertexArray(0);
 
     EndShaderMode();
+
+    // Restore OpenGL state
+    glEnable(GL_CULL_FACE);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDepthMask(GL_TRUE);
 
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
@@ -217,11 +231,8 @@ void selection_indicators_clear() {
 
 void selection_indicators_add(EID entity_id) {
     if (!entity_is_valid(entity_id)) {
-        llw("Attempted to add selection indicator for invalid entity");
         return;
     }
-
-    lli("Adding selection indicator for entity");
 
     // Check if indicator already exists for this entity
     for (SZ i = 0; i < SELECTION_INDICATOR_MAX_COUNT; ++i) {
