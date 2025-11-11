@@ -494,10 +494,12 @@ void d2d_healthbar(EID id) {
 
         // Healthbar is at most as wide as entity, minimum 20 pixels
         bar_width = glm::clamp(screen_radius * 2.0F * 0.8F, 20.0F, 200.0F);
-        bar_height = ui_scale_y(0.6F) * zoom_scale;  // Very thin bar
+        bar_height = bar_width * 0.20F;
+
+
     } else {
         bar_width = ui_scale_x(8.0F) * zoom_scale;
-        bar_height = ui_scale_y(2.30F) * zoom_scale;
+        bar_height = bar_width * 0.20F;
     }
 
     F32 const border_thick = is_multi_selection ? 0.0F : ui_scale_x(0.20F) * zoom_scale;  // No border for multi

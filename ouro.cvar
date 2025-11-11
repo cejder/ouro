@@ -9,13 +9,13 @@ pan_sfx                      : 0.00000000
 pan_voice                    : 0.00000000
 pitch_ambience               : 1.00000000
 pitch_music                  : 1.00000000
-pitch_sfx                    : 1.00000000
-pitch_voice                  : 1.00000000
+pitch_sfx                    : 1.68300009
+pitch_voice                  : 1.61500013
 rolloff_scale                : 1.00000000
-volume_ambience              : 0.00100000
-volume_music                 : 0.50000000
-volume_sfx                   : 0.50000000
-volume_voice                 : 0.50000000
+volume_ambience              : 0.00000000
+volume_music                 : 0.00000000
+volume_sfx                   : 0.00000000
+volume_voice                 : 0.00000000
 
 [console]
 enabled                      : false
@@ -76,10 +76,10 @@ tboy                         : true
 
 [video]
 fps_info                     : true
-fps_max                      : 60
+fps_max                      : 0
 render_resolution_height     : 2160
 render_resolution_width      : 3840
-vsync                        : true
+vsync                        : false
 window_resolution_height     : 2160
 window_resolution_width      : 3840
 

@@ -12,7 +12,7 @@
 
 #include <raylib.h>
 
-#define WORLD_MAX_ENTITIES 15000
+#define WORLD_MAX_ENTITIES 50000
 
 fwd_decl(ATerrain);
 fwd_decl(ASound);
