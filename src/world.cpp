@@ -249,30 +249,35 @@ void world_draw_3d() {
 // Instanced rendering: map from model name to array of entity IDs
 MAP_DECLARE(InstanceGroupMap, U32, EIDArray, MAP_HASH_U32, MAP_EQUAL_U32);
 
-// Animation state key for grouping animated entities
-// NOTE: We group by animation index and bone count, NOT by frame
-// This allows entities playing the same animation to batch together
-// even if they're on different frames (they'll share bone matrices from one representative)
 struct AnimationStateKey {
     U32 model_hash;
     U32 anim_index;
     S32 bone_count;
+    BOOL is_blending;
+    U32 prev_anim_index;
 };
 
 static inline U32 animation_state_key_hash(AnimationStateKey key) {
-    // FNV-1a hash for better distribution
-    U32 hash = 2166136261u; // FNV offset basis
+    U32 hash = 2166136261u;
     hash ^= key.model_hash;
-    hash *= 16777619u; // FNV prime
+    hash *= 16777619u;
     hash ^= key.anim_index;
     hash *= 16777619u;
     hash ^= (U32)key.bone_count;
+    hash *= 16777619u;
+    hash ^= (U32)key.is_blending;
+    hash *= 16777619u;
+    hash ^= key.prev_anim_index;
     hash *= 16777619u;
     return hash;
 }
 
 static inline BOOL animation_state_key_equal(AnimationStateKey a, AnimationStateKey b) {
-    return a.model_hash == b.model_hash && a.anim_index == b.anim_index && a.bone_count == b.bone_count;
+    return a.model_hash == b.model_hash &&
+           a.anim_index == b.anim_index &&
+           a.bone_count == b.bone_count &&
+           a.is_blending == b.is_blending &&
+           a.prev_anim_index == b.prev_anim_index;
 }
 
 MAP_DECLARE(AnimatedInstanceGroupMap, AnimationStateKey, EIDArray, animation_state_key_hash, animation_state_key_equal);
@@ -303,41 +308,36 @@ void world_draw_3d_sketch() {
             if (dungeon_is_entity_occluded(i)) { continue; }
         }
 
-        // Check if entity has active animation
         if (g_world->animation[i].has_animations) {
-            // Animated entities: group by animation state (model, anim index, bone count)
-            // NOTE: We don't group by frame - all entities playing same animation batch together
-            // and use bone matrices from one representative entity
             AnimationStateKey key = {
                 .model_hash = g_world->model_name_hash[i],
                 .anim_index = g_world->animation[i].anim_index,
-                .bone_count = g_world->animation[i].bone_count
+                .bone_count = g_world->animation[i].bone_count,
+                .is_blending = g_world->animation[i].is_blending,
+                .prev_anim_index = g_world->animation[i].prev_anim_index
             };
 
             EIDArray *group = AnimatedInstanceGroupMap_get(&animated_instance_groups, key);
             if (!group) {
                 EIDArray new_group = {};
-                array_init(MEMORY_TYPE_ARENA_TRANSIENT, &new_group, 64); // Reduced from 1024
+                array_init(MEMORY_TYPE_ARENA_TRANSIENT, &new_group, 64);
                 AnimatedInstanceGroupMap_insert(&animated_instance_groups, key, new_group);
                 group = AnimatedInstanceGroupMap_get(&animated_instance_groups, key);
             }
 
-            // Validate group was retrieved successfully
             if (group) {
                 array_push(group, i);
             }
         } else {
-            // Static entities: group by model name hash
             U32 const model_name_hash = asset_get_model_by_hash(g_world->model_name_hash[i])->header.name_hash;
             EIDArray *group = InstanceGroupMap_get(&instance_groups, model_name_hash);
             if (!group) {
                 EIDArray new_group = {};
-                array_init(MEMORY_TYPE_ARENA_TRANSIENT, &new_group, 64); // Reduced from 1024
+                array_init(MEMORY_TYPE_ARENA_TRANSIENT, &new_group, 64);
                 InstanceGroupMap_insert(&instance_groups, model_name_hash, new_group);
                 group = InstanceGroupMap_get(&instance_groups, model_name_hash);
             }
 
-            // Validate group was retrieved successfully
             if (group) {
                 array_push(group, i);
             }
