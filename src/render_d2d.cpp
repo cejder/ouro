@@ -488,11 +488,26 @@ void d2d_healthbar(EID id) {
 
     // Use minimal healthbar style when multiple units are selected
     BOOL const is_multi_selection = g_world->selected_entity_count > 1 && world_is_entity_selected(id);
-    F32 const size_scale = is_multi_selection ? 0.5F : 1.0F;  // Smaller for multi-selection
 
-    F32 const bar_width    = ui_scale_x(8.0F) * zoom_scale * size_scale;
-    F32 const bar_height   = ui_scale_y(2.30F) * zoom_scale * size_scale;
-    F32 const border_thick = ui_scale_x(0.20F) * zoom_scale;
+    F32 bar_width, bar_height;
+    if (is_multi_selection) {
+        // For multi-selection: make bar width based on entity size (at most as wide as entity)
+        // Project entity radius to screen space
+        F32 const entity_radius = g_world->radius[id];
+        Vector3 const radius_point = Vector3Add(position, {entity_radius, 0.0F, 0.0F});
+        Vector2 const center_screen = GetWorldToScreenEx(position, *cam, (S32)render_res.x, (S32)render_res.y);
+        Vector2 const radius_screen = GetWorldToScreenEx(radius_point, *cam, (S32)render_res.x, (S32)render_res.y);
+        F32 const screen_radius = glm::abs(radius_screen.x - center_screen.x);
+
+        // Healthbar is at most as wide as entity, minimum 20 pixels
+        bar_width = glm::clamp(screen_radius * 2.0F * 0.8F, 20.0F, 200.0F);
+        bar_height = ui_scale_y(1.2F) * zoom_scale;  // Very thin bar
+    } else {
+        bar_width = ui_scale_x(8.0F) * zoom_scale;
+        bar_height = ui_scale_y(2.30F) * zoom_scale;
+    }
+
+    F32 const border_thick = is_multi_selection ? 0.0F : ui_scale_x(0.20F) * zoom_scale;  // No border for multi
     F32 const roundness    = 0.5F;
     S32 const segments     = 10;
 
@@ -519,14 +534,21 @@ void d2d_healthbar(EID id) {
     Vector2 const bar_pos       = {screen_pos.x - (bar_width * 0.5F), screen_pos.y - (bar_height * 0.5F)};
     Rectangle const bg_rect     = {bar_pos.x, bar_pos.y, bar_width, bar_height};
     Rectangle const fill_rect   = {bar_pos.x, bar_pos.y, bar_width * health_perc, bar_height};
-    Rectangle const shadow_rect = {bg_rect.x + 1.5F, bg_rect.y + 1.5F, bg_rect.width, bg_rect.height};
 
-    d2d_rectangle_rounded_rec(shadow_rect, roundness, segments, Fade(BLACK, 0.25F * alpha));
+    // Skip shadow for multi-selection (simpler, cleaner look)
+    if (!is_multi_selection) {
+        Rectangle const shadow_rect = {bg_rect.x + 1.5F, bg_rect.y + 1.5F, bg_rect.width, bg_rect.height};
+        d2d_rectangle_rounded_rec(shadow_rect, roundness, segments, Fade(BLACK, 0.25F * alpha));
+    }
+
     d2d_rectangle_rounded_rec(bg_rect, roundness, segments, bg_color);
 
     if (health_perc > 0.01F) { d2d_rectangle_rounded_rec(fill_rect, roundness, segments, fill_color); }
 
-    d2d_rectangle_rounded_lines_ex(bg_rect, roundness, segments, border_thick, border_color);
+    // Skip border for multi-selection (simpler look)
+    if (!is_multi_selection) {
+        d2d_rectangle_rounded_lines_ex(bg_rect, roundness, segments, border_thick, border_color);
+    }
 
     // Font size threshold with smooth fade transition
     F32 const font_size_threshold = 16.0F;  // Below this pixel size, text becomes unreadable
