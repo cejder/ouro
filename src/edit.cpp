@@ -148,11 +148,15 @@ void static i_handle_selected_entity_input(EID id, F32 dtu, BOOL mouse_left_down
     Vector3 position     = g_world->position[id];
     Vector3 const scale  = g_world->scale[id];
 
-    // Keyboard rotation
-    if (is_down(IA_DBG_ROTATE_ENTITY_NEG)) { entity_set_rotation(id, rotation - rot_speed); }
-    if (is_down(IA_DBG_ROTATE_ENTITY_POS)) { entity_set_rotation(id, rotation + rot_speed); }
+    // Keyboard rotation - apply rotation delta to this entity
+    F32 rotation_delta = 0.0F;
+    if (is_down(IA_DBG_ROTATE_ENTITY_NEG)) { rotation_delta -= rot_speed; }
+    if (is_down(IA_DBG_ROTATE_ENTITY_POS)) { rotation_delta += rot_speed; }
+    if (rotation_delta != 0.0F) {
+        entity_set_rotation(id, rotation + rotation_delta);
+    }
 
-    // Keyboard movement
+    // Keyboard movement - apply same movement to this entity
     if (is_down(IA_DBG_MOVE_ENTITY_UP))       { entity_add_position(id, {0,  move_speed, 0}); }
     if (is_down(IA_DBG_MOVE_ENTITY_DOWN))     { entity_add_position(id, {0, -move_speed, 0}); }
     if (is_down(IA_DBG_MOVE_ENTITY_LEFT))     { entity_move(id, MOVE_LEFT,     move_speed);   }
@@ -166,13 +170,17 @@ void static i_handle_selected_entity_input(EID id, F32 dtu, BOOL mouse_left_down
         if (terrain_collision.hit) {
             position.y = terrain_collision.point.y;
             entity_set_position(id, position);
-            i_state.mouse_click_location = terrain_collision.point;
+            if (id == g_world->selected_entities[0]) {  // Only update click location for primary
+                i_state.mouse_click_location = terrain_collision.point;
+            }
         }
     }
 
     // Mouse interactions (only if collision is valid)
+    // NOTE: For multi-entity operations, only the first entity's position/scale matters,
+    // and we apply the same delta to all selected entities
     if (mouse_left_down && collision.hit) {
-        // Mouse rotation with Alt
+        // Mouse rotation with Alt - apply rotation delta to this entity
         if (is_mod(I_MODIFIER_ALT)) {
             Vector2 const mouse_delta = input_get_mouse_delta();
             entity_set_rotation(id, rotation + (mouse_delta.x * 0.5F));
@@ -184,7 +192,7 @@ void static i_handle_selected_entity_input(EID id, F32 dtu, BOOL mouse_left_down
             collision.point.y   += 1.0F;
             *left_click_consumed = true;
         }
-        // Mouse scaling with Ctrl+Shift
+        // Mouse scaling with Ctrl+Shift - scale this entity by the same factor
         else if (is_mod(I_MODIFIER_SHIFT) && is_mod(I_MODIFIER_CTRL)) {
             Vector2 const mouse_delta = input_get_mouse_delta();
             F32 t = scale.x;
@@ -198,7 +206,7 @@ void static i_handle_selected_entity_input(EID id, F32 dtu, BOOL mouse_left_down
         }
     }
 
-    // Mouse wheel for vertical movement (with Ctrl modifier)
+    // Mouse wheel for vertical movement (with Ctrl modifier) - apply to this entity
     if (is_mod(I_MODIFIER_CTRL)) {
         F32 const wheel = input_get_mouse_wheel();
         if (wheel != 0.0F) {
@@ -207,11 +215,7 @@ void static i_handle_selected_entity_input(EID id, F32 dtu, BOOL mouse_left_down
         }
     }
 
-    // Delete entity
-    if (is_pressed(IA_DBG_DELETE_ENTITY)) {
-        // HACK: REMOVE THIS
-        entity_destroy(id);
-    }
+    // Delete entity - handled separately for multi-selection to avoid array modification during iteration
 }
 
 void edit_update(F32 dt, F32 dtu) {
@@ -254,8 +258,48 @@ void edit_update(F32 dt, F32 dtu) {
     // Allow manipulation unless Shift-only is held (reserved for selection)
     // Ctrl+Shift is allowed for entity scaling
     if (g_world->selected_entity_count > 0 && (!shift_down || ctrl_down)) {
-        EID const first_selected = g_world->selected_entities[0];
-        i_handle_selected_entity_input(first_selected, dtu, mouse_left_down, collision, &left_click_consumed);
+        // For multi-entity selection with Ctrl+drag, maintain relative positions
+        BOOL const is_multi_selection = g_world->selected_entity_count > 1;
+        Vector3 position_offset = {0.0F, 0.0F, 0.0F};
+
+        // Calculate position offset from first entity if doing Ctrl+drag
+        if (is_multi_selection && mouse_left_down && collision.hit &&
+            is_mod(I_MODIFIER_CTRL) && !is_mod(I_MODIFIER_SHIFT) && !is_mod(I_MODIFIER_ALT)) {
+            EID const first_id = g_world->selected_entities[0];
+            Vector3 const old_pos = g_world->position[first_id];
+            position_offset = Vector3Subtract(collision.point, old_pos);
+        }
+
+        // Apply manipulation to all selected entities
+        for (SZ i = 0; i < g_world->selected_entity_count; ++i) {
+            EID const id = g_world->selected_entities[i];
+
+            // For Ctrl+drag with multiple entities, apply offset instead of direct position
+            if (is_multi_selection && mouse_left_down && collision.hit &&
+                is_mod(I_MODIFIER_CTRL) && !is_mod(I_MODIFIER_SHIFT) && !is_mod(I_MODIFIER_ALT)) {
+                // Apply the same offset to maintain relative positions
+                Vector3 new_pos = Vector3Add(g_world->position[id], position_offset);
+                entity_set_position(id, new_pos);
+                left_click_consumed = true;
+            } else {
+                // Regular handling for other operations
+                i_handle_selected_entity_input(id, dtu, mouse_left_down, collision, &left_click_consumed);
+            }
+        }
+
+        // Delete all selected entities (done after iteration to avoid modifying array during loop)
+        if (is_pressed(IA_DBG_DELETE_ENTITY)) {
+            // Copy selected entities to temporary array since entity_destroy modifies selection
+            EID entities_to_delete[WORLD_MAX_ENTITIES];
+            SZ delete_count = g_world->selected_entity_count;
+            for (SZ i = 0; i < delete_count; ++i) {
+                entities_to_delete[i] = g_world->selected_entities[i];
+            }
+            // Now delete all of them
+            for (SZ i = 0; i < delete_count; ++i) {
+                entity_destroy(entities_to_delete[i]);
+            }
+        }
     }
 
     if (!left_click_consumed && !mouse_look && mouse_left_pressed) {
