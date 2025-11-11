@@ -23,6 +23,8 @@
 #define CAMERA2D_MIN_ZOOM 0.1F
 #define CAMERA2D_MAX_ZOOM 10.0F
 #define CAMERA3D_DEFAULT_FOV 65.0F
+#define CAMERA3D_MIN_FOV 20.0F
+#define CAMERA3D_MAX_FOV 200.0F
 
 fwd_decl(String);
 fwd_decl(Loading);
@@ -322,6 +324,8 @@ void c3d_set_position(Vector3 position);
 void c3d_set_target(Vector3 target);
 void c3d_set_up(Vector3 up);
 F32 c3d_get_fov();
+void c3d_set_fov(F32 fov);
+void c3d_adjust_fov(F32 delta);
 void c3d_reset();
 void c3d_cb_reset(void *data);
 void c3d_cb_toggle(void *data);

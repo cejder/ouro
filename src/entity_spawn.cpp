@@ -317,11 +317,11 @@ void entity_spawn_test_overworld_set(EntityTestOverworldSet *set) {
     SZ const grid_rows = (LUMBERYARD_COUNT + grid_cols - 1) / grid_cols; // Ceiling division
 
     // Grid spacing and starting position
-    F32 const spacing_x = 100.0F; // Distance between lumberyards in X
-    F32 const spacing_z = 100.0F; // Distance between lumberyards in Z
-    F32 const start_x = (F32)A_TERRAIN_DEFAULT_SIZE / 3;
-    F32 const start_z = (F32)A_TERRAIN_DEFAULT_SIZE / 3;
-    F32 const rand_scale = random_f32(4.0F, 6.0F);
+    F32 const spacing_x  = 100.0F; // Distance between lumberyards in X
+    F32 const spacing_z  = 100.0F; // Distance between lumberyards in Z
+    F32 const start_x    = (F32)A_TERRAIN_DEFAULT_SIZE / 3;
+    F32 const start_z    = (F32)A_TERRAIN_DEFAULT_SIZE / 3;
+    F32 const rand_scale = 10.0F;
 
     SZ lumberyard_index = 0;
     for (SZ row = 0; row < grid_rows && lumberyard_index < LUMBERYARD_COUNT; ++row) {

@@ -4,6 +4,7 @@
 #include "color.hpp"
 #include "cvar.hpp"
 #include "debug.hpp"
+#include "ease.hpp"
 #include "light.hpp"
 #include "log.hpp"
 #include "math.hpp"
@@ -149,6 +150,11 @@ case I_MOUSE_EXTRA:                         return "Extra Mouse";
 case I_MOUSE_FORWARD:                       return "Forward Mouse";
 case I_MOUSE_BACK:                          return "Back Mouse";
 default:                                    _unreachable_(); return nullptr; }}
+C8 static const *i_wheel_to_cstr(IWheel wheel) { switch (wheel) {
+case I_WHEEL_NULL:                          return "Null";
+case I_WHEEL_UP:                            return "Wheel Up";
+case I_WHEEL_DOWN:                          return "Wheel Down";
+default:                                    _unreachable_(); return nullptr; }}
 C8 static const *i_gamepad_button_to_cstr(GamepadButton button) { switch (button) {
 case GAMEPAD_BUTTON_LEFT_FACE_UP:           return "D-Pad Up";
 case GAMEPAD_BUTTON_LEFT_FACE_RIGHT:        return "D-Pad Right";
@@ -272,12 +278,13 @@ case IA_PROFILER_FLAME_GRAPH_SHOW_TOGGLE:   return "FLAME GRAPH SHOW";
 case IA_PROFILER_FLAME_GRAPH_PAUSE_TOGGLE:  return "FLAME GRAPH PAUSE";
 default:                                    _unreachable_(); return nullptr; }}
 
-void static set(IAction action, IModifier modifier, KeyboardKey primary, KeyboardKey secondary, IMouse mouse, GamepadButton gamepad) {
+void static set(IAction action, IModifier modifier, KeyboardKey primary, KeyboardKey secondary, IMouse mouse, GamepadButton gamepad, IWheel wheel) {
     i_input.keybindings[action].modifier  = modifier;
     i_input.keybindings[action].primary   = primary;
     i_input.keybindings[action].secondary = secondary;
     i_input.keybindings[action].mouse     = mouse;
     i_input.keybindings[action].gamepad   = gamepad;
+    i_input.keybindings[action].wheel     = wheel;
 }
 
 #define NO_GAMEPAD_ATTACHED_INDEX (-1)
@@ -297,6 +304,7 @@ BOOL static i_find_first_controller() {
 #define _mn_ I_MODIFIER_NULL
 #define _mon_ I_MOUSE_NULL
 #define _gn_ GAMEPAD_BUTTON_UNKNOWN
+#define _wn_ I_WHEEL_NULL
 void input_init() {
     for (SZ i = 0; i < IA_COUNT; ++i) {
         i_input.action_state[i]          = false;
@@ -309,112 +317,114 @@ void input_init() {
         llt("No gamepad found");
     }
 
-//   ACTION                                             MODIFIER,           PRIMARY           SECONDARY   MOUSE,          GAMEPAD
-set( IA_YES,                                            _mn_,               KEY_ENTER,        _kn_,       _mon_,          GAMEPAD_BUTTON_RIGHT_FACE_DOWN  );
-set( IA_NO,                                             _mn_,               KEY_BACKSPACE,    _kn_,       _mon_,          GAMEPAD_BUTTON_RIGHT_FACE_RIGHT );
-set( IA_OPEN_OVERLAY_MENU,                              _mn_,               KEY_ESCAPE,       _kn_,       _mon_,          GAMEPAD_BUTTON_MIDDLE_RIGHT     );
-set( IA_DECREASE,                                       _mn_,               KEY_LEFT,         _kn_,       _mon_,          GAMEPAD_BUTTON_LEFT_FACE_LEFT   );
-set( IA_INCREASE,                                       _mn_,               KEY_RIGHT,        _kn_,       _mon_,          GAMEPAD_BUTTON_LEFT_FACE_RIGHT  );
-set( IA_TOGGLE_OVERWORLD_AND_DUNGEON_SCENE,             _mn_,               KEY_TAB,          _kn_,       _mon_,          GAMEPAD_BUTTON_MIDDLE_LEFT      );
-set( IA_NEXT,                                           _mn_,               KEY_DOWN,         _kn_,       _mon_,          GAMEPAD_BUTTON_LEFT_FACE_DOWN   );
-set( IA_PREVIOUS,                                       _mn_,               KEY_UP,           _kn_,       _mon_,          GAMEPAD_BUTTON_LEFT_FACE_UP     );
-set( IA_TURN_3D_LEFT,                                   _mn_,               KEY_W,            _kn_,       _mon_,          GAMEPAD_BUTTON_LEFT_TRIGGER_1   );
-set( IA_TURN_3D_RIGHT,                                  _mn_,               KEY_R,            _kn_,       _mon_,          GAMEPAD_BUTTON_RIGHT_TRIGGER_1  );
-set( IA_MOVE_3D_FORWARD,                                _mn_,               KEY_E,            _kn_,       _mon_,          GAMEPAD_BUTTON_LEFT_FACE_UP     );
-set( IA_MOVE_3D_BACKWARD,                               _mn_,               KEY_D,            _kn_,       _mon_,          GAMEPAD_BUTTON_LEFT_FACE_DOWN   );
-set( IA_MOVE_3D_LEFT,                                   _mn_,               KEY_S,            _kn_,       _mon_,          GAMEPAD_BUTTON_LEFT_FACE_LEFT   );
-set( IA_MOVE_3D_RIGHT,                                  _mn_,               KEY_F,            _kn_,       _mon_,          GAMEPAD_BUTTON_LEFT_FACE_RIGHT  );
-set( IA_MOVE_3D_UP,                                     _mn_,               KEY_T,            _kn_,       _mon_,          GAMEPAD_BUTTON_LEFT_TRIGGER_2   );
-set( IA_MOVE_3D_DOWN,                                   _mn_,               KEY_G,            _kn_,       _mon_,          GAMEPAD_BUTTON_LEFT_TRIGGER_1   );
-set( IA_MOVE_3D_JUMP,                                   _mn_,               KEY_SPACE,        _kn_,       _mon_,          _gn_                            );
-set( IA_MOVE_2D_LEFT,                                   _mn_,               KEY_S,            _kn_,       _mon_,          _gn_                            );
-set( IA_MOVE_2D_RIGHT,                                  _mn_,               KEY_F,            _kn_,       _mon_,          _gn_                            );
-set( IA_MOVE_2D_UP,                                     _mn_,               KEY_E,            _kn_,       _mon_,          _gn_                            );
-set( IA_MOVE_2D_DOWN,                                   _mn_,               KEY_D,            _kn_,       _mon_,          _gn_                            );
-set( IA_SCROLL_UP,                                      _mn_,               KEY_PAGE_UP,      _kn_,       _mon_,          _gn_                            );
-set( IA_SCROLL_DOWN,                                    _mn_,               KEY_PAGE_DOWN,    _kn_,       _mon_,          _gn_                            );
-set( IA_ZOOM_IN,                                        _mn_,               KEY_Y,            _kn_,       _mon_,          _gn_                            );
-set( IA_ZOOM_OUT,                                       _mn_,               KEY_H,            _kn_,       _mon_,          _gn_                            );
-set( IA_EDITOR_MOVE_UP,                                 _mn_,               KEY_E,            _kn_,       _mon_,          _gn_                            );
-set( IA_EDITOR_MOVE_DOWN,                               _mn_,               KEY_D,            _kn_,       _mon_,          _gn_                            );
-set( IA_EDITOR_MOVE_LEFT,                               _mn_,               KEY_S,            _kn_,       _mon_,          _gn_                            );
-set( IA_EDITOR_MOVE_RIGHT,                              _mn_,               KEY_F,            _kn_,       _mon_,          _gn_                            );
-set( IA_EDITOR_BIG_PREVIEW_TOGGLE,                      _mn_,               KEY_V,            _kn_,       _mon_,          _gn_                            );
-set( IA_EDITOR_SKYBOX_TOGGLE,                           _mn_,               KEY_P,            _kn_,       _mon_,          _gn_                            );
-set( IA_EDITOR_DELETE,                                  _mn_,               KEY_BACKSPACE,    _kn_,       _mon_,          _gn_                            );
-set( IA_CONSOLE_TOGGLE,                                 I_MODIFIER_NONE,    KEY_F3,           _kn_,       _mon_,          _gn_                            );
-set( IA_CONSOLE_SCROLL_UP,                              _mn_,               KEY_PAGE_UP,      _kn_,       _mon_,          _gn_                            );
-set( IA_CONSOLE_SCROLL_DOWN,                            _mn_,               KEY_PAGE_DOWN,    _kn_,       _mon_,          _gn_                            );
-set( IA_CONSOLE_BACKSPACE,                              _mn_,               KEY_BACKSPACE,    _kn_,       _mon_,          _gn_                            );
-set( IA_CONSOLE_DELETE,                                 _mn_,               KEY_DELETE,       _kn_,       _mon_,          _gn_                            );
-set( IA_CONSOLE_HISTORY_PREVIOUS,                       _mn_,               KEY_UP,           _kn_,       _mon_,          _gn_                            );
-set( IA_CONSOLE_HISTORY_NEXT,                           _mn_,               KEY_DOWN,         _kn_,       _mon_,          _gn_                            );
-set( IA_CONSOLE_CURSOR_LEFT,                            _mn_,               KEY_LEFT,         _kn_,       _mon_,          _gn_                            );
-set( IA_CONSOLE_CURSOR_RIGHT,                           _mn_,               KEY_RIGHT,        _kn_,       _mon_,          _gn_                            );
-set( IA_CONSOLE_AUTOCOMPLETE,                           _mn_,               KEY_TAB,          _kn_,       _mon_,          _gn_                            );
-set( IA_CONSOLE_EXECUTE,                                _mn_,               KEY_ENTER,        _kn_,       _mon_,          _gn_                            );
-set( IA_CONSOLE_INCREASE_FONT_SIZE,                     I_MODIFIER_CTRL,    KEY_EQUAL,        _kn_,       _mon_,          _gn_                            );
-set( IA_CONSOLE_DECREASE_FONT_SIZE,                     I_MODIFIER_CTRL,    KEY_MINUS,        _kn_,       _mon_,          _gn_                            );
-set( IA_CONSOLE_BEGIN_LINE,                             I_MODIFIER_CTRL,    KEY_A,            _kn_,       _mon_,          _gn_                            );
-set( IA_CONSOLE_END_LINE,                               I_MODIFIER_CTRL,    KEY_E,            _kn_,       _mon_,          _gn_                            );
-set( IA_CONSOLE_KILL_LINE,                              I_MODIFIER_CTRL,    KEY_K,            _kn_,       _mon_,          _gn_                            );
-set( IA_CONSOLE_COPY,                                   I_MODIFIER_CTRL,    KEY_C,            _kn_,       _mon_,          _gn_                            );
-set( IA_CONSOLE_PASTE,                                  I_MODIFIER_CTRL,    KEY_V,            _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_RESET_WINDOWS,                              I_MODIFIER_SHIFT,   KEY_F4,           _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_TOGGLE_PAUSE_TIME,                          I_MODIFIER_NONE,    KEY_F1,           _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_TOGGLE_CONSOLE_FULLSCREEN,                  I_MODIFIER_SHIFT,   KEY_END,          _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_LOOK_CAMERA_UP,                             _mn_,               KEY_I,            _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_LOOK_CAMERA_DOWN,                           _mn_,               KEY_K,            _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_LOOK_CAMERA_LEFT,                           _mn_,               KEY_J,            _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_LOOK_CAMERA_RIGHT,                          _mn_,               KEY_L,            _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_ROLL_CAMERA_LEFT,                           I_MODIFIER_SHIFT,   KEY_U,            _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_ROLL_CAMERA_RIGHT,                          I_MODIFIER_SHIFT,   KEY_O,            _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_RESET_CAMERA,                               _mn_,               KEY_C,            _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_LIGHT_1,                                    I_MODIFIER_NONE,    KEY_ONE,          _kn_,       _mon_,          GAMEPAD_BUTTON_RIGHT_THUMB      );
-set( IA_DBG_LIGHT_2,                                    I_MODIFIER_NONE,    KEY_TWO,          _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_LIGHT_3,                                    I_MODIFIER_NONE,    KEY_THREE,        _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_LIGHT_4,                                    I_MODIFIER_NONE,    KEY_FOUR,         _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_LIGHT_5,                                    I_MODIFIER_NONE,    KEY_FIVE,         _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_TOGGLE_LIGHT_TYPE_1,                        I_MODIFIER_SHIFT,   KEY_ONE,          _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_TOGGLE_LIGHT_TYPE_2,                        I_MODIFIER_SHIFT,   KEY_TWO,          _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_TOGGLE_LIGHT_TYPE_3,                        I_MODIFIER_SHIFT,   KEY_THREE,        _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_TOGGLE_LIGHT_TYPE_4,                        I_MODIFIER_SHIFT,   KEY_FOUR,         _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_TOGGLE_LIGHT_TYPE_5,                        I_MODIFIER_SHIFT,   KEY_FIVE,         _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_MOVE_LIGHT_1,                               I_MODIFIER_CTRL,    KEY_ONE,          _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_MOVE_LIGHT_2,                               I_MODIFIER_CTRL,    KEY_TWO,          _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_MOVE_LIGHT_3,                               I_MODIFIER_CTRL,    KEY_THREE,        _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_MOVE_LIGHT_4,                               I_MODIFIER_CTRL,    KEY_FOUR,         _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_MOVE_LIGHT_5,                               I_MODIFIER_CTRL,    KEY_FIVE,         _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_TOGGLE_DBG,                                 I_MODIFIER_NONE,    KEY_F4,           _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_TOGGLE_NOCLIP,                              _mn_,               KEY_N,            _kn_,       _mon_,          GAMEPAD_BUTTON_RIGHT_FACE_LEFT  );
-set( IA_DBG_DELETE_ENTITY,                              I_MODIFIER_NONE,    KEY_DELETE,       _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_ADD_PHYSICS_ENTITY,                         I_MODIFIER_CTRL,    KEY_DELETE,       _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_SELECT_ENTITY,                              I_MODIFIER_NONE,    KEY_ENTER,        _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_TURN_ENTITY_LEFT,                           I_MODIFIER_SHIFT,   KEY_M,            _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_TURN_ENTITY_RIGHT,                          I_MODIFIER_SHIFT,   KEY_COMMA,        _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_MOVE_ENTITY_UP,                             _mn_,               KEY_PAGE_UP,      _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_MOVE_ENTITY_DOWN,                           _mn_,               KEY_PAGE_DOWN,    _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_MOVE_ENTITY_LEFT,                           _mn_,               KEY_LEFT,         _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_MOVE_ENTITY_RIGHT,                          _mn_,               KEY_RIGHT,        _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_MOVE_ENTITY_FORWARD,                        _mn_,               KEY_UP,           _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_MOVE_ENTITY_BACKWARD,                       _mn_,               KEY_DOWN,         _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_ROTATE_ENTITY_POS,                          _mn_,               KEY_M,            _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_ROTATE_ENTITY_NEG,                          _mn_,               KEY_COMMA,        _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_MOVE_ENTITY_TO_GROUND,                      I_MODIFIER_ALT,     KEY_ENTER,        _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_TOGGLE_CAMERA,                              I_MODIFIER_NONE,    KEY_F6,           _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_PULL_DEFAULT_CAM_TO_PLAYER_CAM,             I_MODIFIER_SHIFT,   KEY_F6,           _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_WORLD_STATE_RECORD,                         I_MODIFIER_NONE,    KEY_F8,           _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_WORLD_STATE_PLAY,                           I_MODIFIER_SHIFT,   KEY_F8,           _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_WORLD_STATE_BACKWARD,                       I_MODIFIER_NONE,    KEY_F9,           _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_WORLD_STATE_FORWARD,                        I_MODIFIER_NONE,    KEY_F10,          _kn_,       _mon_,          _gn_                            );
-set( IA_DBG_OPEN_TEST_MENU,                             _mn_,               KEY_SEMICOLON,    _kn_,       _mon_,          GAMEPAD_BUTTON_RIGHT_FACE_UP    );
-set( IA_DBG_CYCLE_VIDEO_RESOLUTION,                     I_MODIFIER_SHIFT,   KEY_F1,           _kn_,       _mon_,          _gn_                            );
-set( IA_PROFILER_FLAME_GRAPH_SHOW_TOGGLE,               I_MODIFIER_NONE,    KEY_F5,           _kn_,       _mon_,          _gn_                            );
-set( IA_PROFILER_FLAME_GRAPH_PAUSE_TOGGLE,              I_MODIFIER_SHIFT,   KEY_F5,           _kn_,       _mon_,          _gn_                            );
+//   ACTION                                             MODIFIER,           PRIMARY           SECONDARY   MOUSE,          GAMEPAD                         WHEEL
+set( IA_YES,                                            _mn_,               KEY_ENTER,        _kn_,       _mon_,          GAMEPAD_BUTTON_RIGHT_FACE_DOWN,  _wn_         );
+set( IA_NO,                                             _mn_,               KEY_BACKSPACE,    _kn_,       _mon_,          GAMEPAD_BUTTON_RIGHT_FACE_RIGHT, _wn_         );
+set( IA_OPEN_OVERLAY_MENU,                              _mn_,               KEY_ESCAPE,       _kn_,       _mon_,          GAMEPAD_BUTTON_MIDDLE_RIGHT,     _wn_         );
+set( IA_DECREASE,                                       _mn_,               KEY_LEFT,         _kn_,       _mon_,          GAMEPAD_BUTTON_LEFT_FACE_LEFT,   _wn_         );
+set( IA_INCREASE,                                       _mn_,               KEY_RIGHT,        _kn_,       _mon_,          GAMEPAD_BUTTON_LEFT_FACE_RIGHT,  _wn_         );
+set( IA_TOGGLE_OVERWORLD_AND_DUNGEON_SCENE,             _mn_,               KEY_TAB,          _kn_,       _mon_,          GAMEPAD_BUTTON_MIDDLE_LEFT,      _wn_         );
+set( IA_NEXT,                                           _mn_,               KEY_DOWN,         _kn_,       _mon_,          GAMEPAD_BUTTON_LEFT_FACE_DOWN,   _wn_         );
+set( IA_PREVIOUS,                                       _mn_,               KEY_UP,           _kn_,       _mon_,          GAMEPAD_BUTTON_LEFT_FACE_UP,     _wn_         );
+set( IA_TURN_3D_LEFT,                                   _mn_,               KEY_W,            _kn_,       _mon_,          GAMEPAD_BUTTON_LEFT_TRIGGER_1,   _wn_         );
+set( IA_TURN_3D_RIGHT,                                  _mn_,               KEY_R,            _kn_,       _mon_,          GAMEPAD_BUTTON_RIGHT_TRIGGER_1,  _wn_         );
+set( IA_MOVE_3D_FORWARD,                                _mn_,               KEY_E,            _kn_,       _mon_,          GAMEPAD_BUTTON_LEFT_FACE_UP,     _wn_         );
+set( IA_MOVE_3D_BACKWARD,                               _mn_,               KEY_D,            _kn_,       _mon_,          GAMEPAD_BUTTON_LEFT_FACE_DOWN,   _wn_         );
+set( IA_MOVE_3D_LEFT,                                   _mn_,               KEY_S,            _kn_,       _mon_,          GAMEPAD_BUTTON_LEFT_FACE_LEFT,   _wn_         );
+set( IA_MOVE_3D_RIGHT,                                  _mn_,               KEY_F,            _kn_,       _mon_,          GAMEPAD_BUTTON_LEFT_FACE_RIGHT,  _wn_         );
+set( IA_MOVE_3D_UP,                                     _mn_,               KEY_T,            _kn_,       _mon_,          GAMEPAD_BUTTON_LEFT_TRIGGER_2,   _wn_         );
+set( IA_MOVE_3D_DOWN,                                   _mn_,               KEY_G,            _kn_,       _mon_,          GAMEPAD_BUTTON_LEFT_TRIGGER_1,   _wn_         );
+set( IA_MOVE_3D_JUMP,                                   _mn_,               KEY_SPACE,        _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_MOVE_2D_LEFT,                                   _mn_,               KEY_S,            _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_MOVE_2D_RIGHT,                                  _mn_,               KEY_F,            _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_MOVE_2D_UP,                                     _mn_,               KEY_E,            _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_MOVE_2D_DOWN,                                   _mn_,               KEY_D,            _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_SCROLL_UP,                                      _mn_,               KEY_PAGE_UP,      _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_SCROLL_DOWN,                                    _mn_,               KEY_PAGE_DOWN,    _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_ZOOM_IN,                                        _mn_,               KEY_Y,            _kn_,       _mon_,          _gn_,                            I_WHEEL_UP   );
+set( IA_ZOOM_OUT,                                       _mn_,               KEY_H,            _kn_,       _mon_,          _gn_,                            I_WHEEL_DOWN );
+set( IA_EDITOR_MOVE_UP,                                 _mn_,               KEY_E,            _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_EDITOR_MOVE_DOWN,                               _mn_,               KEY_D,            _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_EDITOR_MOVE_LEFT,                               _mn_,               KEY_S,            _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_EDITOR_MOVE_RIGHT,                              _mn_,               KEY_F,            _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_EDITOR_BIG_PREVIEW_TOGGLE,                      _mn_,               KEY_V,            _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_EDITOR_SKYBOX_TOGGLE,                           _mn_,               KEY_P,            _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_EDITOR_DELETE,                                  _mn_,               KEY_BACKSPACE,    _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_CONSOLE_TOGGLE,                                 I_MODIFIER_NONE,    KEY_F3,           _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_CONSOLE_SCROLL_UP,                              _mn_,               KEY_PAGE_UP,      _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_CONSOLE_SCROLL_DOWN,                            _mn_,               KEY_PAGE_DOWN,    _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_CONSOLE_BACKSPACE,                              _mn_,               KEY_BACKSPACE,    _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_CONSOLE_DELETE,                                 _mn_,               KEY_DELETE,       _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_CONSOLE_HISTORY_PREVIOUS,                       _mn_,               KEY_UP,           _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_CONSOLE_HISTORY_NEXT,                           _mn_,               KEY_DOWN,         _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_CONSOLE_CURSOR_LEFT,                            _mn_,               KEY_LEFT,         _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_CONSOLE_CURSOR_RIGHT,                           _mn_,               KEY_RIGHT,        _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_CONSOLE_AUTOCOMPLETE,                           _mn_,               KEY_TAB,          _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_CONSOLE_EXECUTE,                                _mn_,               KEY_ENTER,        _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_CONSOLE_INCREASE_FONT_SIZE,                     I_MODIFIER_CTRL,    KEY_EQUAL,        _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_CONSOLE_DECREASE_FONT_SIZE,                     I_MODIFIER_CTRL,    KEY_MINUS,        _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_CONSOLE_BEGIN_LINE,                             I_MODIFIER_CTRL,    KEY_A,            _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_CONSOLE_END_LINE,                               I_MODIFIER_CTRL,    KEY_E,            _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_CONSOLE_KILL_LINE,                              I_MODIFIER_CTRL,    KEY_K,            _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_CONSOLE_COPY,                                   I_MODIFIER_CTRL,    KEY_C,            _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_CONSOLE_PASTE,                                  I_MODIFIER_CTRL,    KEY_V,            _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_RESET_WINDOWS,                              I_MODIFIER_SHIFT,   KEY_F4,           _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_TOGGLE_PAUSE_TIME,                          I_MODIFIER_NONE,    KEY_F1,           _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_TOGGLE_CONSOLE_FULLSCREEN,                  I_MODIFIER_SHIFT,   KEY_END,          _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_LOOK_CAMERA_UP,                             _mn_,               KEY_I,            _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_LOOK_CAMERA_DOWN,                           _mn_,               KEY_K,            _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_LOOK_CAMERA_LEFT,                           _mn_,               KEY_J,            _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_LOOK_CAMERA_RIGHT,                          _mn_,               KEY_L,            _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_ROLL_CAMERA_LEFT,                           I_MODIFIER_SHIFT,   KEY_U,            _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_ROLL_CAMERA_RIGHT,                          I_MODIFIER_SHIFT,   KEY_O,            _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_RESET_CAMERA,                               _mn_,               KEY_C,            _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_LIGHT_1,                                    I_MODIFIER_NONE,    KEY_ONE,          _kn_,       _mon_,          GAMEPAD_BUTTON_RIGHT_THUMB,      _wn_         );
+set( IA_DBG_LIGHT_2,                                    I_MODIFIER_NONE,    KEY_TWO,          _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_LIGHT_3,                                    I_MODIFIER_NONE,    KEY_THREE,        _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_LIGHT_4,                                    I_MODIFIER_NONE,    KEY_FOUR,         _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_LIGHT_5,                                    I_MODIFIER_NONE,    KEY_FIVE,         _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_TOGGLE_LIGHT_TYPE_1,                        I_MODIFIER_SHIFT,   KEY_ONE,          _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_TOGGLE_LIGHT_TYPE_2,                        I_MODIFIER_SHIFT,   KEY_TWO,          _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_TOGGLE_LIGHT_TYPE_3,                        I_MODIFIER_SHIFT,   KEY_THREE,        _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_TOGGLE_LIGHT_TYPE_4,                        I_MODIFIER_SHIFT,   KEY_FOUR,         _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_TOGGLE_LIGHT_TYPE_5,                        I_MODIFIER_SHIFT,   KEY_FIVE,         _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_MOVE_LIGHT_1,                               I_MODIFIER_CTRL,    KEY_ONE,          _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_MOVE_LIGHT_2,                               I_MODIFIER_CTRL,    KEY_TWO,          _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_MOVE_LIGHT_3,                               I_MODIFIER_CTRL,    KEY_THREE,        _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_MOVE_LIGHT_4,                               I_MODIFIER_CTRL,    KEY_FOUR,         _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_MOVE_LIGHT_5,                               I_MODIFIER_CTRL,    KEY_FIVE,         _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_TOGGLE_DBG,                                 I_MODIFIER_NONE,    KEY_F4,           _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_TOGGLE_NOCLIP,                              _mn_,               KEY_N,            _kn_,       _mon_,          GAMEPAD_BUTTON_RIGHT_FACE_LEFT,  _wn_         );
+set( IA_DBG_DELETE_ENTITY,                              I_MODIFIER_NONE,    KEY_DELETE,       _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_ADD_PHYSICS_ENTITY,                         I_MODIFIER_CTRL,    KEY_DELETE,       _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_SELECT_ENTITY,                              I_MODIFIER_NONE,    KEY_ENTER,        _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_TURN_ENTITY_LEFT,                           I_MODIFIER_SHIFT,   KEY_M,            _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_TURN_ENTITY_RIGHT,                          I_MODIFIER_SHIFT,   KEY_COMMA,        _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_MOVE_ENTITY_UP,                             _mn_,               KEY_PAGE_UP,      _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_MOVE_ENTITY_DOWN,                           _mn_,               KEY_PAGE_DOWN,    _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_MOVE_ENTITY_LEFT,                           _mn_,               KEY_LEFT,         _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_MOVE_ENTITY_RIGHT,                          _mn_,               KEY_RIGHT,        _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_MOVE_ENTITY_FORWARD,                        _mn_,               KEY_UP,           _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_MOVE_ENTITY_BACKWARD,                       _mn_,               KEY_DOWN,         _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_ROTATE_ENTITY_POS,                          _mn_,               KEY_M,            _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_ROTATE_ENTITY_NEG,                          _mn_,               KEY_COMMA,        _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_MOVE_ENTITY_TO_GROUND,                      I_MODIFIER_ALT,     KEY_ENTER,        _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_TOGGLE_CAMERA,                              I_MODIFIER_NONE,    KEY_F6,           _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_PULL_DEFAULT_CAM_TO_PLAYER_CAM,             I_MODIFIER_SHIFT,   KEY_F6,           _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_WORLD_STATE_RECORD,                         I_MODIFIER_NONE,    KEY_F8,           _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_WORLD_STATE_PLAY,                           I_MODIFIER_SHIFT,   KEY_F8,           _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_WORLD_STATE_BACKWARD,                       I_MODIFIER_NONE,    KEY_F9,           _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_WORLD_STATE_FORWARD,                        I_MODIFIER_NONE,    KEY_F10,          _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_DBG_OPEN_TEST_MENU,                             _mn_,               KEY_SEMICOLON,    _kn_,       _mon_,          GAMEPAD_BUTTON_RIGHT_FACE_UP,    _wn_         );
+set( IA_DBG_CYCLE_VIDEO_RESOLUTION,                     I_MODIFIER_SHIFT,   KEY_F1,           _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_PROFILER_FLAME_GRAPH_SHOW_TOGGLE,               I_MODIFIER_NONE,    KEY_F5,           _kn_,       _mon_,          _gn_,                            _wn_         );
+set( IA_PROFILER_FLAME_GRAPH_PAUSE_TOGGLE,              I_MODIFIER_SHIFT,   KEY_F5,           _kn_,       _mon_,          _gn_,                            _wn_         );
 }
 #undef _kn_
 #undef _mn_
+#undef _mon_
 #undef _gn_
+#undef _wn_
 
 void input_update() {
     BOOL static first_time          = true;
@@ -468,12 +478,14 @@ void input_draw() {
     auto **keybind_strings = mmta(String **, sizeof(String *) * IA_COUNT);
     auto **gamepad_strings = mmta(String **, sizeof(String *) * IA_COUNT);
     auto **mouse_strings   = mmta(String **, sizeof(String *) * IA_COUNT);
+    auto **wheel_strings   = mmta(String **, sizeof(String *) * IA_COUNT);
 
     for (SZ i = 0; i < IA_COUNT; ++i) {
         action_strings[i]  = string_create_empty(MEMORY_TYPE_ARENA_TRANSIENT);
         keybind_strings[i] = string_create_empty(MEMORY_TYPE_ARENA_TRANSIENT);
         gamepad_strings[i] = string_create_empty(MEMORY_TYPE_ARENA_TRANSIENT);
         mouse_strings[i]   = string_create_empty(MEMORY_TYPE_ARENA_TRANSIENT);
+        wheel_strings[i]   = string_create_empty(MEMORY_TYPE_ARENA_TRANSIENT);
     }
 
     // First pass: create strings and calculate maximum widths
@@ -481,6 +493,7 @@ void input_draw() {
     F32 max_keybind_width = 0;
     F32 max_gamepad_width = 0;
     F32 max_mouse_width   = 0;
+    F32 max_wheel_width   = 0;
 
     // Color for when actions are actually active in some way.
     C8 const *down_color     = "\\ouc{#00ff00ff}";
@@ -491,6 +504,7 @@ void input_draw() {
     C8 const *or_color       = "\\ouc{#aaaaffff}";
     C8 const *gamepad_color  = "\\ouc{#ffccddff}";
     C8 const *mouse_color    = "\\ouc{#ff22ddff}";
+    C8 const *wheel_color    = "\\ouc{#ffaa22ff}";
 
     for (SZ i = 0; i < IA_COUNT; ++i) {
         Keybinding const *kb = &i_input.keybindings[i];
@@ -530,21 +544,29 @@ void input_draw() {
             F32 const mouse_width = measure_text_ouc(font, mouse_strings[i]->c).x;
             max_mouse_width       = glm::max(max_mouse_width, mouse_width);
         }
+
+        // Create and measure wheel string if present
+        if (kb->wheel != I_WHEEL_NULL) {
+            string_appendf(wheel_strings[i], "%s%s", wheel_color, i_wheel_to_cstr(kb->wheel));
+            F32 const wheel_width = measure_text_ouc(font, wheel_strings[i]->c).x;
+            max_wheel_width       = glm::max(max_wheel_width, wheel_width);
+        }
     }
 
     // Use initial position as padding reference
     F32 const edge_padding = text_pos.x;  // Use the initial x position as the standard padding
     F32 const col_padding  = 20.0F;        // Padding between columns
 
-    // Define column positions with mouse column
+    // Define column positions with mouse and wheel columns
     F32 const col1_x     = text_pos.x;
     F32 const col2_x     = col1_x + max_action_width + col_padding;
     F32 const col3_x     = col2_x + max_keybind_width + col_padding;
     F32 const col4_x     = col3_x + max_gamepad_width + col_padding;
+    F32 const col5_x     = col4_x + max_mouse_width + col_padding;
     F32 const row_height = (F32)font->font_size;
 
     // Calculate total dimensions based on content and edge padding
-    F32 const total_width  = col4_x + max_mouse_width - text_pos.x + edge_padding;
+    F32 const total_width  = col5_x + max_wheel_width - text_pos.x + edge_padding;
     F32 const total_height = row_height * (F32)IA_COUNT;
 
     // Draw background with consistent padding on all sides
@@ -556,6 +578,7 @@ void input_draw() {
         Vector2 const key_pos     = {col2_x + offset.x, text_pos.y + offset.y};
         Vector2 const gamepad_pos = {col3_x + offset.x, text_pos.y + offset.y};
         Vector2 const mouse_pos   = {col4_x + offset.x, text_pos.y + offset.y};
+        Vector2 const wheel_pos   = {col5_x + offset.x, text_pos.y + offset.y};
 
         // Draw stored strings
         d2d_text_ouc_shadow(font, action_strings[i]->c, action_pos, base_color, shadow_color, shadow_offset);
@@ -567,6 +590,10 @@ void input_draw() {
 
         if (i_input.keybindings[i].mouse != I_MOUSE_NULL) {
             d2d_text_ouc_shadow(font, mouse_strings[i]->c, mouse_pos, base_color, shadow_color, shadow_offset);
+        }
+
+        if (i_input.keybindings[i].wheel != I_WHEEL_NULL) {
+            d2d_text_ouc_shadow(font, wheel_strings[i]->c, wheel_pos, base_color, shadow_color, shadow_offset);
         }
 
         text_pos.y += row_height;
@@ -627,12 +654,24 @@ BOOL static i_mod_check(IModifier modifier) {
 #define MOUSE_CHECK(state, action) \
 (i_input.keybindings[action].mouse != I_MOUSE_NULL && IsMouseButton##state(i_input.keybindings[action].mouse - 1))
 
+BOOL static i_wheel_check(IAction action) {
+    IWheel const wheel = i_input.keybindings[action].wheel;
+    if (wheel == I_WHEEL_NULL) { return false; }
+    F32 const wheel_move = input_get_mouse_wheel();
+    if (wheel == I_WHEEL_UP && wheel_move > 0.0F) { return true; }
+    if (wheel == I_WHEEL_DOWN && wheel_move < 0.0F) { return true; }
+    return false;
+}
+
+#define WHEEL_CHECK(action) i_wheel_check(action)
+
 #define KEY_CHECK(state, action) \
 ( \
 IsKey##state(i_input.keybindings[action].primary) || \
 IsKey##state(i_input.keybindings[action].secondary) || \
 MOUSE_CHECK(state, action) || \
-IsGamepadButton##state(i_input.main_gamepad_idx, i_input.keybindings[action].gamepad) \
+IsGamepadButton##state(i_input.main_gamepad_idx, i_input.keybindings[action].gamepad) || \
+WHEEL_CHECK(action) \
 )
 
 #define KEY_CHECK_SLIM(state, action) \
@@ -908,12 +947,46 @@ void input_camera_input_update(F32 dtu, Camera *camera, F32 move_speed) {
         if (math_abs_f32(y) > GAMEPAD_AXIS_DEADZONE) { rotation.y = y * gamepad_rotation_speed; }
     }
 
-    // Change camera fovy/zoom
-    if (is_down(IA_ZOOM_OUT)) {
-        camera->fovy += 1.0F * fovy_speed;
-    } else if (is_down(IA_ZOOM_IN)) {
-        camera->fovy -= 1.0F * fovy_speed;
+    // Change camera fovy/zoom with smooth easing
+    // Configurable zoom parameters (adjust these to tune the feel)
+    F32 static const zoom_per_tick    = 5.0F;     // How much to zoom per mouse wheel tick
+    F32 static const zoom_ease_speed  = 8.0F;     // Higher = faster easing (recommended: 5-15)
+
+    // State tracking
+    F32 static target_fovy = 45.0F;  // Target fovy we're easing towards
+    BOOL static first_zoom_init = true;
+
+    // Initialize target to current camera fovy on first call
+    if (first_zoom_init) {
+        target_fovy = c3d_get_fov();
+        first_zoom_init = false;
     }
+
+    // Handle zoom input - adjust target fovy
+    // Mouse wheel: discrete ticks (use is_pressed for single frame detection)
+    if (is_pressed(IA_ZOOM_OUT)) {
+        target_fovy += zoom_per_tick;
+    }
+    if (is_pressed(IA_ZOOM_IN)) {
+        target_fovy -= zoom_per_tick;
+    }
+
+    // Keyboard: continuous zoom (use is_down for held keys)
+    if (is_down(IA_ZOOM_OUT)) {
+        target_fovy += 1.0F * fovy_speed;
+    }
+    if (is_down(IA_ZOOM_IN)) {
+        target_fovy -= 1.0F * fovy_speed;
+    }
+
+    // Clamp target to prevent extreme values
+    target_fovy = glm::clamp(target_fovy, CAMERA3D_MIN_FOV, CAMERA3D_MAX_FOV);
+
+    // Ease current fovy towards target fovy using exponential smoothing
+    // This provides smooth, natural-feeling easing that handles continuous input well
+    F32 const ease_factor = 1.0F - glm::exp(-zoom_ease_speed * dtu);
+    F32 const new_fovy = glm::mix(c3d_get_fov(), target_fovy, ease_factor);
+    c3d_set_fov(new_fovy);
 
     UpdateCameraPro(camera, movement, rotation, 0.0F);
 }

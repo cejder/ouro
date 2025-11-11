@@ -10,7 +10,7 @@ pan_voice                    : 0.00000000
 pitch_ambience               : 1.00000000
 pitch_music                  : 1.00000000
 pitch_sfx                    : 1.00000000
-pitch_voice                  : 1.00000000
+pitch_voice                  : 1.50000000
 rolloff_scale                : 1.00000000
 volume_ambience              : 0.00000000
 volume_music                 : 0.00000000
@@ -26,15 +26,15 @@ fullscreen                   : false
 [debug]
 audio_info                   : false
 bbox_info                    : false
-bone_info                    : true
+bone_info                    : false
 bone_label_font_size         : 24
 camera_info                  : false
 cursor_info                  : false
 dungeon_info                 : true
-enabled                      : true
+enabled                      : false
 gizmo_info                   : false
 grid_info                    : false
-keybindings_info             : true
+keybindings_info             : false
 large_font                   : GoMono
 large_font_size              : 20
 light_info                   : true
@@ -77,11 +77,11 @@ tboy                         : true
 [video]
 fps_info                     : false
 fps_max                      : 60
-render_resolution_height     : 2160
-render_resolution_width      : 3840
+render_resolution_height     : 1080
+render_resolution_width      : 1920
 vsync                        : true
-window_resolution_height     : 2160
-window_resolution_width      : 3840
+window_resolution_height     : 1080
+window_resolution_width      : 1920
 
 [world]
 actor_healthbar              : true

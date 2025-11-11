@@ -18,6 +18,13 @@ enum IMouse : U8 {
     I_MOUSE_COUNT,
 };
 
+enum IWheel : U8 {
+    I_WHEEL_NULL,
+    I_WHEEL_UP,
+    I_WHEEL_DOWN,
+    I_WHEEL_COUNT,
+};
+
 fwd_decl(MouseTape);
 
 #define GAMEPAD_AXIS_DEADZONE 0.1F
@@ -145,6 +152,7 @@ struct Keybinding {
     KeyboardKey secondary;
     IMouse mouse;
     GamepadButton gamepad;
+    IWheel wheel;
 };
 
 struct Input {

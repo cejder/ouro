@@ -466,7 +466,7 @@ void d2d_healthbar(EID id) {
     Vector3 const position        = g_world->position[id];
     OrientedBoundingBox const obb = g_world->obb[id];
 
-    Vector3 const world_pos  = {position.x, position.y + (obb.extents.y * 2.8F), position.z};
+    Vector3 const world_pos  = {position.x, position.y + (obb.extents.y * 3.5F), position.z};
     Vector2 const screen_pos = GetWorldToScreenEx(world_pos, *cam, (S32)render_res.x, (S32)render_res.y);
 
     if (screen_pos.x < -150 || screen_pos.x > render_res.x + 150 || screen_pos.y < -150 || screen_pos.y > render_res.y + 150) { return; }
@@ -481,11 +481,14 @@ void d2d_healthbar(EID id) {
     F32 const distance_t = glm::clamp((distance - fade_start) / (max_distance - fade_start), 0.0F, 1.0F);
     F32 const alpha      = ease_out_quart(1.0F - distance_t, 0.0F, 1.0F, 1.0F);
 
+    // World-scale zoom handling: scale UI elements based on camera FOV
+    F32 const zoom_scale = CAMERA3D_DEFAULT_FOV / c3d_get_fov();
+
     F32 const health_perc  = glm::clamp((F32)g_world->health[id].current / (F32)g_world->health[id].max, 0.0F, 1.0F);
 
-    F32 const bar_width    = ui_scale_x(8.0F);
-    F32 const bar_height   = ui_scale_y(2.30F);
-    F32 const border_thick = ui_scale_x(0.20F);
+    F32 const bar_width    = ui_scale_x(8.0F) * zoom_scale;
+    F32 const bar_height   = ui_scale_y(2.30F) * zoom_scale;
+    F32 const border_thick = ui_scale_x(0.20F) * zoom_scale;
     F32 const roundness    = 0.5F;
     S32 const segments     = 10;
 
@@ -521,33 +524,61 @@ void d2d_healthbar(EID id) {
 
     d2d_rectangle_rounded_lines_ex(bg_rect, roundness, segments, border_thick, border_color);
 
-    AFont *name_font        = asset_get_font("GoMono", ui_font_size(2.0F));
-    Vector2 const name_size = measure_text(name_font, g_world->name[id]);
-    Vector2 const name_pos  = {screen_pos.x - (name_size.x * 0.5F), bar_pos.y + (bar_height * 0.5F) - (name_size.y * 0.5F)};
+    // Font size threshold with smooth fade transition
+    F32 const font_size_threshold = 16.0F;  // Below this pixel size, text becomes unreadable
+    F32 const fade_range          = 12.0F;  // Smooth transition range (16-28 pixels)
 
-    Color const text_color      = RAYWHITE;
-    Color const shadow_color    = DARKBROWN;
-    Vector2 const shadow_offset = ui_shadow_offset(0.05F, 0.075F);
+    // Use fixed font object, but scale the fontSize when rendering for smooth scaling
+    S32 const base_font_size   = ui_font_size(2.0F);
+    F32 const scaled_font_size = (F32)base_font_size * zoom_scale;
 
-    d2d_text_shadow(name_font, g_world->name[id], name_pos, Fade(text_color, alpha), Fade(shadow_color, 0.8F * alpha), shadow_offset);
+    // Calculate font fade alpha (1.0 when readable, 0.0 when too small)
+    F32 const font_fade_t = glm::clamp((scaled_font_size - font_size_threshold) / fade_range, 0.0F, 1.0F);
+    F32 const font_alpha  = ease_out_quad(font_fade_t, 0.0F, 1.0F, 1.0F);  // Smooth easing
+
+    // Only draw text if it's visible enough
+    if (font_alpha > 0.01F && scaled_font_size > 1.0F) {
+        // Use fixed font but render at scaled size for smooth scaling (no jitter from integer font sizes)
+        AFont *name_font = asset_get_font("GoMono", base_font_size);
+
+        // Measure at the scaled size
+        Vector2 const name_size = Vector2Scale(measure_text(name_font, g_world->name[id]), zoom_scale);
+        Vector2 const name_pos  = {screen_pos.x - (name_size.x * 0.5F), bar_pos.y + (bar_height * 0.5F) - (name_size.y * 0.5F)};
+
+        Color const text_color      = RAYWHITE;
+        Color const shadow_color    = DARKBROWN;
+        Vector2 const shadow_offset = Vector2Scale(ui_shadow_offset(0.05F, 0.075F), zoom_scale);
+
+        // Draw text with smooth scaled fontSize (avoids jitter from integer rounding)
+        INCREMENT_DRAW_CALL;
+        Vector2 const shadow_pos = Vector2Add(name_pos, shadow_offset);
+        DrawTextEx(name_font->base, g_world->name[id], shadow_pos, scaled_font_size, 0.0F, Fade(shadow_color, 0.8F * alpha * font_alpha));
+        DrawTextEx(name_font->base, g_world->name[id], name_pos, scaled_font_size, 0.0F, Fade(text_color, alpha * font_alpha));
+    }
 
     SZ const wood_count = g_world->actor[id].behavior.wood_count;
-    if (wood_count > 0) {
+    if (wood_count > 0 && scaled_font_size > 1.0F) {
         Texture2D icon         = asset_get_model("wood.glb")->icon;
-        F32 const icon_size    = ui_scale_x(2.0F);
+        F32 const icon_size    = ui_scale_x(2.0F) * zoom_scale;
         F32 const tilt_angle   = 0.0F;
-        Vector2 const icon_pos = {bar_pos.x + bar_width + ui_scale_x(0.75F), bar_pos.y - (icon_size/2)};
+        Vector2 const icon_pos = {bar_pos.x + bar_width + ui_scale_x(0.75F) * zoom_scale, bar_pos.y - (icon_size/2)};
 
         d2d_texture_ex_raylib(icon, icon_pos, tilt_angle, icon_size / (F32)icon.width, Fade(SUNSETAMBER, alpha));
 
-        AFont *count_font            = asset_get_font("GoMono", ui_font_size(2.5F));
-        String const *count_text     = TS("%zu", wood_count);
-        Vector2 const count_pos      = {icon_pos.x + (icon_size/3), icon_pos.y + (icon_size/2)};
-        Color const big_text_color   = WHITE;
-        Color const big_shadow_color = NEARBLACK;
-        Vector2 const big_shadow     = ui_shadow_offset(0.05F, 0.075F);
+        // Use smooth scaled fontSize for wood count too
+        S32 const count_base_size       = ui_font_size(2.5F);
+        F32 const count_scaled_size     = (F32)count_base_size * zoom_scale;
+        AFont *count_font               = asset_get_font("GoMono", count_base_size);
+        String const *count_text        = TS("%zu", wood_count);
+        Vector2 const count_pos         = {icon_pos.x + (icon_size/3), icon_pos.y + (icon_size/2)};
+        Color const big_text_color      = WHITE;
+        Color const big_shadow_color    = NEARBLACK;
+        Vector2 const big_shadow        = Vector2Scale(ui_shadow_offset(0.05F, 0.075F), zoom_scale);
 
-        d2d_text_shadow(count_font, count_text->c, count_pos, Fade(big_text_color, alpha), Fade(big_shadow_color, 0.9F * alpha), big_shadow);
+        INCREMENT_DRAW_CALL;
+        Vector2 const count_shadow_pos = Vector2Add(count_pos, big_shadow);
+        DrawTextEx(count_font->base, count_text->c, count_shadow_pos, count_scaled_size, 0.0F, Fade(big_shadow_color, 0.9F * alpha));
+        DrawTextEx(count_font->base, count_text->c, count_pos, count_scaled_size, 0.0F, Fade(big_text_color, alpha));
     }
 }
 

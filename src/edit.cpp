@@ -18,40 +18,40 @@ EditState static i_state = {};
 
 // Helper function to print entity command messages with entity name
 void static i_print_entity_command_message(EID id, C8 const *command_text, C8 const *command_color, MessageType type) {
-    C8 const *entity_name = g_world->name[id];
+    // C8 const *entity_name = g_world->name[id];
 
-    // If entity has a name, use it; otherwise use a generic description
-    if (entity_name[0] != '\0') {
-        messages_ouc_printf(type, WHITE, MESSAGE_DEFAULT_DURATION,
-            "\\ouc{#ffffffff}%s: \\ouc{%s}%s", entity_name, command_color, command_text);
-    } else {
-        messages_ouc_printf(type, WHITE, MESSAGE_DEFAULT_DURATION,
-            "\\ouc{#ffffffff}Entity: \\ouc{%s}%s", command_color, command_text);
-    }
+    // // If entity has a name, use it; otherwise use a generic description
+    // if (entity_name[0] != '\0') {
+    //     messages_ouc_printf(type, WHITE, MESSAGE_DEFAULT_DURATION,
+    //         "\\ouc{#ffffffff}%s: \\ouc{%s}%s", entity_name, command_color, command_text);
+    // } else {
+    //     messages_ouc_printf(type, WHITE, MESSAGE_DEFAULT_DURATION,
+    //         "\\ouc{#ffffffff}Entity: \\ouc{%s}%s", command_color, command_text);
+    // }
 }
 
 // Helper function to print entity command messages with target entity name
 void static i_print_entity_command_message_with_target(EID id, C8 const *command_text, C8 const *command_color, EID target_id, MessageType type) {
-    C8 const *entity_name = g_world->name[id];
-    C8 const *target_name = g_world->name[target_id];
+    // C8 const *entity_name = g_world->name[id];
+    // C8 const *target_name = g_world->name[target_id];
 
-    if (entity_name[0] != '\0' && target_name[0] != '\0') {
-        messages_ouc_printf(type, WHITE, MESSAGE_DEFAULT_DURATION,
-            "\\ouc{#ffffffff}%s: \\ouc{%s}%s \\ouc{#888888ff}> \\ouc{#ffdd00ff}%s",
-            entity_name, command_color, command_text, target_name);
-    } else if (entity_name[0] != '\0') {
-        messages_ouc_printf(type, WHITE, MESSAGE_DEFAULT_DURATION,
-            "\\ouc{#ffffffff}%s: \\ouc{%s}%s \\ouc{#888888ff}> \\ouc{#aaaaaa88}Entity #%d",
-            entity_name, command_color, command_text, target_id);
-    } else if (target_name[0] != '\0') {
-        messages_ouc_printf(type, WHITE, MESSAGE_DEFAULT_DURATION,
-            "\\ouc{#ffffffff}Entity: \\ouc{%s}%s \\ouc{#888888ff}> \\ouc{#ffdd00ff}%s",
-            command_color, command_text, target_name);
-    } else {
-        messages_ouc_printf(type, WHITE, MESSAGE_DEFAULT_DURATION,
-            "\\ouc{#ffffffff}Entity: \\ouc{%s}%s \\ouc{#888888ff}> \\ouc{#aaaaaa88}Entity #%d",
-            command_color, command_text, target_id);
-    }
+    // if (entity_name[0] != '\0' && target_name[0] != '\0') {
+    //     messages_ouc_printf(type, WHITE, MESSAGE_DEFAULT_DURATION,
+    //         "\\ouc{#ffffffff}%s: \\ouc{%s}%s \\ouc{#888888ff}> \\ouc{#ffdd00ff}%s",
+    //         entity_name, command_color, command_text, target_name);
+    // } else if (entity_name[0] != '\0') {
+    //     messages_ouc_printf(type, WHITE, MESSAGE_DEFAULT_DURATION,
+    //         "\\ouc{#ffffffff}%s: \\ouc{%s}%s \\ouc{#888888ff}> \\ouc{#aaaaaa88}Entity #%d",
+    //         entity_name, command_color, command_text, target_id);
+    // } else if (target_name[0] != '\0') {
+    //     messages_ouc_printf(type, WHITE, MESSAGE_DEFAULT_DURATION,
+    //         "\\ouc{#ffffffff}Entity: \\ouc{%s}%s \\ouc{#888888ff}> \\ouc{#ffdd00ff}%s",
+    //         command_color, command_text, target_name);
+    // } else {
+    //     messages_ouc_printf(type, WHITE, MESSAGE_DEFAULT_DURATION,
+    //         "\\ouc{#ffffffff}Entity: \\ouc{%s}%s \\ouc{#888888ff}> \\ouc{#aaaaaa88}Entity #%d",
+    //         command_color, command_text, target_id);
+    // }
 }
 
 void static i_handle_selected_entity_input(EID id, F32 dtu, BOOL mouse_left_down, RayCollision collision, BOOL *left_click_consumed) {

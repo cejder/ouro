@@ -22,9 +22,9 @@ void player_init() {
     // g_player.cameras[SCENE_OVERWORLD].up         = {0.0F, 1.0F, 0.0F};
 
     g_player.cameras[SCENE_OVERWORLD].fovy       = 60.0F;
-    g_player.cameras[SCENE_OVERWORLD].position   = {434.4F, 215.0F, 350.0F};
+    g_player.cameras[SCENE_OVERWORLD].position   = {303.4F, 515.0F, -40.0F};
     g_player.cameras[SCENE_OVERWORLD].projection = CAMERA_ORTHOGRAPHIC;
-    g_player.cameras[SCENE_OVERWORLD].target     = {436.0F, 211.8F, 352.7F};
+    g_player.cameras[SCENE_OVERWORLD].target     = {600.0F, 44.8F, 500.7F};
     g_player.cameras[SCENE_OVERWORLD].up         = {0.0F, 1.0F, 0.0F};
 
     g_player.cameras[SCENE_DUNGEON].fovy       = 80.0F;
@@ -34,9 +34,9 @@ void player_init() {
     g_player.cameras[SCENE_DUNGEON].up         = {0.0F, 1.0F, 0.0F};
 
     g_player.cameras[SCENE_COLLISION_TEST].fovy       = 40.0F;
-    g_player.cameras[SCENE_COLLISION_TEST].position   = {434.4F, 215.0F, 350.0F};
+    g_player.cameras[SCENE_OVERWORLD].position        = {303.4F, 515.0F, -40.0F};
     g_player.cameras[SCENE_COLLISION_TEST].projection = CAMERA_ORTHOGRAPHIC;
-    g_player.cameras[SCENE_COLLISION_TEST].target     = {436.0F, 211.8F, 352.7F};
+    g_player.cameras[SCENE_OVERWORLD].target          = {600.0F, 44.8F, 500.7F};
     g_player.cameras[SCENE_COLLISION_TEST].up         = {0.0F, 1.0F, 0.0F};
 
     c3d_copy_from_other(&g_render.cameras.c3d.default_cam, &g_player.cameras[SCENE_OVERWORLD]);
@@ -115,14 +115,23 @@ void player_step() {
 }
 
 void player_dump_cameras() {
+    SZ max_scene_name_len = 0;
     for (SZ i = 0; i < SCENE_COUNT; ++i) {
-        llw("%s: %.0f %.0f %.0f    %.0f",
+        SZ const len = strlen(scenes_to_cstr((SceneType)i));
+        max_scene_name_len = glm::max(len, max_scene_name_len);
+    }
+
+    lli("%-*s  %8s %8s %8s  %8s", (S32)max_scene_name_len, "Scene", "Pos X", "Pos Y", "Pos Z", "FOV");
+    lli("%-*s  %8s %8s %8s  %8s", (S32)max_scene_name_len, "-----", "-----", "-----", "-----", "---");
+
+    for (SZ i = 0; i < SCENE_COUNT; ++i) {
+        lli("%-*s  %8.2f %8.2f %8.2f  %8.2f",
+            (S32)max_scene_name_len,
             scenes_to_cstr((SceneType)i),
             g_player.cameras[i].position.x,
             g_player.cameras[i].position.y,
             g_player.cameras[i].position.z,
             g_player.cameras[i].fovy
-           );
+        );
     }
-    printf("\n");
 }
