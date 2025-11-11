@@ -40,6 +40,14 @@ F32 c3d_get_fov() {
     return g_render.cameras.c3d.active_cam->fovy;
 }
 
+void c3d_set_fov(F32 fov) {
+    g_render.cameras.c3d.active_cam->fovy = glm::clamp(fov, CAMERA3D_MIN_FOV, CAMERA3D_MAX_FOV);
+}
+
+void c3d_adjust_fov(F32 delta) {
+    c3d_set_fov(g_render.cameras.c3d.active_cam->fovy + delta);
+}
+
 void c3d_reset() {
     g_render.cameras.c3d.active_cam             = &g_render.cameras.c3d.default_cam;
     g_render.cameras.c3d.active_cam->position   = {};

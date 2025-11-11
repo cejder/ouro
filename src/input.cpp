@@ -958,7 +958,7 @@ void input_camera_input_update(F32 dtu, Camera *camera, F32 move_speed) {
 
     // Initialize target to current camera fovy on first call
     if (first_zoom_init) {
-        target_fovy = camera->fovy;
+        target_fovy = c3d_get_fov();
         first_zoom_init = false;
     }
 
@@ -979,14 +979,14 @@ void input_camera_input_update(F32 dtu, Camera *camera, F32 move_speed) {
         target_fovy -= 1.0F * fovy_speed;
     }
 
+    // Clamp target to prevent extreme values
+    target_fovy = glm::clamp(target_fovy, CAMERA3D_MIN_FOV, CAMERA3D_MAX_FOV);
+
     // Ease current fovy towards target fovy using exponential smoothing
     // This provides smooth, natural-feeling easing that handles continuous input well
     F32 const ease_factor = 1.0F - glm::exp(-zoom_ease_speed * dtu);
-    camera->fovy = glm::mix(camera->fovy, target_fovy, ease_factor);
-
-    // Clamp to prevent extreme values
-    camera->fovy = glm::clamp(camera->fovy, 1.0F, 120.0F);
-    target_fovy = glm::clamp(target_fovy, 1.0F, 120.0F);
+    F32 const new_fovy = glm::mix(c3d_get_fov(), target_fovy, ease_factor);
+    c3d_set_fov(new_fovy);
 
     UpdateCameraPro(camera, movement, rotation, 0.0F);
 }
