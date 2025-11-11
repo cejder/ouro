@@ -1300,86 +1300,8 @@ void particles3d_add_harvest_active(Vector3 center, Color start_color, Color end
     particles3d_add(positions, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, count);
 }
 
-void particles3d_add_selection_indicator(Vector3 position, F32 radius, Color start_color, Color end_color, SZ count) {
-    // Large spinning magic circles: 2-4 big stationary particles rotating in place beneath the entity
-    C8 const* selection_texture_names[] = {
-        "particle_magic_03.png",
-        "particle_magic_02.png",
-        "particle_magic_04.png"
-    };
-    SZ const texture_count = sizeof(selection_texture_names) / sizeof(selection_texture_names[0]);
-
-    auto *textures = mcta(ATexture**, texture_count, sizeof(ATexture*));
-    for (SZ i = 0; i < texture_count; ++i) {
-        textures[i] = asset_get_texture(selection_texture_names[i]);
-    }
-
-    // Force count to be 2-4 particles max for big spinning circles
-    SZ const actual_count = glm::min(count, (SZ)4);
-
-    auto *positions_arr     = mcta(Vector3*, actual_count, sizeof(Vector3));
-    auto *velocities        = mcta(Vector3*, actual_count, sizeof(Vector3));
-    auto *accelerations     = mcta(Vector3*, actual_count, sizeof(Vector3));
-    auto *start_colors      = mcta(Color*,   actual_count, sizeof(Color));
-    auto *end_colors        = mcta(Color*,   actual_count, sizeof(Color));
-    F32* lives              = mcta(F32*,     actual_count, sizeof(F32));
-    F32* sizes              = mcta(F32*,     actual_count, sizeof(F32));
-    U32* texture_indices    = mcta(U32*,     actual_count, sizeof(U32));
-    F32* gravities          = mcta(F32*,     actual_count, sizeof(F32));
-    F32* rotation_speeds    = mcta(F32*,     actual_count, sizeof(F32));
-    F32* air_resistances    = mcta(F32*,     actual_count, sizeof(F32));
-    U32* billboard_modes    = mcta(U32*,     actual_count, sizeof(U32));
-    F32* stretch_factors    = mcta(F32*,     actual_count, sizeof(F32));
-
-    Vector3 terrain_normal = math_get_terrain_normal(g_world->base_terrain, position.x, position.z);
-    F32 y_offset            = 0.15F * (1.0F - terrain_normal.y);
-
-    for (SZ i = 0; i < actual_count; ++i) {
-        // All particles at the same position - centered beneath the entity
-        positions_arr[i] = {
-            position.x,
-            position.y + y_offset,  // Raised higher to prevent clipping into ground
-            position.z
-        };
-
-        // NO velocity - particles stay stationary, only rotate in place
-        velocities[i]      = {0.0F, 0.0F, 0.0F};
-        accelerations[i]   = {0.0F, 0.0F, 0.0F};
-
-        // Vibrant, mystical colors
-        start_colors[i]    = color_variation(start_color, 15);
-        end_colors[i]      = color_variation(end_color, 15);
-
-        lives[i]           = random_f32(1.2F, 1.8F);
-        sizes[i]           = radius * 2.0F;
-        gravities[i]       = 0.0F;  // No gravity
-
-        // Alternate rotation direction for counter-rotating effect
-        F32 const rotation_direction = (i % 2 == 0) ? 1.0F : -1.0F;
-        rotation_speeds[i] = random_f32(3.0F, 6.0F) * rotation_direction;  // Spin in place (CW/CCW)
-
-        air_resistances[i] = 0.0F;  // No air resistance
-        billboard_modes[i] = PARTICLE3D_BILLBOARD_HORIZONTAL;  // Flat on ground!
-        stretch_factors[i] = 1.0F;
-
-        // Use different textures for each particle
-        ATexture* texture = textures[i % texture_count];
-        texture_indices[i] = particles3d_register_texture(texture);
-    }
-
-    particles3d_add(positions_arr, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, actual_count);
-
-    // Set terrain normal for all particles we just added
-    for (SZ i = 0; i < actual_count; ++i) {
-        SZ const particle_index = (g_particles3d.write_index - actual_count + i + PARTICLES_3D_MAX) % PARTICLES_3D_MAX;
-        g_particles3d.mapped_data[particle_index].extra0 = terrain_normal.x;
-        g_particles3d.mapped_data[particle_index].extra1 = terrain_normal.y;
-        g_particles3d.mapped_data[particle_index].extra2 = terrain_normal.z;
-    }
-}
-
 void particles3d_add_click_indicator(Vector3 position, F32 radius, Color start_color, Color end_color, SZ count) {
-    // Large spinning light circles for ground click indicators
+    // Fountain effect particles shooting upward
     C8 const* click_texture_names[] = {
         "particle_light_03.png",
         "particle_light_02.png",
@@ -1392,8 +1314,8 @@ void particles3d_add_click_indicator(Vector3 position, F32 radius, Color start_c
         textures[i] = asset_get_texture(click_texture_names[i]);
     }
 
-    // Force count to be 2-4 particles max for big spinning circles
-    SZ const actual_count = glm::min(count, (SZ)4);
+    // More particles for fountain effect
+    SZ const actual_count = glm::min(count, (SZ)20);
 
     auto *positions_arr     = mcta(Vector3*, actual_count, sizeof(Vector3));
     auto *velocities        = mcta(Vector3*, actual_count, sizeof(Vector3));
@@ -1413,31 +1335,38 @@ void particles3d_add_click_indicator(Vector3 position, F32 radius, Color start_c
     F32 y_offset           = 0.15F * (1.0F - terrain_normal.y);
 
     for (SZ i = 0; i < actual_count; ++i) {
-        // All particles at the same position - centered at click location
+        // Start at ground level, slightly offset randomly
+        F32 const radial_offset = random_f32(0.0F, radius * 0.5F);
+        F32 const angle = random_f32(0.0F, 2.0F * glm::pi<F32>());
+
         positions_arr[i] = {
-            position.x,
-            position.y + y_offset,  // Raised higher to prevent clipping into ground
-            position.z
+            position.x + radial_offset * math_cos_f32(angle),
+            position.y + y_offset,
+            position.z + radial_offset * math_sin_f32(angle)
         };
 
-        // NO velocity - particles stay stationary, only rotate in place
-        velocities[i]      = {0.0F, 0.0F, 0.0F};
+        // Fountain: shoot upward with slight outward velocity
+        F32 const upward_speed = random_f32(3.0F, 6.0F);
+        F32 const outward_speed = random_f32(0.5F, 1.5F);
+        velocities[i] = {
+            outward_speed * math_cos_f32(angle),
+            upward_speed,
+            outward_speed * math_sin_f32(angle)
+        };
         accelerations[i]   = {0.0F, 0.0F, 0.0F};
 
-        // Vibrant, mystical colors
+        // Vibrant colors
         start_colors[i]    = color_variation(start_color, 15);
         end_colors[i]      = color_variation(end_color, 15);
 
-        lives[i]           = random_f32(0.8F, 1.2F);  // Shorter lived than selection indicator
-        sizes[i]           = radius * random_f32(2.5F, 3.75F);  // BIG particles scaled to radius! (25% wider)
-        gravities[i]       = 0.0F;  // No gravity
+        lives[i]           = random_f32(0.6F, 1.0F);  // Shorter life for fountain
+        sizes[i]           = radius * random_f32(0.8F, 1.5F);  // Smaller particles
+        gravities[i]       = random_f32(8.0F, 12.0F);  // Gravity pulls them down
 
-        // Alternate rotation direction for counter-rotating effect
-        F32 const rotation_direction = (i % 2 == 0) ? 1.0F : -1.0F;
-        rotation_speeds[i] = random_f32(4.0F, 7.0F) * rotation_direction;  // Slightly faster spin for clicks
+        rotation_speeds[i] = random_f32(-10.0F, 10.0F);  // Spin as they fly
 
-        air_resistances[i] = 0.0F;  // No air resistance
-        billboard_modes[i] = PARTICLE3D_BILLBOARD_HORIZONTAL;  // Flat on ground!
+        air_resistances[i] = random_f32(0.01F, 0.03F);  // Some air resistance
+        billboard_modes[i] = PARTICLE3D_BILLBOARD_CAMERA_FACING;  // Face camera (spherical billboard)
         stretch_factors[i] = 1.0F;
 
         // Use different textures for each particle
@@ -1756,7 +1685,6 @@ void particles3d_add_chaos_stress_test   (Vector3 center, F32 radius, SZ count) 
 void particles3d_add_harvest_impact      (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
 void particles3d_add_harvest_active      (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
 void particles3d_add_harvest_complete    (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
-void particles3d_add_selection_indicator (Vector3 position, F32 radius, Color start_color, Color end_color, SZ count) {}
 void particles3d_add_click_indicator     (Vector3 position, F32 radius, Color start_color, Color end_color, SZ count) {}
 void particles3d_add_blood_hit           (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
 void particles3d_add_blood_death         (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}

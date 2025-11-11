@@ -274,6 +274,9 @@ void world_draw_3d_sketch() {
         // Check if entity has active animation
         if (g_world->animation[i].has_animations) {
             // Animated entities: draw immediately (no instancing for now)
+            S32 is_selected = world_is_entity_selected(i) ? 1 : 0;
+            SetShaderValue(g_render.model_shader.shader->base, g_render.model_shader.is_selected_loc, &is_selected, SHADER_UNIFORM_INT);
+
             d3d_model_animated_by_hash(
                 g_world->model_name_hash[i],
                 g_world->position[i],
@@ -366,6 +369,9 @@ void world_draw_3d_sketch() {
             // Not worth instancing for single/few entities - use regular rendering
             for (SZ j = 0; j < group.count; ++j) {
                 EID const i = group.data[j];
+                S32 is_selected = world_is_entity_selected(i) ? 1 : 0;
+                SetShaderValue(g_render.model_shader.shader->base, g_render.model_shader.is_selected_loc, &is_selected, SHADER_UNIFORM_INT);
+
                 d3d_model_by_hash(
                     model_name_hash,
                     g_world->position[i],
@@ -375,11 +381,15 @@ void world_draw_3d_sketch() {
                 );
             }
         } else {
-            // Build transform and color arrays for all instances in this group
-            MatrixArray transforms;
-            ColorArray tints;
-            array_init(MEMORY_TYPE_ARENA_TRANSIENT, &transforms, group.count);
-            array_init(MEMORY_TYPE_ARENA_TRANSIENT, &tints, group.count);
+            // Build transform and color arrays, split by selection state
+            MatrixArray transforms_selected;
+            ColorArray tints_selected;
+            MatrixArray transforms_unselected;
+            ColorArray tints_unselected;
+            array_init(MEMORY_TYPE_ARENA_TRANSIENT, &transforms_selected, group.count);
+            array_init(MEMORY_TYPE_ARENA_TRANSIENT, &tints_selected, group.count);
+            array_init(MEMORY_TYPE_ARENA_TRANSIENT, &transforms_unselected, group.count);
+            array_init(MEMORY_TYPE_ARENA_TRANSIENT, &tints_unselected, group.count);
 
             for (SZ j = 0; j < group.count; ++j) {
                 EID const i = group.data[j];
@@ -387,12 +397,29 @@ void world_draw_3d_sketch() {
                 Matrix mat_rot = MatrixRotate((Vector3){0, 1, 0}, g_world->rotation[i] * DEG2RAD);
                 Matrix mat_trans = MatrixTranslate(g_world->position[i].x, g_world->position[i].y, g_world->position[i].z);
                 Matrix transform = MatrixMultiply(MatrixMultiply(mat_scale, mat_rot), mat_trans);
-                array_push(&transforms, transform);
-                array_push(&tints, g_world->tint[i]);
+
+                if (world_is_entity_selected(i)) {
+                    array_push(&transforms_selected, transform);
+                    array_push(&tints_selected, g_world->tint[i]);
+                } else {
+                    array_push(&transforms_unselected, transform);
+                    array_push(&tints_unselected, g_world->tint[i]);
+                }
             }
 
-            // Draw all instances with a single draw call!
-            d3d_model_instanced_by_hash(model_name_hash, transforms.data, tints.data, transforms.count);
+            // Draw non-selected instances
+            if (transforms_unselected.count > 0) {
+                S32 is_selected = 0;
+                SetShaderValue(g_render.model_instanced_shader.shader->base, g_render.model_instanced_shader.is_selected_loc, &is_selected, SHADER_UNIFORM_INT);
+                d3d_model_instanced_by_hash(model_name_hash, transforms_unselected.data, tints_unselected.data, transforms_unselected.count);
+            }
+
+            // Draw selected instances
+            if (transforms_selected.count > 0) {
+                S32 is_selected = 1;
+                SetShaderValue(g_render.model_instanced_shader.shader->base, g_render.model_instanced_shader.is_selected_loc, &is_selected, SHADER_UNIFORM_INT);
+                d3d_model_instanced_by_hash(model_name_hash, transforms_selected.data, tints_selected.data, transforms_selected.count);
+            }
         }
     }
 
@@ -400,6 +427,11 @@ void world_draw_3d_sketch() {
     if (backpack_transforms.count > 0) {
         d3d_model_instanced("wood.glb", backpack_transforms.data, backpack_tints.data, backpack_transforms.count);
     }
+
+    // Reset isSelected to 0 after entity rendering
+    S32 is_selected = 0;
+    SetShaderValue(g_render.model_shader.shader->base, g_render.model_shader.is_selected_loc, &is_selected, SHADER_UNIFORM_INT);
+    SetShaderValue(g_render.model_instanced_shader.shader->base, g_render.model_instanced_shader.is_selected_loc, &is_selected, SHADER_UNIFORM_INT);
 }
 
 void world_draw_3d_hud() {

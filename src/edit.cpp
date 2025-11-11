@@ -418,24 +418,6 @@ void edit_update(F32 dt, F32 dtu) {
         }
     }
 
-    // Spawn selection indicator particles for all selected entities (frame-rate independent)
-    if (g_world->selected_entity_count > 0) {
-        // Frame-rate independent particle spawning
-        F32 const spawn_interval = 1.0F / EDIT_SELECTION_INDICATOR_PARTICLES_PER_SECOND;
-        i_state.selection_indicator_timer += dt;
-        while (i_state.selection_indicator_timer >= spawn_interval) {
-            for (SZ i = 0; i < g_world->selected_entity_count; ++i) {
-                EID const id = g_world->selected_entities[i];
-                Vector3 const position = g_world->position[id];
-                F32 const radius = g_world->radius[id];
-                particles3d_add_selection_indicator(position, radius, GREEN, LIME, EDIT_SELECTION_INDICATOR_PARTICLE_COUNT);
-            }
-            i_state.selection_indicator_timer -= spawn_interval;
-        }
-    } else {
-        // Reset timer when no entity is selected
-        i_state.selection_indicator_timer = 0.0F;
-    }
 }
 
 

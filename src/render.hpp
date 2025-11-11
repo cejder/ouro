@@ -110,6 +110,8 @@ struct RenderModelShader {
     S32 animation_enabled_loc;
     S32 view_pos_loc;
     S32 ambient_color_loc;
+    S32 is_selected_loc;
+    S32 time_loc;
 
     FogUniforms fog;
     LightUniforms light[LIGHTS_MAX];
@@ -121,6 +123,8 @@ struct RenderModelInstancedShader {
     S32 view_pos_loc;
     S32 ambient_color_loc;
     S32 instance_tint_loc;
+    S32 is_selected_loc;
+    S32 time_loc;
 
     FogUniforms fog;
     LightUniforms light[LIGHTS_MAX];

@@ -96,6 +96,8 @@ void render_init() {
     ms->animation_enabled_loc = GetShaderLocation(ms->shader->base, "animationEnabled");
     ms->view_pos_loc          = GetShaderLocation(ms->shader->base, "viewPos");
     ms->ambient_color_loc     = GetShaderLocation(ms->shader->base, "ambient");
+    ms->is_selected_loc       = GetShaderLocation(ms->shader->base, "isSelected");
+    ms->time_loc              = GetShaderLocation(ms->shader->base, "time");
     ms->fog.density_loc       = GetShaderLocation(ms->shader->base, "fog.density");
     ms->fog.color_loc         = GetShaderLocation(ms->shader->base, "fog.color");
     for (SZ i  = 0; i < LIGHTS_MAX; ++i) {
@@ -115,6 +117,8 @@ void render_init() {
     mis->view_pos_loc               = GetShaderLocation(mis->shader->base, "viewPos");
     mis->ambient_color_loc          = GetShaderLocation(mis->shader->base, "ambient");
     mis->instance_tint_loc          = GetShaderLocationAttrib(mis->shader->base, "instanceTint");
+    mis->is_selected_loc            = GetShaderLocation(mis->shader->base, "isSelected");
+    mis->time_loc                   = GetShaderLocation(mis->shader->base, "time");
     mis->fog.density_loc            = GetShaderLocation(mis->shader->base, "fog.density");
     mis->fog.color_loc              = GetShaderLocation(mis->shader->base, "fog.color");
     for (SZ i = 0; i < LIGHTS_MAX; ++i) {
@@ -408,6 +412,10 @@ void static i_set_uniforms() {
 
     // SKETCH
     SetShaderValue(g_render.sketch_shader.shader->base, g_render.sketch_shader.time_loc, &current_time, SHADER_UNIFORM_FLOAT);
+
+    // MODEL SHADERS (for pulsing selection effect)
+    SetShaderValue(g_render.model_shader.shader->base, g_render.model_shader.time_loc, &current_time, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(g_render.model_instanced_shader.shader->base, g_render.model_instanced_shader.time_loc, &current_time, SHADER_UNIFORM_FLOAT);
 }
 
 void render_end() {
