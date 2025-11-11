@@ -90,7 +90,7 @@ void player_input_update(F32 dt, F32 dtu) {
 
         // Start wipe effect - direction depends on which mode we're entering
         ScreenFadeType const wipe_direction = g_player.camera_projection.is_orthographic ? SCREEN_FADE_TYPE_WIPE_LEFT_OUT : SCREEN_FADE_TYPE_WIPE_RIGHT_OUT;
-        screen_fade_init(wipe_direction, 0.5F, BLACK, EASE_IN_OUT_CUBIC, nullptr);
+        screen_fade_init(wipe_direction, PLAYER_TRANSITION_DURATION, g_render.sketch_shader.minor_color, EASE_IN_OUT_CUBIC, nullptr);
         audio_play(ACG_SFX, "mario_camera_moving.ogg");
     }
 
