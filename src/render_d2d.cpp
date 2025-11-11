@@ -481,11 +481,15 @@ void d2d_healthbar(EID id) {
     F32 const distance_t = glm::clamp((distance - fade_start) / (max_distance - fade_start), 0.0F, 1.0F);
     F32 const alpha      = ease_out_quart(1.0F - distance_t, 0.0F, 1.0F, 1.0F);
 
+    // World-scale zoom handling: scale UI elements based on camera FOV
+    F32 const default_fov = 45.0F;  // Reference FOV for original UI scale
+    F32 const zoom_scale  = default_fov / c3d_get_fov();
+
     F32 const health_perc  = glm::clamp((F32)g_world->health[id].current / (F32)g_world->health[id].max, 0.0F, 1.0F);
 
-    F32 const bar_width    = ui_scale_x(8.0F);
-    F32 const bar_height   = ui_scale_y(2.30F);
-    F32 const border_thick = ui_scale_x(0.20F);
+    F32 const bar_width    = ui_scale_x(8.0F) * zoom_scale;
+    F32 const bar_height   = ui_scale_y(2.30F) * zoom_scale;
+    F32 const border_thick = ui_scale_x(0.20F) * zoom_scale;
     F32 const roundness    = 0.5F;
     S32 const segments     = 10;
 
@@ -521,26 +525,40 @@ void d2d_healthbar(EID id) {
 
     d2d_rectangle_rounded_lines_ex(bg_rect, roundness, segments, border_thick, border_color);
 
-    AFont *name_font        = asset_get_font("GoMono", ui_font_size(2.0F));
-    Vector2 const name_size = measure_text(name_font, g_world->name[id]);
-    Vector2 const name_pos  = {screen_pos.x - (name_size.x * 0.5F), bar_pos.y + (bar_height * 0.5F) - (name_size.y * 0.5F)};
+    // Font size threshold with smooth fade transition
+    F32 const font_size_threshold = 8.0F;   // Below this pixel size, text is unreadable
+    F32 const fade_range          = 4.0F;   // Smooth transition range (8-12 pixels)
 
-    Color const text_color      = RAYWHITE;
-    Color const shadow_color    = DARKBROWN;
-    Vector2 const shadow_offset = ui_shadow_offset(0.05F, 0.075F);
+    S32 const base_font_size   = ui_font_size(2.0F);
+    F32 const scaled_font_size = (F32)base_font_size * zoom_scale;
 
-    d2d_text_shadow(name_font, g_world->name[id], name_pos, Fade(text_color, alpha), Fade(shadow_color, 0.8F * alpha), shadow_offset);
+    // Calculate font fade alpha (1.0 when readable, 0.0 when too small)
+    F32 const font_fade_t = glm::clamp((scaled_font_size - font_size_threshold) / fade_range, 0.0F, 1.0F);
+    F32 const font_alpha  = ease_out_quad(font_fade_t, 0.0F, 1.0F, 1.0F);  // Smooth easing
+
+    // Only draw text if it's visible enough
+    if (font_alpha > 0.01F) {
+        AFont *name_font        = asset_get_font("GoMono", glm::max((S32)scaled_font_size, 1));
+        Vector2 const name_size = measure_text(name_font, g_world->name[id]);
+        Vector2 const name_pos  = {screen_pos.x - (name_size.x * 0.5F), bar_pos.y + (bar_height * 0.5F) - (name_size.y * 0.5F)};
+
+        Color const text_color      = RAYWHITE;
+        Color const shadow_color    = DARKBROWN;
+        Vector2 const shadow_offset = ui_shadow_offset(0.05F, 0.075F);
+
+        d2d_text_shadow(name_font, g_world->name[id], name_pos, Fade(text_color, alpha * font_alpha), Fade(shadow_color, 0.8F * alpha * font_alpha), shadow_offset);
+    }
 
     SZ const wood_count = g_world->actor[id].behavior.wood_count;
     if (wood_count > 0) {
         Texture2D icon         = asset_get_model("wood.glb")->icon;
-        F32 const icon_size    = ui_scale_x(2.0F);
+        F32 const icon_size    = ui_scale_x(2.0F) * zoom_scale;
         F32 const tilt_angle   = 0.0F;
-        Vector2 const icon_pos = {bar_pos.x + bar_width + ui_scale_x(0.75F), bar_pos.y - (icon_size/2)};
+        Vector2 const icon_pos = {bar_pos.x + bar_width + ui_scale_x(0.75F) * zoom_scale, bar_pos.y - (icon_size/2)};
 
         d2d_texture_ex_raylib(icon, icon_pos, tilt_angle, icon_size / (F32)icon.width, Fade(SUNSETAMBER, alpha));
 
-        AFont *count_font            = asset_get_font("GoMono", ui_font_size(2.5F));
+        AFont *count_font            = asset_get_font("GoMono", (S32)((F32)ui_font_size(2.5F) * zoom_scale));
         String const *count_text     = TS("%zu", wood_count);
         Vector2 const count_pos      = {icon_pos.x + (icon_size/3), icon_pos.y + (icon_size/2)};
         Color const big_text_color   = WHITE;
