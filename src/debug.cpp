@@ -456,7 +456,14 @@ void static i_setup_dbg_gui() {
         qil("Visible Vertices", TS("%s", pretty_buffer_1)->c);
         qil("Max Generation", TS("%u", g_world->max_gen)->c);
         qil("Entities", TS("%u", g_world->active_ent_count)->c);
-        qil("Selected Entity", g_world->selected_id != INVALID_EID ? TS("%u", g_world->selected_id)->c : "NO SELECTION");
+        if (g_world->selected_entity_count > 0) {
+            qil("Selected Entities", TS("%zu selected", g_world->selected_entity_count)->c);
+            if (g_world->selected_entity_count == 1) {
+                qil("Selected ID", TS("%u", g_world->selected_entities[0])->c);
+            }
+        } else {
+            qil("Selected Entities", "NO SELECTION");
+        }
 
         // NOTE: We want to skip "NONE" ergo starting at 1
         for (SZ i = 1; i < ENTITY_TYPE_COUNT; ++i) { qil(TS("TYPE: %s", entity_type_to_cstr((EntityType)i))->c, TS("%u", g_world->entity_type_counts[i])->c); }

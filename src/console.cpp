@@ -319,14 +319,18 @@ BOOL con_cmd_dump(ConCMD const *cmd) {
     lln("Player_Position: %.2f %.2f %.2f", g_player.cameras[g_scenes.current_scene_type].position.x, g_player.cameras[g_scenes.current_scene_type].position.y, g_player.cameras[g_scenes.current_scene_type].position.z);
     lln("Player_Target: %.2f %.2f %.2f", g_player.cameras[g_scenes.current_scene_type].target.x, g_player.cameras[g_scenes.current_scene_type].target.y, g_player.cameras[g_scenes.current_scene_type].target.z);
 
-    if (g_world->selected_id != INVALID_EID) {
+    if (g_world->selected_entity_count > 0) {
         console_draw_separator();
-        Vector3 const position = g_world->position[g_world->selected_id];
-        Vector3 const scale    = g_world->scale[g_world->selected_id];
-        F32 const rotation     = g_world->rotation[g_world->selected_id];
-        lln("Target_Position: %.2f %.2f %.2f", position.x, position.y, position.z);
-        lln("Target_Scale: %.2f %.2f %.2f", scale.x, scale.y, scale.z);
-        lln("Target_Rotation: %.2f", rotation);
+        lln("Selected_Count: %zu", g_world->selected_entity_count);
+
+        // Show detailed info for first selected entity
+        EID const primary_id = g_world->selected_entities[0];
+        Vector3 const position = g_world->position[primary_id];
+        Vector3 const scale    = g_world->scale[primary_id];
+        F32 const rotation     = g_world->rotation[primary_id];
+        lln("Primary_Target_Position: %.2f %.2f %.2f", position.x, position.y, position.z);
+        lln("Primary_Target_Scale: %.2f %.2f %.2f", scale.x, scale.y, scale.z);
+        lln("Primary_Target_Rotation: %.2f", rotation);
     }
     console_draw_separator();
 

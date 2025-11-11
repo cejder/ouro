@@ -423,7 +423,7 @@ void world_draw_3d_dbg() {
         }
 
         F32 gizmos_alpha       = 1.0F;
-        BOOL const is_selected = g_world->selected_id == i;
+        BOOL const is_selected = world_is_entity_selected(i);
         Color const obb_color  = is_selected ? color_sync_blinking_regular(SALMON, PERSIMMON) : entity_type_to_color(g_world->type[i]);
 
         // We only do this fading by distance if the entity is not selected.
@@ -470,6 +470,15 @@ void world_set_selected_entity(EID id) {
     g_world->selected_id = id;
 
     audio_play(ACG_SFX, "selected_0.ogg");
+}
+
+BOOL world_is_entity_selected(EID id) {
+    for (SZ i = 0; i < g_world->selected_entity_count; ++i) {
+        if (g_world->selected_entities[i] == id) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void world_vegetation_collision() {

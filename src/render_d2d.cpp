@@ -472,7 +472,7 @@ void d2d_healthbar(EID id) {
     if (screen_pos.x < -150 || screen_pos.x > render_res.x + 150 || screen_pos.y < -150 || screen_pos.y > render_res.y + 150) { return; }
 
     F32 distance = Vector3Distance(position, cam->position);
-    if (g_world->selected_id == id) { distance = 0.0F; } // If this is the selected entity, we do not care about distance.
+    if (world_is_entity_selected(id)) { distance = 0.0F; } // If this is a selected entity, we do not care about distance.
     F32 const max_distance = 10.0F + g_world->radius[id];
     F32 const fade_start   = max_distance * 0.75F;
 

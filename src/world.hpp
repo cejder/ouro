@@ -131,3 +131,4 @@ void world_mark_follower_cache_dirty();
 void world_target_tracker_add(EID target_id, EID actor_id);
 void world_target_tracker_remove(EID target_id, EID actor_id);
 void world_notify_actors_target_destroyed(EID destroyed_target_id);
+BOOL world_is_entity_selected(EID id);
