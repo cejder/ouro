@@ -87,9 +87,7 @@ void player_input_update(F32 dt, F32 dtu) {
         g_player.camera_projection.is_orthographic = !g_player.camera_projection.is_orthographic;
         Camera3D const *target_cam = g_player.camera_projection.is_orthographic ? &g_player.camera_projection.orthographic_camera : &g_player.camera_projection.perspective_camera;
 
-        F32 const preserve_fov = current_cam->fovy;
         *current_cam = *target_cam;
-        current_cam->fovy = preserve_fov;
 
         ScreenFadeType const wipe_direction = g_player.camera_projection.is_orthographic ? SCREEN_FADE_TYPE_WIPE_LEFT_OUT : SCREEN_FADE_TYPE_WIPE_RIGHT_OUT;
         screen_fade_init(wipe_direction, PLAYER_TRANSITION_DURATION, g_render.sketch_shader.minor_color, EASE_IN_OUT_CUBIC, nullptr);
