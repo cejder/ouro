@@ -13,6 +13,7 @@
 #include "world.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
+#include <raymath.h>
 
 EditState static i_state = {};
 
@@ -241,20 +242,19 @@ void edit_update(F32 dt, F32 dtu) {
         audio_play(ACG_SFX, "ting.ogg");
 
         // Spawn indicator particles at click location (only if no entity is selected, otherwise handled in command section)
-        if (g_world->selected_entity_count == 0) {
+        if (g_world->selected_id == INVALID_EID) {
             particles3d_add_click_indicator(collision.point, 0.5F, PINK, PURPLE, 5);
         }
     }
 
-    // Rectangle selection (left mouse drag)
-    BOOL const shift_down = is_mod(I_MODIFIER_SHIFT);
-
-    // Entity manipulation (only if entity is selected, and NOT when shift is held for selection)
-    // Shift is reserved for additive selection, not entity scaling
-    if (g_world->selected_entity_count > 0 && !shift_down) {
+    // Entity manipulation (only if entity is selected) - manipulate first selected entity only
+    if (g_world->selected_entity_count > 0) {
         EID const first_selected = g_world->selected_entities[0];
         i_handle_selected_entity_input(first_selected, dtu, mouse_left_down, collision, &left_click_consumed);
     }
+
+    // Rectangle selection (left mouse drag)
+    BOOL const shift_down = is_mod(I_MODIFIER_SHIFT);
 
     if (!left_click_consumed && !mouse_look && mouse_left_pressed) {
         // Start potential rectangle selection
