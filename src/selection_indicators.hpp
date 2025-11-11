@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.hpp"
+#include "color.hpp"
 #include "math.hpp"
 #include "asset.hpp"
 #include "entity.hpp"

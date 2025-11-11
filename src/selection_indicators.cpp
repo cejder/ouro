@@ -5,7 +5,8 @@
 #include "scene.hpp"
 
 #include <raymath.h>
-#include <glad/gl.h>
+#include <rlgl.h>
+#include <external/glad.h>
 
 SelectionIndicators g_selection_indicators = {};
 
