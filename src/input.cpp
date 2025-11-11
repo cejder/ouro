@@ -182,7 +182,7 @@ case IA_NEXT:                               return "NEXT";
 case IA_PREVIOUS:                           return "PREVIOUS";
 case IA_DECREASE:                           return "DECREASE";
 case IA_INCREASE:                           return "INCREASE";
-case IA_TOGGLE_OVERWORLD_AND_DUNGEON_SCENE: return "TOGGLE OVERWORLD/DUNGEON";
+case IA_TOGGLE_CAMERA_PROJECTION:           return "TOGGLE CAMERA PROJECTION";
 case IA_TURN_3D_LEFT:                       return "TURN_LEFT";
 case IA_TURN_3D_RIGHT:                      return "TURN_RIGHT";
 case IA_MOVE_3D_FORWARD:                    return "MOVE FORWARD";
@@ -323,7 +323,7 @@ set( IA_NO,                                             _mn_,               KEY_
 set( IA_OPEN_OVERLAY_MENU,                              _mn_,               KEY_ESCAPE,       _kn_,       _mon_,          GAMEPAD_BUTTON_MIDDLE_RIGHT,     _wn_         );
 set( IA_DECREASE,                                       _mn_,               KEY_LEFT,         _kn_,       _mon_,          GAMEPAD_BUTTON_LEFT_FACE_LEFT,   _wn_         );
 set( IA_INCREASE,                                       _mn_,               KEY_RIGHT,        _kn_,       _mon_,          GAMEPAD_BUTTON_LEFT_FACE_RIGHT,  _wn_         );
-set( IA_TOGGLE_OVERWORLD_AND_DUNGEON_SCENE,             _mn_,               KEY_TAB,          _kn_,       _mon_,          GAMEPAD_BUTTON_MIDDLE_LEFT,      _wn_         );
+set( IA_TOGGLE_CAMERA_PROJECTION,                       _mn_,               KEY_TAB,          _kn_,       _mon_,          GAMEPAD_BUTTON_MIDDLE_LEFT,      _wn_         );
 set( IA_NEXT,                                           _mn_,               KEY_DOWN,         _kn_,       _mon_,          GAMEPAD_BUTTON_LEFT_FACE_DOWN,   _wn_         );
 set( IA_PREVIOUS,                                       _mn_,               KEY_UP,           _kn_,       _mon_,          GAMEPAD_BUTTON_LEFT_FACE_UP,     _wn_         );
 set( IA_TURN_3D_LEFT,                                   _mn_,               KEY_W,            _kn_,       _mon_,          GAMEPAD_BUTTON_LEFT_TRIGGER_1,   _wn_         );

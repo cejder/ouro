@@ -51,11 +51,17 @@ struct PlayerKeepOnGroundState {
     F32 last_height;
 };
 
+struct CameraProjectionState {
+    Camera3D perspective_camera;
+    Camera3D orthographic_camera;
+    BOOL is_orthographic;
+};
 
 struct Player {
     PlayerTurnState turn_state;
     PlayerMoveState move_state;
     PlayerKeepOnGroundState keep_on_ground_state;
+    CameraProjectionState camera_projection;
 
     BOOL non_player_camera;
     BOOL on_triangle_floor;

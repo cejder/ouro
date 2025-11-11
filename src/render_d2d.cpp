@@ -460,6 +460,7 @@ void d2d_healthbar(EID id) {
     if (!c_world__actor_healthbar)                                    { return; }
     if (g_world->health[id].max <= 0)                                 { return; }
     if (!ENTITY_HAS_FLAG(g_world->flags[id], ENTITY_FLAG_IN_FRUSTUM)) { return; }
+    if (!world_is_entity_selected(id))                                { return; }
 
     Camera3D *cam                 = c3d_get_ptr();
     Vector2 const render_res      = render_get_render_resolution();
@@ -471,15 +472,7 @@ void d2d_healthbar(EID id) {
 
     if (screen_pos.x < -150 || screen_pos.x > render_res.x + 150 || screen_pos.y < -150 || screen_pos.y > render_res.y + 150) { return; }
 
-    F32 distance = Vector3Distance(position, cam->position);
-    if (world_is_entity_selected(id)) { distance = 0.0F; } // If this is a selected entity, we do not care about distance.
-    F32 const max_distance = 10.0F + g_world->radius[id];
-    F32 const fade_start   = max_distance * 0.75F;
-
-    if (distance > max_distance) { return; }
-
-    F32 const distance_t = glm::clamp((distance - fade_start) / (max_distance - fade_start), 0.0F, 1.0F);
-    F32 const alpha      = ease_out_quart(1.0F - distance_t, 0.0F, 1.0F, 1.0F);
+    F32 const alpha = 1.0F;
 
     // World-scale zoom handling: scale UI elements based on camera FOV
     F32 const zoom_scale = CAMERA3D_DEFAULT_FOV / c3d_get_fov();
