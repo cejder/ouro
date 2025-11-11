@@ -995,21 +995,21 @@ void input_camera_input_update(F32 dtu, Camera *camera, F32 move_speed) {
         first_zoom_init = false;
     }
 
-    // Handle zoom input - adjust target fovy
-    // Mouse wheel: discrete ticks (use is_pressed for single frame detection)
-    if (is_pressed(IA_ZOOM_OUT)) {
-        target_fovy += zoom_per_tick;
-    }
-    if (is_pressed(IA_ZOOM_IN)) {
-        target_fovy -= zoom_per_tick;
-    }
+    // Handle zoom input - adjust target fovy (skip if shift is held for time control)
+    if (!is_mod(I_MODIFIER_SHIFT)) {
+        if (is_pressed(IA_ZOOM_OUT)) {
+            target_fovy += zoom_per_tick;
+        }
+        if (is_pressed(IA_ZOOM_IN)) {
+            target_fovy -= zoom_per_tick;
+        }
 
-    // Keyboard: continuous zoom (use is_down for held keys)
-    if (is_down(IA_ZOOM_OUT)) {
-        target_fovy += 1.0F * fovy_speed;
-    }
-    if (is_down(IA_ZOOM_IN)) {
-        target_fovy -= 1.0F * fovy_speed;
+        if (is_down(IA_ZOOM_OUT)) {
+            target_fovy += 1.0F * fovy_speed;
+        }
+        if (is_down(IA_ZOOM_IN)) {
+            target_fovy -= 1.0F * fovy_speed;
+        }
     }
 
     // Clamp target to prevent extreme values
