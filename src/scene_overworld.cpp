@@ -582,7 +582,6 @@ SKIP_OTHER_INPUT:
 
     // HACK:
     if (input_is_action_pressed(IA_YES)) {
-        mqf("AAAAAAA");
         C8 const* platform = args_get_string("Platform");
         if (ou_strcmp(platform, "steamdeck") == 0) {
             i_harvest_trees(nullptr);
