@@ -678,8 +678,6 @@ void particles2d_queue_spiral(Rectangle spawn_rect, Color start_color, Color end
 
 // Main thread only: process all queued commands
 void particles2d_process_command_queue() {
-    PP(particles2d_process_command_queue());
-
     mtx_lock(&g_particle2d_command_queue.mutex);
     U32 const cmd_count = g_particle2d_command_queue.count;
     mtx_unlock(&g_particle2d_command_queue.mutex);
