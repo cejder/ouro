@@ -659,242 +659,239 @@ void entity_actor_update(EID id, F32 dt) {
     EntityBehaviorController *behavior = &actor->behavior;
     EntityMovementController *movement = &actor->movement;
 
-    // // First evaluate if any state transitions are needed
-    // i_evaluate_behavior_transitions(id);
+    // First evaluate if any state transitions are needed
+    i_evaluate_behavior_transitions(id);
 
-    // // Then update the current states
-    // switch (movement->state) {
-    //     case ENTITY_MOVEMENT_STATE_IDLE: {
-    //         // Apply gentle repulsion if entities are overlapping while idle
-    //         F32 constexpr idle_repulsion_strength = 0.25F;  // Much weaker than moving separation
-    //         Vector3 const separation = i_calculate_separation_force(id);
+    // Then update the current states
+    switch (movement->state) {
+        case ENTITY_MOVEMENT_STATE_IDLE: {
+            // Apply gentle repulsion if entities are overlapping while idle
+            F32 constexpr idle_repulsion_strength = 0.25F;  // Much weaker than moving separation
+            Vector3 const separation = i_calculate_separation_force(id);
 
-    //         if (Vector3LengthSqr(separation) > 0.001F) {  // Only apply if there's significant overlap
-    //             Vector3 const repulsion_velocity = Vector3Scale(separation, idle_repulsion_strength);
-    //             Vector3 new_position = Vector3Add(g_world->position[id], Vector3Scale(repulsion_velocity, dt));
-    //             new_position.y = math_get_terrain_height(g_world->base_terrain, new_position.x, new_position.z);
+            if (Vector3LengthSqr(separation) > 0.001F) {  // Only apply if there's significant overlap
+                Vector3 const repulsion_velocity = Vector3Scale(separation, idle_repulsion_strength);
+                Vector3 new_position = Vector3Add(g_world->position[id], Vector3Scale(repulsion_velocity, dt));
+                new_position.y = math_get_terrain_height(g_world->base_terrain, new_position.x, new_position.z);
 
-    //             // Resolve dungeon wall collision with sliding if in dungeon scene
-    //             if (g_scenes.current_scene_type == SCENE_DUNGEON) {
-    //                 new_position = dungeon_resolve_wall_collision(id, new_position);
-    //             }
+                // Resolve dungeon wall collision with sliding if in dungeon scene
+                if (g_scenes.current_scene_type == SCENE_DUNGEON) {
+                    new_position = dungeon_resolve_wall_collision(id, new_position);
+                }
 
-    //             entity_set_position(id, new_position);
-    //         }
+                entity_set_position(id, new_position);
+            }
 
-    //         switch (movement->goal_type) {
-    //             case ENTITY_MOVEMENT_GOAL_MOVE_TO_POSITION: {
-    //                 i_movement_transition_to_state(id, ENTITY_MOVEMENT_STATE_MOVING);
-    //             } break;
-    //             case ENTITY_MOVEMENT_GOAL_TURN_TO_ANGLE: {
-    //                 i_movement_transition_to_state(id, ENTITY_MOVEMENT_STATE_TURNING);
-    //             } break;
-    //             case ENTITY_MOVEMENT_GOAL_STOP: {
-    //                 movement->goal_completed = true;
-    //             } break;
-    //             default: {
-    //                 break;
-    //             }
-    //         }
-    //     } break;
+            switch (movement->goal_type) {
+                case ENTITY_MOVEMENT_GOAL_MOVE_TO_POSITION: {
+                    i_movement_transition_to_state(id, ENTITY_MOVEMENT_STATE_MOVING);
+                } break;
+                case ENTITY_MOVEMENT_GOAL_TURN_TO_ANGLE: {
+                    i_movement_transition_to_state(id, ENTITY_MOVEMENT_STATE_TURNING);
+                } break;
+                case ENTITY_MOVEMENT_GOAL_STOP: {
+                    movement->goal_completed = true;
+                } break;
+                default: {
+                    break;
+                }
+            }
+        } break;
 
-    //     case ENTITY_MOVEMENT_STATE_MOVING: {
-    //         // Update target position if following an entity
-    //         if (i_is_target_valid(movement->target_id, movement->target_gen)) {
-    //             Vector3 const base_target = g_world->position[movement->target_id];
-    //             movement->target_position = i_calculate_offset_target_position(id, base_target);
-    //         } else if (movement->target_id != INVALID_EID) {
-    //             movement->goal_failed = true;
-    //             i_movement_transition_to_state(id, ENTITY_MOVEMENT_STATE_IDLE);
-    //             return;
-    //         }
+        case ENTITY_MOVEMENT_STATE_MOVING: {
+            // Update target position if following an entity
+            if (i_is_target_valid(movement->target_id, movement->target_gen)) {
+                Vector3 const base_target = g_world->position[movement->target_id];
+                movement->target_position = i_calculate_offset_target_position(id, base_target);
+            } else if (movement->target_id != INVALID_EID) {
+                movement->goal_failed = true;
+                i_movement_transition_to_state(id, ENTITY_MOVEMENT_STATE_IDLE);
+                return;
+            }
 
-    //         Vector3 const current_pos = g_world->position[id];
-    //         Vector3 const direction   = Vector3Subtract(movement->target_position, current_pos);
+            Vector3 const current_pos = g_world->position[id];
+            Vector3 const direction   = Vector3Subtract(movement->target_position, current_pos);
 
-    //         // Check if we've reached the target
-    //         if (i_has_reached_target(id, movement->target_position, movement->target_id)) {
-    //             movement->goal_completed = true;
-    //             i_movement_transition_to_state(id, ENTITY_MOVEMENT_STATE_STOPPING);
-    //             return;
-    //         }
+            // Check if we've reached the target
+            if (i_has_reached_target(id, movement->target_position, movement->target_id)) {
+                movement->goal_completed = true;
+                i_movement_transition_to_state(id, ENTITY_MOVEMENT_STATE_STOPPING);
+                return;
+            }
 
-    //         // Calculate separation force
-    //         Vector3 separation         = i_calculate_separation_force(id);
-    //         movement->separation_force = separation;
+            // Calculate separation force
+            Vector3 separation         = i_calculate_separation_force(id);
+            movement->separation_force = separation;
 
-    //         // Handle stuck detection
-    //         Vector3 const actual_velocity = Vector3Scale(Vector3Subtract(current_pos, movement->last_position), 1.0F / dt);
+            // Handle stuck detection
+            Vector3 const actual_velocity = Vector3Scale(Vector3Subtract(current_pos, movement->last_position), 1.0F / dt);
 
-    //         if (Vector3LengthSqr(actual_velocity) < 0.1F) {
-    //             movement->stuck_timer += dt;
-    //             if (movement->stuck_timer > ACTOR_MAX_STUCK_TIME) {
-    //                 F32 const escape_angle     = random_f32(0.0F, 2.0F * glm::pi<F32>());
-    //                 Vector3 const escape_force = {math_cos_f32(escape_angle) * 3.0F, 0, math_sin_f32(escape_angle) * 3.0F};
-    //                 separation = Vector3Add(separation, escape_force);
-    //                 movement->stuck_timer = 0.0F;
-    //             }
-    //         } else {
-    //             movement->stuck_timer = 0.0F;
-    //         }
-    //         movement->last_position = current_pos;
+            if (Vector3LengthSqr(actual_velocity) < 0.1F) {
+                movement->stuck_timer += dt;
+                if (movement->stuck_timer > ACTOR_MAX_STUCK_TIME) {
+                    F32 const escape_angle     = random_f32(0.0F, 2.0F * glm::pi<F32>());
+                    Vector3 const escape_force = {math_cos_f32(escape_angle) * 3.0F, 0, math_sin_f32(escape_angle) * 3.0F};
+                    separation = Vector3Add(separation, escape_force);
+                    movement->stuck_timer = 0.0F;
+                }
+            } else {
+                movement->stuck_timer = 0.0F;
+            }
+            movement->last_position = current_pos;
 
-    //         // Calculate desired movement direction
-    //         Vector3 const desired_direction = Vector3Normalize(direction);
-    //         F32 target_speed                = movement->speed;
+            // Calculate desired movement direction
+            Vector3 const desired_direction = Vector3Normalize(direction);
+            F32 target_speed                = movement->speed;
 
-    //         // Apply separation force
-    //         Vector3 final_direction = Vector3Add(desired_direction, Vector3Scale(separation, 1.5F));
+            // Apply separation force
+            Vector3 final_direction = Vector3Add(desired_direction, Vector3Scale(separation, 1.5F));
 
-    //         // Limit direction magnitude
-    //         F32 const direction_magnitude_sqr = Vector3LengthSqr(final_direction);
-    //         if (direction_magnitude_sqr > 1.0F) { final_direction = Vector3Normalize(final_direction); }
+            // Limit direction magnitude
+            F32 const direction_magnitude_sqr = Vector3LengthSqr(final_direction);
+            if (direction_magnitude_sqr > 1.0F) { final_direction = Vector3Normalize(final_direction); }
 
-    //         // Dynamic speed based on distance to target
-    //         F32 const distance_to_target_sqr = Vector3LengthSqr(direction);
-    //         if (distance_to_target_sqr < 25.0F) {  // 5.0F * 5.0F
-    //             F32 const distance_to_target = math_sqrt_f32(distance_to_target_sqr);
-    //             target_speed                *= (distance_to_target / 5.0F);
-    //             target_speed                 = glm::max(target_speed, movement->speed * 0.3F);
-    //         }
+            // Dynamic speed based on distance to target
+            F32 const distance_to_target_sqr = Vector3LengthSqr(direction);
+            if (distance_to_target_sqr < 25.0F) {  // 5.0F * 5.0F
+                F32 const distance_to_target = math_sqrt_f32(distance_to_target_sqr);
+                target_speed                *= (distance_to_target / 5.0F);
+                target_speed                 = glm::max(target_speed, movement->speed * 0.3F);
+            }
 
-    //         // Calculate desired velocity
-    //         Vector3 const desired_velocity = Vector3Scale(final_direction, target_speed);
+            // Calculate desired velocity
+            Vector3 const desired_velocity = Vector3Scale(final_direction, target_speed);
 
-    //         // Apply movement
-    //         Vector3 new_position = Vector3Add(g_world->position[id], Vector3Scale(desired_velocity, dt));
-    //         new_position.y       = math_get_terrain_height(g_world->base_terrain, new_position.x, new_position.z);
+            // Apply movement
+            Vector3 new_position = Vector3Add(g_world->position[id], Vector3Scale(desired_velocity, dt));
+            new_position.y       = math_get_terrain_height(g_world->base_terrain, new_position.x, new_position.z);
 
-    //         // Resolve dungeon wall collision with sliding if in dungeon scene
-    //         if (g_scenes.current_scene_type == SCENE_DUNGEON) {
-    //             new_position = dungeon_resolve_wall_collision(id, new_position);
-    //         }
+            // Resolve dungeon wall collision with sliding if in dungeon scene
+            if (g_scenes.current_scene_type == SCENE_DUNGEON) {
+                new_position = dungeon_resolve_wall_collision(id, new_position);
+            }
 
-    //         entity_set_position(id, new_position);
+            entity_set_position(id, new_position);
 
-    //         movement->velocity = desired_velocity;
+            movement->velocity = desired_velocity;
 
-    //         // Handle turning - Always face the direction we're actually moving
-    //         // When separation forces are active, we naturally face where we're going
-    //         // When no separation, we face the target - both cases look natural
-    //         F32 const separation_strength = Vector3Length(separation);
-    //         BOOL const has_separation     = separation_strength > 0.01F;
+            // Handle turning - Always face the direction we're actually moving
+            // When separation forces are active, we naturally face where we're going
+            // When no separation, we face the target - both cases look natural
+            F32 const separation_strength = Vector3Length(separation);
+            BOOL const has_separation     = separation_strength > 0.01F;
 
-    //         // If we have meaningful separation forces, face the actual movement direction
-    //         // Otherwise, face directly toward the target for cleaner movement
-    //         Vector3 const facing_direction = has_separation ? final_direction : desired_direction;
-    //         F32 const target_rotation      = (-math_atan2_f32(facing_direction.z, facing_direction.x) * RAD2DEG) + 90.0F;
-    //         F32 current_rotation           = g_world->rotation[id];
-    //         current_rotation               = math_normalize_angle_0_360(current_rotation);
-    //         F32 normalized_target          = math_normalize_angle_0_360(target_rotation);
-    //         F32 const delta_angle          = math_normalize_angle_delta(normalized_target - current_rotation);
-    //         F32 const abs_delta            = math_abs_f32(delta_angle);
+            // If we have meaningful separation forces, face the actual movement direction
+            // Otherwise, face directly toward the target for cleaner movement
+            Vector3 const facing_direction = has_separation ? final_direction : desired_direction;
+            F32 const target_rotation      = (-math_atan2_f32(facing_direction.z, facing_direction.x) * RAD2DEG) + 90.0F;
+            F32 current_rotation           = g_world->rotation[id];
+            current_rotation               = math_normalize_angle_0_360(current_rotation);
+            F32 normalized_target          = math_normalize_angle_0_360(target_rotation);
+            F32 const delta_angle          = math_normalize_angle_delta(normalized_target - current_rotation);
+            F32 const abs_delta            = math_abs_f32(delta_angle);
 
-    //         // Only apply rotation if the angle difference is meaningful (> 1 degree)
-    //         // This prevents jittering while still correcting persistent angle errors
-    //         if (abs_delta > 1.0F) {
-    //             F32 const turn_speed          = 480.0F;  // Faster turn speed for more responsive movement
-    //             F32 const max_turn_this_frame = turn_speed * dt;
-    //             F32 turn_amount               = delta_angle;
-    //             if (abs_delta > max_turn_this_frame) { turn_amount = (turn_amount > 0.0F) ? max_turn_this_frame : -max_turn_this_frame; }
-    //             entity_set_rotation(id, current_rotation + turn_amount);
-    //         }
-    //     } break;
+            // Only apply rotation if the angle difference is meaningful (> 1 degree)
+            // This prevents jittering while still correcting persistent angle errors
+            if (abs_delta > 1.0F) {
+                F32 const turn_speed          = 480.0F;  // Faster turn speed for more responsive movement
+                F32 const max_turn_this_frame = turn_speed * dt;
+                F32 turn_amount               = delta_angle;
+                if (abs_delta > max_turn_this_frame) { turn_amount = (turn_amount > 0.0F) ? max_turn_this_frame : -max_turn_this_frame; }
+                entity_set_rotation(id, current_rotation + turn_amount);
+            }
+        } break;
 
-    //     case ENTITY_MOVEMENT_STATE_TURNING: {
-    //         movement->turn_elapsed += dt;
+        case ENTITY_MOVEMENT_STATE_TURNING: {
+            movement->turn_elapsed += dt;
 
-    //         if (movement->turn_elapsed >= movement->turn_duration) {
-    //             entity_set_rotation(id, movement->turn_target_angle);
-    //             movement->goal_completed = true;
-    //             i_movement_transition_to_state(id, ENTITY_MOVEMENT_STATE_IDLE);
-    //         } else {
-    //             F32 const current_angle = ease_use(movement->turn_ease_type,
-    //                                                movement->turn_elapsed,
-    //                                                movement->turn_start_angle,
-    //                                                movement->turn_target_angle - movement->turn_start_angle,
-    //                                                movement->turn_duration);
-    //             entity_set_rotation(id, current_angle);
-    //         }
-    //     } break;
+            if (movement->turn_elapsed >= movement->turn_duration) {
+                entity_set_rotation(id, movement->turn_target_angle);
+                movement->goal_completed = true;
+                i_movement_transition_to_state(id, ENTITY_MOVEMENT_STATE_IDLE);
+            } else {
+                F32 const current_angle = ease_use(movement->turn_ease_type,
+                                                   movement->turn_elapsed,
+                                                   movement->turn_start_angle,
+                                                   movement->turn_target_angle - movement->turn_start_angle,
+                                                   movement->turn_duration);
+                entity_set_rotation(id, current_angle);
+            }
+        } break;
 
-    //     case ENTITY_MOVEMENT_STATE_STOPPING: {
-    //         if (movement->current_speed <= 0.01F) {
-    //             movement->current_speed  = 0.0F;
-    //             movement->velocity       = {0, 0, 0};
-    //             movement->goal_completed = true;
-    //             i_movement_transition_to_state(id, ENTITY_MOVEMENT_STATE_IDLE);
-    //             return;
-    //         }
+        case ENTITY_MOVEMENT_STATE_STOPPING: {
+            if (movement->current_speed <= 0.01F) {
+                movement->current_speed  = 0.0F;
+                movement->velocity       = {0, 0, 0};
+                movement->goal_completed = true;
+                i_movement_transition_to_state(id, ENTITY_MOVEMENT_STATE_IDLE);
+                return;
+            }
 
-    //         movement->current_speed = glm::max(0.0F, movement->current_speed - (movement->acceleration * dt * 3.0F));
+            movement->current_speed = glm::max(0.0F, movement->current_speed - (movement->acceleration * dt * 3.0F));
 
-    //         if (Vector3Length(movement->velocity) > 0.01F) {
-    //             Vector3 const normalized_velocity = Vector3Normalize(movement->velocity);
-    //             Vector3 new_position = Vector3Add(g_world->position[id], Vector3Scale(normalized_velocity, movement->current_speed * dt));
-    //             new_position.y = math_get_terrain_height(g_world->base_terrain, new_position.x, new_position.z);
-    //             entity_set_position(id, new_position);
-    //         }
-    //     } break;
+            if (Vector3Length(movement->velocity) > 0.01F) {
+                Vector3 const normalized_velocity = Vector3Normalize(movement->velocity);
+                Vector3 new_position = Vector3Add(g_world->position[id], Vector3Scale(normalized_velocity, movement->current_speed * dt));
+                new_position.y = math_get_terrain_height(g_world->base_terrain, new_position.x, new_position.z);
+                entity_set_position(id, new_position);
+            }
+        } break;
 
-    //     default: {
-    //         break;
-    //     }
-    // }
+        default: {
+            break;
+        }
+    }
 
-    // switch (actor->behavior.state) {
-    //     case ENTITY_BEHAVIOR_STATE_HARVESTING_TARGET: {
-    //         // Only do the harvesting work if target still valid
-    //         if (i_is_target_valid(behavior->target_id, behavior->target_gen)) {
-    //             EID const target_id        = behavior->target_id;
-    //             F32 lowest_timer           = F32_MAX;
-    //             U32 const harvesters_count = i_count_harvesters_for_target(target_id, &lowest_timer);
+    switch (actor->behavior.state) {
+        case ENTITY_BEHAVIOR_STATE_HARVESTING_TARGET: {
+            // Only do the harvesting work if target still valid
+            if (i_is_target_valid(behavior->target_id, behavior->target_gen)) {
+                EID const target_id        = behavior->target_id;
+                F32 lowest_timer           = F32_MAX;
+                U32 const harvesters_count = i_count_harvesters_for_target(target_id, &lowest_timer);
 
-    //             if (behavior->action_timer == lowest_timer) {
-    //                 F32 const progress      = 1.0F - (behavior->action_timer / ACTION_DURATION_HARVEST);
-    //                 // Use expo ease-in to keep scale high until the very end, then drop quickly
-    //                 F32 const eased_progress = ease_in_expo(progress, 0.0F, 1.0F, 1.0F);
-    //                 F32 scale_factor         = 1.0F - (eased_progress * 0.99F);
+                if (behavior->action_timer == lowest_timer) {
+                    F32 const progress      = 1.0F - (behavior->action_timer / ACTION_DURATION_HARVEST);
+                    // Use expo ease-in to keep scale high until the very end, then drop quickly
+                    F32 const eased_progress = ease_in_expo(progress, 0.0F, 1.0F, 1.0F);
+                    F32 scale_factor         = 1.0F - (eased_progress * 0.99F);
 
-    //                 // Add initial rustle/shake effect in the first 0.6 seconds
-    //                 F32 const rustle_duration = 0.6F;
-    //                 F32 const rustle_progress = glm::min(progress / (rustle_duration / ACTION_DURATION_HARVEST), 1.0F);
-    //                 if (rustle_progress < 1.0F) {
-    //                     F32 const shake_frequency  = 8.0F;  // Slower wobble
-    //                     F32 const shake_amplitude  = 0.035F;  // Subtle variation
-    //                     F32 const shake_decay      = ease_out_elastic(rustle_progress, 1.0F, -1.0F, 1.0F);  // Bouncy decay
-    //                     F32 const shake            = math_sin_f32(progress * shake_frequency * glm::pi<F32>() * 2.0F) * shake_amplitude * shake_decay;
-    //                     scale_factor              += shake;
-    //                 }
+                    // Add initial rustle/shake effect in the first 0.6 seconds
+                    F32 const rustle_duration = 0.6F;
+                    F32 const rustle_progress = glm::min(progress / (rustle_duration / ACTION_DURATION_HARVEST), 1.0F);
+                    if (rustle_progress < 1.0F) {
+                        F32 const shake_frequency  = 8.0F;  // Slower wobble
+                        F32 const shake_amplitude  = 0.035F;  // Subtle variation
+                        F32 const shake_decay      = ease_out_elastic(rustle_progress, 1.0F, -1.0F, 1.0F);  // Bouncy decay
+                        F32 const shake            = math_sin_f32(progress * shake_frequency * glm::pi<F32>() * 2.0F) * shake_amplitude * shake_decay;
+                        scale_factor              += shake;
+                    }
 
-    //                 Vector3 const new_scale = Vector3Scale(g_world->original_scale[target_id], scale_factor);
-    //                 entity_set_scale(target_id, new_scale);
+                    Vector3 const new_scale = Vector3Scale(g_world->original_scale[target_id], scale_factor);
+                    entity_set_scale(target_id, new_scale);
 
-    //                 // Frame-rate independent particle spawning during harvest
-    //                 Vector3 const target_pos        = g_world->position[target_id];
-    //                 F32 const spawn_interval        = 1.0F / HARVEST_ACTIVE_PARTICLES_PER_SECOND;
-    //                 behavior->particle_spawn_timer += dt;
-    //                 while (behavior->particle_spawn_timer >= spawn_interval) {
-    //                     particles3d_add_harvest_active(target_pos, GREEN, BROWN, HARVEST_ACTIVE_SIZE_MULTIPLIER, HARVEST_ACTIVE_PARTICLE_COUNT);
-    //                     behavior->particle_spawn_timer -= spawn_interval;
-    //                 }
-    //             }
+                    // Frame-rate independent particle spawning during harvest
+                    Vector3 const target_pos        = g_world->position[target_id];
+                    F32 const spawn_interval        = 1.0F / HARVEST_ACTIVE_PARTICLES_PER_SECOND;
+                    behavior->particle_spawn_timer += dt;
+                    while (behavior->particle_spawn_timer >= spawn_interval) {
+                        particles3d_add_harvest_active(target_pos, GREEN, BROWN, HARVEST_ACTIVE_SIZE_MULTIPLIER, HARVEST_ACTIVE_PARTICLE_COUNT);
+                        behavior->particle_spawn_timer -= spawn_interval;
+                    }
+                }
 
-    //             behavior->action_timer -= dt * (F32)harvesters_count;
-    //         }
-    //     } break;
+                behavior->action_timer -= dt * (F32)harvesters_count;
+            }
+        } break;
 
-    //     case ENTITY_BEHAVIOR_STATE_DELIVERING_TO_LUMBERYARD:
-    //     case ENTITY_BEHAVIOR_STATE_ATTACKING_NPC: {
-    //         behavior->action_timer -= dt;
-    //     } break;
+        case ENTITY_BEHAVIOR_STATE_DELIVERING_TO_LUMBERYARD:
+        case ENTITY_BEHAVIOR_STATE_ATTACKING_NPC: {
+            behavior->action_timer -= dt;
+        } break;
 
-    //     default: {
-    //     } break;
-    // }
-
-    actor->movement.state = ENTITY_MOVEMENT_STATE_IDLE;
-    actor->behavior.state = ENTITY_BEHAVIOR_STATE_IDLE;
+        default: {
+        } break;
+    }
 
     // TODO: These animation indices are hardcoded!
 

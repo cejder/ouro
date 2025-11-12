@@ -51,12 +51,9 @@ void render_healthbar_init() {
     // Create healthbar SSBO with persistent mapping
     glGenBuffers(1, &g_render_healthbar.ssbo);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, g_render_healthbar.ssbo);
-    glBufferStorage(GL_SHADER_STORAGE_BUFFER, (GLsizeiptr)(HEALTHBAR_MAX * sizeof(HealthbarInstance)),
-                    nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+    glBufferStorage(GL_SHADER_STORAGE_BUFFER, (GLsizeiptr)(HEALTHBAR_MAX * sizeof(HealthbarInstance)), nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
 
-    g_render_healthbar.mapped_data = (HealthbarInstance *)glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0,
-                                                                           (GLsizeiptr)(HEALTHBAR_MAX * sizeof(HealthbarInstance)),
-                                                                           GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+    g_render_healthbar.mapped_data = (HealthbarInstance *)glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, (GLsizeiptr)(HEALTHBAR_MAX * sizeof(HealthbarInstance)), GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
     if (!g_render_healthbar.mapped_data) {
         lle("Failed to map healthbar buffer!");
         return;

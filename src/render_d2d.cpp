@@ -674,10 +674,10 @@ void d2d_healthbar_batched(EID id) {
 
         // Healthbar is at most as wide as entity, minimum 40 pixels for visibility
         bar_width = glm::clamp(screen_radius * 2.0F * 0.8F, 40.0F, 200.0F);
-        bar_height = ui_scale_y(1.5F) * zoom_scale;  // Thicker for better visibility
+        bar_height = ui_scale_y(0.5F) * zoom_scale;  // Thicker for better visibility
     } else {
         bar_width = ui_scale_x(8.0F) * zoom_scale;
-        bar_height = ui_scale_y(2.30F) * zoom_scale;
+        bar_height = ui_scale_y(2.0F) * zoom_scale;
     }
 
     // Determine color based on health percentage
