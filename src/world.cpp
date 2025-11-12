@@ -10,6 +10,7 @@
 #include "map.hpp"
 #include "memory.hpp"
 #include "message.hpp"
+#include "particles_2d.hpp"
 #include "particles_3d.hpp"
 #include "profiler.hpp"
 #include "render.hpp"
@@ -315,11 +316,6 @@ void world_update(F32 dt, F32 dtu) {
             }
 
             job_system_wait();
-
-            // Process any particle spawn commands queued by worker threads (must be on main thread for OpenGL)
-            PP(particles3d_process_command_queue());
-            PP(particles2d_process_command_queue());
-
             PEND("actor_update_MT");
         } else {
             PBEGIN("actor_update_ST");

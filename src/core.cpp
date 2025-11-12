@@ -178,6 +178,11 @@ void core_update() {
     PP(particles3d_update(dt));
     PP(math_update());
     PP(scenes_update(dt, dtu));
+
+    // Process particle spawn commands queued during scene update (must be on main thread for OpenGL)
+    PP(particles3d_process_command_queue());
+    PP(particles2d_process_command_queue());
+
     PP(messages_update(dtu));
     PP(dbg_update());
 }
