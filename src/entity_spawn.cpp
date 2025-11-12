@@ -31,9 +31,9 @@ void static i_entity_spawn_queue_command(EntitySpawnCommandType type, ATerrain *
         if (g_entity_spawn_command_queue.count < ENTITY_SPAWN_COMMAND_QUEUE_MAX) {
             EntitySpawnCommand *cmd = &g_entity_spawn_command_queue.commands[g_entity_spawn_command_queue.count++];
             cmd->type = type;
-            cmd->terrain = terrain;
-            cmd->count = count;
-            cmd->notify = notify;
+            cmd->vegetation.terrain = terrain;
+            cmd->vegetation.count = count;
+            cmd->vegetation.notify = notify;
         } else {
             llt("EntitySpawn command queue full, dropping command");
         }
@@ -43,6 +43,38 @@ void static i_entity_spawn_queue_command(EntitySpawnCommandType type, ATerrain *
 
 void entity_spawn_queue_random_vegetation_on_terrain(ATerrain *terrain, SZ count, BOOL notify) {
     i_entity_spawn_queue_command(ENTITY_SPAWN_CMD_RANDOM_VEGETATION, terrain, count, notify);
+}
+
+void entity_spawn_queue_arbitrary_entity(EntityType type, C8 const *name, Vector3 position, F32 rotation, Vector3 scale, Color tint, C8 const *model_name) {
+    // Lazy mutex initialization
+    static BOOL mutex_initialized = false;
+    if (!mutex_initialized) {
+        mtx_init(&g_entity_spawn_command_queue.mutex, mtx_plain);
+        mutex_initialized = true;
+    }
+
+    mtx_lock(&g_entity_spawn_command_queue.mutex);
+    {
+        if (g_entity_spawn_command_queue.count < ENTITY_SPAWN_COMMAND_QUEUE_MAX) {
+            EntitySpawnCommand *cmd = &g_entity_spawn_command_queue.commands[g_entity_spawn_command_queue.count++];
+            cmd->type = ENTITY_SPAWN_CMD_ARBITRARY_ENTITY;
+            cmd->arbitrary.entity_type = type;
+            cmd->arbitrary.position = position;
+            cmd->arbitrary.rotation = rotation;
+            cmd->arbitrary.scale = scale;
+            cmd->arbitrary.tint = tint;
+
+            // Copy strings safely
+            ou_strncpy(cmd->arbitrary.name, name, sizeof(cmd->arbitrary.name) - 1);
+            cmd->arbitrary.name[sizeof(cmd->arbitrary.name) - 1] = '\0';
+
+            ou_strncpy(cmd->arbitrary.model_name, model_name, sizeof(cmd->arbitrary.model_name) - 1);
+            cmd->arbitrary.model_name[sizeof(cmd->arbitrary.model_name) - 1] = '\0';
+        } else {
+            llt("EntitySpawn command queue full, dropping command");
+        }
+    }
+    mtx_unlock(&g_entity_spawn_command_queue.mutex);
 }
 
 void entity_spawn_process_command_queue() {
@@ -59,7 +91,17 @@ void entity_spawn_process_command_queue() {
 
         switch (cmd->type) {
             case ENTITY_SPAWN_CMD_RANDOM_VEGETATION: {
-                entity_spawn_random_vegetation_on_terrain(cmd->terrain, cmd->count, cmd->notify);
+                entity_spawn_random_vegetation_on_terrain(cmd->vegetation.terrain, cmd->vegetation.count, cmd->vegetation.notify);
+            } break;
+
+            case ENTITY_SPAWN_CMD_ARBITRARY_ENTITY: {
+                entity_create(cmd->arbitrary.entity_type,
+                              cmd->arbitrary.name,
+                              cmd->arbitrary.position,
+                              cmd->arbitrary.rotation,
+                              cmd->arbitrary.scale,
+                              cmd->arbitrary.tint,
+                              cmd->arbitrary.model_name);
             } break;
 
             default: {

@@ -4,6 +4,7 @@
 #include "audio.hpp"
 #include "color.hpp"
 #include "entity_actor.hpp"
+#include "entity_spawn.hpp"
 #include "grid.hpp"
 #include "input.hpp"
 #include "log.hpp"
@@ -712,17 +713,20 @@ BOOL entity_damage(EID id, S32 damage) {
         }
         audio_queue_play_3d_at_position(ACG_SFX, "plop.ogg", g_world->position[id]);
 
-        // Spawn a headstone where the entity was
+        // Queue headstone spawn on main thread (can't load models in worker threads)
         Vector3 const death_pos = g_world->position[id];
         Color const entity_color = g_world->tint[id];
+        Vector3 const death_scale = g_world->scale[id] / 2.0F;
+        F32 const death_rotation = g_world->rotation[id];
+        String const *headstone_name = TS("Headstone for %s", g_world->name[id]);
 
-        entity_create(ENTITY_TYPE_PROP,
-                      TS("Headstone for %s", g_world->name[id])->c,
-                      death_pos,
-                      g_world->rotation[id],
-                      g_world->scale[id] / 2.0F,
-                      entity_color,
-                      "headstone.glb");
+        entity_spawn_queue_arbitrary_entity(ENTITY_TYPE_PROP,
+                                             headstone_name->c,
+                                             death_pos,
+                                             death_rotation,
+                                             death_scale,
+                                             entity_color,
+                                             "headstone.glb");
 
         entity_destroy(id);
 
