@@ -260,7 +260,9 @@ void entity_spawn_npc(SZ count, BOOL notify) {
     Vector3 const center_position = collision.point;
 
     // Spawn in circle pattern to avoid overlap
-    F32 const spawn_radius = 3.0F;  // Radius of spawn circle
+    // Scale radius based on count to prevent overlapping
+    F32 const base_radius = 1.5F;
+    F32 const spawn_radius = base_radius + (math_sqrt_f32((F32)count) * 0.8F);
 
     for (SZ i = 0; i < count; ++i) {
         if (g_world->active_ent_count >= WORLD_MAX_ENTITIES) {
