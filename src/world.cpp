@@ -93,16 +93,9 @@ struct AnimationStateKey {
     U32 anim_index;
     U32 anim_frame;
     BOOL is_blending;
-
-    BOOL operator==(AnimationStateKey const& other) const {
-        return model_hash == other.model_hash &&
-               anim_index == other.anim_index &&
-               anim_frame == other.anim_frame &&
-               is_blending == other.is_blending;
-    }
 };
 
-static inline U32 animation_state_key_hash(AnimationStateKey key) {
+U32 static inline i_animation_state_key_hash(AnimationStateKey key) {
     U32 hash = 2166136261u;
     hash ^= key.model_hash; hash *= 16777619u;
     hash ^= key.anim_index; hash *= 16777619u;
@@ -111,7 +104,14 @@ static inline U32 animation_state_key_hash(AnimationStateKey key) {
     return hash;
 }
 
-MAP_DECLARE(AnimationStateBatchMap, AnimationStateKey, EIDArray, animation_state_key_hash, (AnimationStateKey a, AnimationStateKey b) { return a == b; });
+BOOL static inline i_animation_state_key_equal(AnimationStateKey a, AnimationStateKey b) {
+    return a.model_hash == b.model_hash &&
+           a.anim_index == b.anim_index &&
+           a.anim_frame == b.anim_frame &&
+           a.is_blending == b.is_blending;
+}
+
+MAP_DECLARE(AnimationStateBatchMap, AnimationStateKey, EIDArray, i_animation_state_key_hash, i_animation_state_key_equal);
 
 // Worker function for animation updates (executed by job system)
 S32 static i_animation_update_worker(void *arg) {
