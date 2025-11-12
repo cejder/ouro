@@ -12,11 +12,10 @@ fwd_decl(AShader);
 // GPU-aligned healthbar instance structure (must match shader)
 // Total size: 32 bytes (multiple of 16)
 struct HealthbarInstance {
-    Vector3 world_pos;      // 12 bytes - world position
-    F32 entity_radius;      // 4 bytes - entity radius for horizontal size calculation
+    Vector2 screen_pos;     // 8 bytes - screen position (center)
+    Vector2 bar_size;       // 8 bytes - bar width and height in pixels
     F32 health_perc;        // 4 bytes - health percentage (0.0 - 1.0)
-    F32 obb_extent_y;       // 4 bytes - vertical extent for healthbar offset
-    F32 padding[2];         // 8 bytes - padding to align to 32 bytes
+    F32 padding[3];         // 12 bytes - padding to align to 32 bytes
 };
 
 struct RenderHealthbar {
@@ -37,5 +36,5 @@ extern RenderHealthbar g_render_healthbar;
 
 void render_healthbar_init();
 void render_healthbar_clear();
-void render_healthbar_add(Vector3 world_pos, F32 entity_radius, F32 health_perc);
+void render_healthbar_add(Vector2 screen_pos, Vector2 bar_size, F32 health_perc);
 void render_healthbar_draw();

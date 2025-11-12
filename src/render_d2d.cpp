@@ -644,13 +644,37 @@ void d2d_healthbar_batched(EID id) {
     if (!ENTITY_HAS_FLAG(g_world->flags[id], ENTITY_FLAG_IN_FRUSTUM)) { return; }
     if (!world_is_entity_selected(id))                                { return; }
 
-    // Get entity data
-    Vector3 const world_pos = g_world->position[id];
+    Camera3D const *cam = render_get_active_camera();
+    Vector2 const render_res = render_get_render_resolution();
+    Vector3 const position = g_world->position[id];
+    OrientedBoundingBox const obb = g_world->obb[id];
+
+    // Project healthbar position (above entity)
+    Vector3 const world_pos = {position.x, position.y + (obb.extents.y * 3.5F), position.z};
+    Vector2 const screen_pos = GetWorldToScreenEx(world_pos, *cam, (S32)render_res.x, (S32)render_res.y);
+
+    // Early exit if offscreen
+    if (screen_pos.x < -150 || screen_pos.x > render_res.x + 150 || screen_pos.y < -150 || screen_pos.y > render_res.y + 150) { return; }
+
+    // Calculate bar size
+    F32 const zoom_scale = CAMERA3D_DEFAULT_FOV / c3d_get_fov();
     F32 const entity_radius = g_world->radius[id];
+
+    // Project entity radius to screen space
+    Vector3 const radius_point = Vector3Add(position, {entity_radius, 0.0F, 0.0F});
+    Vector2 const center_screen = GetWorldToScreenEx(position, *cam, (S32)render_res.x, (S32)render_res.y);
+    Vector2 const radius_screen = GetWorldToScreenEx(radius_point, *cam, (S32)render_res.x, (S32)render_res.y);
+    F32 const screen_radius = glm::abs(radius_screen.x - center_screen.x);
+
+    // Bar dimensions
+    F32 const bar_width = glm::clamp(screen_radius * 2.0F * 0.8F, 40.0F, 200.0F);
+    F32 const bar_height = ui_scale_y(0.5F) * zoom_scale;
+
+    // Health percentage for shader coloring
     F32 const health_perc = glm::clamp((F32)g_world->health[id].current / (F32)g_world->health[id].max, 0.0F, 1.0F);
 
-    // Add to batch render - shader will handle projection, sizing, and coloring
-    render_healthbar_add(world_pos, entity_radius, health_perc);
+    // Add to batch render - shader will handle coloring
+    render_healthbar_add(screen_pos, {bar_width, bar_height}, health_perc);
 }
 
 void d2d_healthbar_draw_batched() {

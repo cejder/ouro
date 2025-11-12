@@ -69,15 +69,15 @@ void render_healthbar_clear() {
     g_render_healthbar.count = 0;
 }
 
-void render_healthbar_add(Vector3 world_pos, F32 entity_radius, F32 health_perc) {
+void render_healthbar_add(Vector2 screen_pos, Vector2 bar_size, F32 health_perc) {
     if (g_render_healthbar.count >= HEALTHBAR_MAX) {
         llw("Healthbar buffer full! Max: %d", HEALTHBAR_MAX);
         return;
     }
 
     HealthbarInstance *hb = &g_render_healthbar.mapped_data[g_render_healthbar.count];
-    hb->world_pos = world_pos;
-    hb->entity_radius = entity_radius;
+    hb->screen_pos = screen_pos;
+    hb->bar_size = bar_size;
     hb->health_perc = health_perc;
     hb->padding[0] = 0.0F;
     hb->padding[1] = 0.0F;
@@ -93,25 +93,12 @@ void render_healthbar_draw() {
     RenderHealthbarShader const *shader = &g_render.healthbar_shader;
     BeginShaderMode(shader->shader->base);
 
-    // Get camera and render info
-    Camera3D const *cam = render_get_active_camera();
+    // Get render resolution for screen projection
     Vector2 const render_res = render_get_render_resolution();
-    F32 const camera_fov = c3d_get_fov();
 
-    // Calculate view-projection matrix
-    Matrix const view = GetCameraMatrix(*cam);
-    Matrix const proj = MatrixPerspective(camera_fov * DEG2RAD, render_res.x / render_res.y, 0.01F, 1000.0F);
-    Matrix const view_proj = MatrixMultiply(view, proj);
-
-    // Set view-projection matrix
-    SetShaderValueMatrix(shader->shader->base, shader->view_proj_loc, view_proj);
-
-    // Set camera FOV for zoom calculations
-    SetShaderValue(shader->shader->base, shader->camera_fov_loc, &camera_fov, SHADER_UNIFORM_FLOAT);
-
-    // Set render resolution
-    F32 const resolution[2] = {render_res.x, render_res.y};
-    SetShaderValue(shader->shader->base, shader->render_resolution_loc, resolution, SHADER_UNIFORM_VEC2);
+    // Screen-space orthographic projection matrix
+    Matrix const projection = MatrixOrtho(0.0F, render_res.x, render_res.y, 0.0F, -1.0F, 1.0F);
+    SetShaderValueMatrix(shader->shader->base, shader->view_proj_loc, projection);
 
     // Set time for pulsing animation
     F32 const current_time = (F32)time_get();
@@ -151,7 +138,7 @@ void render_healthbar_draw() {
 
 void render_healthbar_init() { llw("Healthbar rendering is not supported on macOS!"); }
 void render_healthbar_clear() {}
-void render_healthbar_add(Vector3 world_pos, F32 entity_radius, F32 health_perc) {}
+void render_healthbar_add(Vector2 screen_pos, Vector2 bar_size, F32 health_perc) {}
 void render_healthbar_draw() {}
 
 #endif
