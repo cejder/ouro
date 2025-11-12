@@ -95,7 +95,6 @@ SCENE_UPDATE(particles_demo) {
 
     if (is_pressed(IA_YES)) {
         audio_play(ACG_SFX, "menu_selection.ogg");
-        // TODO:
     }
 
     if (is_pressed_or_repeat(IA_MOVE_2D_UP)) {

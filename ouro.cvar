@@ -59,7 +59,7 @@ multithreaded                : true
 flame_graph_enabled          : true
 flame_graph_font             : GoMono
 flame_graph_font_size        : 18
-flame_graph_position_y       : 0.11675540
+flame_graph_position_y       : 0.28573692
 frame_graph_button_font      : GoMono
 frame_graph_button_font_size : 22
 frame_graph_legend_font      : GoMono

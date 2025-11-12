@@ -33,7 +33,7 @@ struct AudioState {
     do {                                                   \
         FMOD_RESULT const _result = (call);                \
         if (_result != FMOD_OK) {                          \
-            lle("%s: %s", msg, FMOD_ErrorString(_result)); \
+            llw("%s: %s", msg, FMOD_ErrorString(_result)); \
             return;                                        \
         }                                                  \
     } while (0)
@@ -42,7 +42,7 @@ struct AudioState {
     do {                                                   \
         FMOD_RESULT const _result = (call);                \
         if (_result != FMOD_OK) {                          \
-            lle("%s: %s", msg, FMOD_ErrorString(_result)); \
+            llw("%s: %s", msg, FMOD_ErrorString(_result)); \
             return ret;                                    \
         }                                                  \
     } while (0)
