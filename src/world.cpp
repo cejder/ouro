@@ -193,9 +193,12 @@ void world_draw_2d_hud() {
 
         if (g_world->type[i] == ENTITY_TYPE_NPC) {
             entity_actor_draw_2d_hud(i);
-            d2d_healthbar(i);
+            d2d_healthbar_batched(i);  // Collect healthbar data for batched rendering
         }
     }
+
+    // Draw all healthbars in a single batched draw call
+    d2d_healthbar_draw_batched();
 
     edit_draw_2d_hud();
 }
