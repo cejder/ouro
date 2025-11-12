@@ -86,8 +86,6 @@ struct AnimationUpdateJobData {
     F32 dt;
     U32 start_idx;
     U32 end_idx;
-    U32 stat_total;
-    U32 stat_culled;
 };
 
 // Actor update job data
@@ -102,20 +100,14 @@ S32 static i_animation_update_worker(void *arg) {
     auto *data = (AnimationUpdateJobData *)arg;
     F32 const dt = data->dt;
 
-    data->stat_total = 0;
-    data->stat_culled = 0;
-
     for (U32 idx = data->start_idx; idx < data->end_idx; ++idx) {
         EID const id = g_world->active_entities[idx];
 
         if (!g_world->animation[id].has_animations) { continue; }
         if (!g_world->animation[id].anim_playing)   { continue; }
 
-        data->stat_total++;
-
         // Frustum culling: Skip off-screen entities
         if (!ENTITY_HAS_FLAG(g_world->flags[id], ENTITY_FLAG_IN_FRUSTUM)) {
-            data->stat_culled++;
             continue;
         }
 
@@ -246,42 +238,18 @@ void world_update(F32 dt, F32 dtu) {
             }
 
             job_system_wait();
-
-            // Collect statistics from all jobs
-            U32 total = 0, culled = 0;
-            for (U32 i = 0; i < worker_count; ++i) {
-                total += job_data[i].stat_total;
-                culled += job_data[i].stat_culled;
-            }
-            U32 const computed = total - culled;
-
-            // Log statistics periodically (every 120 frames ~ 2 seconds at 60fps)
-            static U32 frame_counter = 0;
-            if (++frame_counter >= 120) {
-                frame_counter = 0;
-                F32 const cull_pct = total > 0 ? ((F32)culled * 100.0F / (F32)total) : 0.0F;
-                F32 const comp_pct = total > 0 ? ((F32)computed * 100.0F / (F32)total) : 0.0F;
-                lli("Anim MT: total=%u culled=%u(%.1f%%) computed=%u(%.1f%%)",
-                    total, culled, cull_pct, computed, comp_pct);
-            }
-
             PEND("anim_update_MT");
         } else {
             PBEGIN("anim_update_ST");
             // Single-threaded fallback
-            U32 total = 0, culled = 0;
-
             for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
                 EID const id = g_world->active_entities[idx];
 
                 if (!g_world->animation[id].has_animations) { continue; }
                 if (!g_world->animation[id].anim_playing)   { continue; }
 
-                total++;
-
                 // Frustum culling: Skip off-screen entities
                 if (!ENTITY_HAS_FLAG(g_world->flags[id], ENTITY_FLAG_IN_FRUSTUM)) {
-                    culled++;
                     continue;
                 }
 
@@ -320,19 +288,6 @@ void world_update(F32 dt, F32 dtu) {
 
                 math_compute_entity_bone_matrices(id);
             }
-
-            U32 const computed = total - culled;
-
-            // Log statistics periodically (every 120 frames ~ 2 seconds at 60fps)
-            static U32 frame_counter = 0;
-            if (++frame_counter >= 120) {
-                frame_counter = 0;
-                F32 const cull_pct = total > 0 ? ((F32)culled * 100.0F / (F32)total) : 0.0F;
-                F32 const comp_pct = total > 0 ? ((F32)computed * 100.0F / (F32)total) : 0.0F;
-                lli("Anim ST: total=%u culled=%u(%.1f%%) computed=%u(%.1f%%)",
-                    total, culled, cull_pct, computed, comp_pct);
-            }
-
             PEND("anim_update_ST");
         }
     }
