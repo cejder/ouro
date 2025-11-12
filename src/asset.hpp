@@ -21,14 +21,11 @@ fwd_decl_ns(FMOD, Sound);
 #define A_TERRAIN_DEFAULT_SIZE 1024
 #define A_TERRAIN_SAMPLE_RATE 1024
 #define A_MODEL_ICON_SIZE 256
-#define A_MODEL_SHADER_NAME "model"
-#define A_MODEL_INSTANCED_SHADER_NAME "model_instanced"
-#define A_MODEL_ANIMATED_INSTANCED_SHADER_NAME "model_animated_instanced"
 #define A_SKYBOX_SHADER_NAME "skybox"
 #define A_CUBEMAP_SHADER_NAME "cubemap"
-#define A_TERRAIN_INFO_SHADER_NAME "terrain_info"
 #define A_PATH_MAX_LENGTH 128
 #define A_NAME_MAX_LENGTH 32
+
 #define A_ASSETS_PATH "assets"
 #define A_MODELS_PATH A_ASSETS_PATH "/models"
 #define A_TEXTURES_PATH A_ASSETS_PATH "/textures"

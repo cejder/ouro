@@ -5,7 +5,7 @@
 #include <errno.h>
 #include <glm/common.hpp>
 
-#define PRINT(fmt, ...) ou_fprintf(stdout, fmt, __VA_ARGS__)
+#define OUT(fmt, ...) ou_fprintf(stdout, fmt, __VA_ARGS__)
 #define ERR(fmt, ...) ou_fprintf(stderr, fmt, __VA_ARGS__)
 
 Args static i_args = {};
@@ -180,8 +180,8 @@ void args_print() {
         max_name_len = glm::max(len, max_name_len);
     }
 
-    PRINT("%s\n", "Args:");
-    for (SZ i = 0; i < i_args.arg_count; i++) { PRINT("   %*s: %s\n", (S32)max_name_len, i_args.args[i].name, i_arg_value_to_string(&i_args.args[i])); }
+    OUT("%s\n", "Args:");
+    for (SZ i = 0; i < i_args.arg_count; i++) { OUT("   %*s: %s\n", (S32)max_name_len, i_args.args[i].name, i_arg_value_to_string(&i_args.args[i])); }
 }
 
 void args_usage() {
@@ -200,12 +200,12 @@ void args_usage() {
         max_long_len  = glm::max(long_len, max_long_len);
     }
 
-    PRINT("Usage: %s [options]\n", i_args.project_name);
-    PRINT("%s\n", "Options:");
+    OUT("Usage: %s [options]\n", i_args.project_name);
+    OUT("%s\n", "Options:");
 
     for (SZ i = 0; i < i_args.arg_count; i++) {
         Arg *arg = &i_args.args[i];
-        PRINT("   %*s:  %-*s  or  %-*s    %s\n", (S32)max_name_len, arg->name, (S32)max_short_len, arg->short_flag, (S32)max_long_len, arg->long_flag,
+        OUT("   %*s:  %-*s  or  %-*s    %s\n", (S32)max_name_len, arg->name, (S32)max_short_len, arg->short_flag, (S32)max_long_len, arg->long_flag,
               arg->description);
     }
 }

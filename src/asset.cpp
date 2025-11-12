@@ -120,7 +120,7 @@ void static i_load_model(C8 const *path) {
         }
     }
 
-    AShader *model_shader = asset_get_shader(A_MODEL_SHADER_NAME);
+    AShader *model_shader = asset_get_shader("model");
     asset_set_model_shader(a, model_shader->base);
 
     for (S32 i = 0; i < a->base.meshCount; ++i) { a->vertex_count += (SZ)a->base.meshes[i].vertexCount; }
@@ -414,10 +414,10 @@ TextureCubemap static i_skybox_gen_cubemap(ASkybox *a) {
     rlViewport(0, 0, rlGetFramebufferWidth(), rlGetFramebufferHeight());
     rlEnableBackfaceCulling();
 
-    cubemap.width = size;
-    cubemap.height = size;
+    cubemap.width   = size;
+    cubemap.height  = size;
     cubemap.mipmaps = 1;
-    cubemap.format = format;
+    cubemap.format  = format;
 
     return cubemap;
 }
@@ -448,28 +448,26 @@ void static i_load_skybox(C8 const *path) {
 }
 
 void static i_delete_outdated_terrain_caches(C8 const *path, S64 heightmap_modtime, Vector3 dimensions) {
-    // Get all .bin files
     FilePathList const files = LoadDirectoryFilesEx(path, ".bin", false);
 
     for (U32 i = 0U; i < files.count; i++) {
+        C8 const *h_prefix = "height_cache_";
+        C8 const *i_prefix = "info_cache_";
         C8 const *filename = GetFileName(files.paths[i]);
-        // Check if this is one of our cache files
-        if (ou_strncmp(filename, "height_cache_", 12) == 0 || ou_strncmp(filename, "info_cache_", 10) == 0) {
-            // Find the modtime in the filename (after the last underscore)
-            C8 const *modtime_str = ou_strrchr(filename, '_') + 1;
-            // Remove .bin extension before converting
+        if (ou_strncmp(filename, h_prefix, ou_strlen(h_prefix)) == 0 ||
+            ou_strncmp(filename, i_prefix, ou_strlen(i_prefix)) == 0) {
+            C8 const *modtime_str    = ou_strrchr(filename, '_') + 1;
             String const *number_str = TS("%.*s", (S32)(ou_strlen(modtime_str) - 4), modtime_str);
-            S64 const cache_modtime = ou_strtol(number_str->c, nullptr, 10);
+            S64 const cache_modtime  = ou_strtol(number_str->c, nullptr, 10);
 
             if (cache_modtime < heightmap_modtime) {
-                remove(files.paths[i]);
+                FileRemove(files.paths[i]);
                 lld("Deleted outdated terrain cache (reason: modtime): %s", files.paths[i]);
             }
 
-            // Check if the dimensions differ
             String *t = TS("%s", filename);
             if (!string_contains(t, TS("%d_%d", (U32)dimensions.x, A_TERRAIN_SAMPLE_RATE))) {
-                remove(files.paths[i]);
+                FileRemove(files.paths[i]);
                 lld("Deleted outdated terrain cache (reason: size/sample rate): %s", files.paths[i]);
             }
         }
@@ -487,8 +485,8 @@ struct ICreateTerrainThreadData {
 
 S32 static i_create_terrain_thread_func(void *arg) {
     ICreateTerrainThreadData *data = (ICreateTerrainThreadData *)arg;
-    ATerrain *a = data->terrain;
-    Vector3 const dimensions = data->dimensions;
+    ATerrain *a                    = data->terrain;
+    Vector3 const dimensions       = data->dimensions;
 
     for (U32 z = data->start_z; z < data->end_z; z++) {
         U32 const z_idx = z * A_TERRAIN_SAMPLE_RATE;
@@ -498,7 +496,7 @@ S32 static i_create_terrain_thread_func(void *arg) {
             F32 const world_z            = ((F32)z / (F32)(A_TERRAIN_SAMPLE_RATE - 1U)) * dimensions.z;
             Vector3 const ray_start      = {world_x, dimensions.y * 2.0F, world_z};
             RayCollision const collision = math_ray_collision_to_terrain(a, ray_start, {0.0F, -1.0F, 0.0F});
-            a->height_field[idx] = collision.hit ? collision.point.y : 0.0F;
+            a->height_field[idx]         = collision.hit ? collision.point.y : 0.0F;
         }
     }
 
@@ -617,11 +615,11 @@ void static i_load_terrain(C8 const *path, Vector3 dimensions) {
     }
 
     // Generate the mesh (always needed)
-    a->mesh  = GenMeshHeightmap(heightmap_image, dimensions);
-    a->model = LoadModelFromMesh(a->mesh);
-    a->model.materials[0].shader = asset_get_shader(A_MODEL_SHADER_NAME)->base;
+    a->mesh                                                  = GenMeshHeightmap(heightmap_image, dimensions);
+    a->model                                                 = LoadModelFromMesh(a->mesh);
+    a->model.materials[0].shader                             = asset_get_shader("model")->base;
     a->model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = a->diffuse_texture->base;
-    a->transform = MatrixTranslate(0.0F, 0.0F, 0.0F);
+    a->transform                                             = MatrixTranslate(0.0F, 0.0F, 0.0F);
 
     // In i_load_terrain, replace the height field generation with:
     if (need_generate) {
@@ -629,12 +627,10 @@ void static i_load_terrain(C8 const *path, Vector3 dimensions) {
 
         lld("Generating terrain heights with %zu threads for %s", core_count, path);
 
-        U32 const sample_count = A_TERRAIN_SAMPLE_RATE * A_TERRAIN_SAMPLE_RATE;
-        a->height_field = mmpa(F32 *, sizeof(F32) * sample_count);
-
-        auto *threads = mmta(thrd_t *, sizeof(thrd_t) * core_count);
-        auto *thread_data = mmta(ICreateTerrainThreadData *, sizeof(ICreateTerrainThreadData) * core_count);
-
+        U32 const sample_count    = A_TERRAIN_SAMPLE_RATE * A_TERRAIN_SAMPLE_RATE;
+        a->height_field           = mmpa(F32 *, sizeof(F32) * sample_count);
+        auto *threads             = mmta(thrd_t *, sizeof(thrd_t) * core_count);
+        auto *thread_data         = mmta(ICreateTerrainThreadData *, sizeof(ICreateTerrainThreadData) * core_count);
         U32 const rows_per_thread = A_TERRAIN_SAMPLE_RATE / core_count;
         U32 const remaining_rows  = A_TERRAIN_SAMPLE_RATE % core_count;
         U32 current_row           = 0;
@@ -667,26 +663,25 @@ void static i_load_terrain(C8 const *path, Vector3 dimensions) {
     UnloadImage(heightmap_image);
 
     // Generate terrain info data
-    U32 const r = (U32)dimensions.x / A_TERRAIN_SAMPLE_RATE;  // NOLINT
+    U32 const r       = (U32)dimensions.x / A_TERRAIN_SAMPLE_RATE;
     U32 const x_steps = (U32)dimensions.x / r;
     U32 const z_steps = (U32)dimensions.z / r;
-    SZ const cap = (SZ)x_steps * (SZ)z_steps;
+    SZ const cap      = (SZ)x_steps * (SZ)z_steps;
 
     array_init(MEMORY_TYPE_ARENA_PERMANENT, &a->info_positions,  cap);
     array_init(MEMORY_TYPE_ARENA_PERMANENT, &a->info_normals,    cap);
     array_init(MEMORY_TYPE_ARENA_PERMANENT, &a->info_transforms, cap);
 
+    a->info_material        = g_render.default_material;
+    a->info_mesh            = GenMeshSphere(0.25F, 8, 8);
+    F32 const min_height    = math_find_lowest_point_in_model (&a->model, a->transform).y;
+    F32 const max_height    = math_find_highest_point_in_model(&a->model, a->transform).y;
     F32 const normal_length = 2.0F;
 
-    a->info_material = g_render.default_material;
-    a->info_mesh = GenMeshSphere(0.25F, 8, 8);
-    F32 const min_height = math_find_lowest_point_in_model (&a->model, a->transform).y;
-    F32 const max_height = math_find_highest_point_in_model(&a->model, a->transform).y;
-
     // Try to load terrain info from cache
-    String *info_cache_path = TS("%s/info_cache_%u_%u_%" PRId64 ".bin", path, (U32)dimensions.x, A_TERRAIN_SAMPLE_RATE, modtime);
+    String *info_cache_path      = TS("%s/info_cache_%u_%u_%" PRId64 ".bin", path, (U32)dimensions.x, A_TERRAIN_SAMPLE_RATE, modtime);
     S32 const expected_info_size = (S32)(cap * (sizeof(Vector3) + sizeof(Vector3) + sizeof(Matrix)));
-    BOOL need_generate_info = true;
+    BOOL need_generate_info      = true;
 
     if (FileExists(info_cache_path->c) && GetFileLength(info_cache_path->c) == expected_info_size) {
         S32 data_size = 0;
@@ -747,7 +742,7 @@ void static i_load_terrain(C8 const *path, Vector3 dimensions) {
 
         // Save terrain info to cache
         U8 *cache_data = mmta(U8 *, (SZ)expected_info_size);
-        U8 *ptr = cache_data;
+        U8 *ptr        = cache_data;
         ou_memcpy(ptr, a->info_positions.data,  cap * sizeof(Vector3)); ptr += cap * sizeof(Vector3);
         ou_memcpy(ptr, a->info_normals.data,    cap * sizeof(Vector3)); ptr += cap * sizeof(Vector3);
         ou_memcpy(ptr, a->info_transforms.data, cap * sizeof(Matrix));
@@ -755,11 +750,11 @@ void static i_load_terrain(C8 const *path, Vector3 dimensions) {
         lld("Saved terrain info to cache: %s", info_cache_path->c);
     }
 
-    AShader *terrain_info_shader = asset_get_shader("terrain_info");
-    a->info_material.shader = terrain_info_shader->base;
+    AShader *terrain_info_shader                          = asset_get_shader("terrain_info");
+    a->info_material.shader                               = terrain_info_shader->base;
     terrain_info_shader->base.locs[SHADER_LOC_MATRIX_MVP] = GetShaderLocation(terrain_info_shader->base, "mvp");
-    S32 const min_height_loc = GetShaderLocation(terrain_info_shader->base, "minHeight");
-    S32 const max_height_loc = GetShaderLocation(terrain_info_shader->base, "maxHeight");
+    S32 const min_height_loc                              = GetShaderLocation(terrain_info_shader->base, "minHeight");
+    S32 const max_height_loc                              = GetShaderLocation(terrain_info_shader->base, "maxHeight");
     SetShaderValue(a->info_material.shader, min_height_loc, &min_height, SHADER_UNIFORM_FLOAT);
     SetShaderValue(a->info_material.shader, max_height_loc, &max_height, SHADER_UNIFORM_FLOAT);
 
@@ -925,6 +920,7 @@ void asset_init() {
 
     g_assets.run_update_thread = OURO_IS_DEBUG;
     g_assets.initialized       = true;
+
 }
 
 void asset_start_reload_thread() {
@@ -1260,10 +1256,10 @@ void static i_dump(void *asset) {
     C8 pretty_size[PRETTY_BUFFER_SIZE] = {};
     unit_to_pretty_prefix_binary_u("B", header->file_size, pretty_size, PRETTY_BUFFER_SIZE, UNIT_PREFIX_BINARY_MEBI);
 
-    time_t const current_unix_time = time(nullptr);
-    F64 const ns_since_access      = header->last_access > 0 ? BASE_TO_NANO(difftime(current_unix_time, header->last_access)) : 0.0;
-    F64 const ns_since_modified    = header->last_modified > 0 ? BASE_TO_NANO(difftime(current_unix_time, header->last_modified)) : 0.0;
-    C8 pretty_access[PRETTY_BUFFER_SIZE] = {};
+    time_t const current_unix_time         = time(nullptr);
+    F64 const ns_since_access              = header->last_access > 0 ? BASE_TO_NANO(difftime(current_unix_time, header->last_access)) : 0.0;
+    F64 const ns_since_modified            = header->last_modified > 0 ? BASE_TO_NANO(difftime(current_unix_time, header->last_modified)) : 0.0;
+    C8 pretty_access[PRETTY_BUFFER_SIZE]   = {};
     C8 pretty_modified[PRETTY_BUFFER_SIZE] = {};
 
     if (header->last_access > 0) {
@@ -1364,7 +1360,7 @@ F32 asset_get_animation_duration(C8 const *model_name, U32 anim_index, F32 fps, 
     if (!model->has_animations)                    { return 0.0F; }
     if (anim_index >= (U32)model->animation_count) { return 0.0F; }
 
-    ModelAnimation const &anim = model->animations[anim_index];
+    ModelAnimation const &anim    = model->animations[anim_index];
     F32 const frame_duration      = 1.0F / fps;
     F32 const base_duration       = (F32)anim.frameCount * frame_duration;
     F32 const real_world_duration = base_duration / anim_speed;
@@ -1378,7 +1374,7 @@ F32 asset_get_animation_duration_by_hash(U32 model_name_hash, U32 anim_index, F3
     if (!model->has_animations)                    { return 0.0F; }
     if (anim_index >= (U32)model->animation_count) { return 0.0F; }
 
-    ModelAnimation const &anim = model->animations[anim_index];
+    ModelAnimation const &anim    = model->animations[anim_index];
     F32 const frame_duration      = 1.0F / fps;
     F32 const base_duration       = (F32)anim.frameCount * frame_duration;
     F32 const real_world_duration = base_duration / anim_speed;
@@ -1427,11 +1423,11 @@ void asset_blob_write() {
     SZ total_size = SZ_MIN;
 
     for (SZ i = 0; i < list.count; ++i) {
-        ABlob blob     = {};
-        S32 size       = S32_MIN;
+        ABlob blob = {};
+        S32 size   = S32_MIN;
         ou_strncpy(blob.filepath, list.paths[i], A_PATH_MAX_LENGTH);
-        blob.data      = LoadFileData(blob.filepath, &size);
-        blob.size      = (SZ)size;
+        blob.data  = LoadFileData(blob.filepath, &size);
+        blob.size  = (SZ)size;
 
         if (blob.size == 0) { lle("Could not load file '%s'", blob.filepath); }
 

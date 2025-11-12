@@ -17,13 +17,13 @@
 #endif
 
 #if OURO_IS_DEBUG_NUM
-#define _assertf_(expr, fmt, ...)                                                                         \
-    do {                                                                                                  \
-        if (!(expr)) {                                                                                    \
-            fprintf(stderr, "%s:%d:%s: ASSERTION VIOLATED: %s\n", __FILE__, __LINE__, __func__,          \
-                    TS(fmt, __VA_ARGS__)->c);                                                             \
-            abort();                                                                                      \
-        }                                                                                                 \
+#define _assertf_(expr, fmt, ...)                                                               \
+    do {                                                                                        \
+        if (!(expr)) {                                                                          \
+            fprintf(stderr, "%s:%d:%s: ASSERTION VIOLATED: %s\n", __FILE__, __LINE__, __func__, \
+                    TS(fmt, __VA_ARGS__)->c);                                                   \
+            abort();                                                                            \
+        }                                                                                       \
     } while (0)
 #else
 #define _assertf_(expr, fmt, ...) ((void)0)

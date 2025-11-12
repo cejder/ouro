@@ -242,7 +242,7 @@ IDungeonData static i_parse_dungeon(C8 const* filepath) {
 
         // Use default material with rock texture
         data.combined_model.materials[0]        = g_render.default_material;
-        data.combined_model.materials[0].shader = asset_get_shader(A_MODEL_SHADER_NAME)->base;
+        data.combined_model.materials[0].shader = asset_get_shader("model")->base;
 
         // Load and apply rock texture
         ATexture *texture = asset_get_texture("cracked_mud.jpg");

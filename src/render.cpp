@@ -93,7 +93,7 @@ void render_init() {
     se->time_loc           = GetShaderLocation(se->shader->base, "time");
 
     RenderModelShader *ms     = &g_render.model_shader;
-    ms->shader                = asset_get_shader(A_MODEL_SHADER_NAME);
+    ms->shader                = asset_get_shader("model");
     ms->animation_enabled_loc = GetShaderLocation(ms->shader->base, "animationEnabled");
     ms->view_pos_loc          = GetShaderLocation(ms->shader->base, "viewPos");
     ms->ambient_color_loc     = GetShaderLocation(ms->shader->base, "ambient");
@@ -113,7 +113,7 @@ void render_init() {
     }
 
     RenderModelInstancedShader *mis = &g_render.model_instanced_shader;
-    mis->shader                     = asset_get_shader(A_MODEL_INSTANCED_SHADER_NAME);
+    mis->shader                     = asset_get_shader("model_instanced");
     mis->mvp_loc                    = GetShaderLocation(mis->shader->base, "mvp");
     mis->view_pos_loc               = GetShaderLocation(mis->shader->base, "viewPos");
     mis->ambient_color_loc          = GetShaderLocation(mis->shader->base, "ambient");
@@ -134,7 +134,7 @@ void render_init() {
     }
 
     RenderModelAnimatedInstancedShader *mais = &g_render.model_animated_instanced_shader;
-    mais->shader                             = asset_get_shader(A_MODEL_ANIMATED_INSTANCED_SHADER_NAME);
+    mais->shader                             = asset_get_shader("model_animated_instanced");
     mais->mvp_loc                            = GetShaderLocation(mais->shader->base, "mvp");
     mais->view_pos_loc                       = GetShaderLocation(mais->shader->base, "viewPos");
     mais->ambient_color_loc                  = GetShaderLocation(mais->shader->base, "ambient");
