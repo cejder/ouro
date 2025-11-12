@@ -249,10 +249,10 @@ void world_update(F32 dt, F32 dtu) {
             static U32 frame_counter = 0;
             if (++frame_counter >= 120) {
                 frame_counter = 0;
-                F32 const cull_pct = total > 0 ? (culled * 100.0F / total) : 0.0F;
-                F32 const unch_pct = total > 0 ? (unchanged * 100.0F / total) : 0.0F;
-                F32 const comp_pct = total > 0 ? (computed * 100.0F / total) : 0.0F;
-                lld("Anim MT: total=%u culled=%u(%.1f%%) unchanged=%u(%.1f%%) computed=%u(%.1f%%)",
+                F32 const cull_pct = total > 0 ? ((F32)culled * 100.0F / (F32)total) : 0.0F;
+                F32 const unch_pct = total > 0 ? ((F32)unchanged * 100.0F / (F32)total) : 0.0F;
+                F32 const comp_pct = total > 0 ? ((F32)computed * 100.0F / (F32)total) : 0.0F;
+                lli("Anim MT: total=%u culled=%u(%.1f%%) unchanged=%u(%.1f%%) computed=%u(%.1f%%)",
                     total, culled, cull_pct, unchanged, unch_pct, computed, comp_pct);
             }
 
@@ -328,10 +328,10 @@ void world_update(F32 dt, F32 dtu) {
             static U32 frame_counter = 0;
             if (++frame_counter >= 120) {
                 frame_counter = 0;
-                F32 const cull_pct = total > 0 ? (culled * 100.0F / total) : 0.0F;
-                F32 const unch_pct = total > 0 ? (unchanged * 100.0F / total) : 0.0F;
-                F32 const comp_pct = total > 0 ? (computed * 100.0F / total) : 0.0F;
-                lld("Anim ST: total=%u culled=%u(%.1f%%) unchanged=%u(%.1f%%) computed=%u(%.1f%%)",
+                F32 const cull_pct = total > 0 ? ((F32)culled * 100.0F / (F32)total) : 0.0F;
+                F32 const unch_pct = total > 0 ? ((F32)unchanged * 100.0F / (F32)total) : 0.0F;
+                F32 const comp_pct = total > 0 ? ((F32)computed * 100.0F / (F32)total) : 0.0F;
+                lli("Anim ST: total=%u culled=%u(%.1f%%) unchanged=%u(%.1f%%) computed=%u(%.1f%%)",
                     total, culled, cull_pct, unchanged, unch_pct, computed, comp_pct);
             }
 
