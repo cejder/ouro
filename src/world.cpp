@@ -90,6 +90,13 @@ struct AnimationUpdateJobData {
     U32 stat_culled;
 };
 
+// Actor update job data
+struct ActorUpdateJobData {
+    F32 dt;
+    U32 start_idx;
+    U32 end_idx;
+};
+
 // Worker function for animation updates (executed by job system)
 S32 static i_animation_update_worker(void *arg) {
     auto *data = (AnimationUpdateJobData *)arg;
@@ -158,6 +165,22 @@ S32 static i_animation_update_worker(void *arg) {
     return 0;
 }
 
+// Worker function for actor updates (executed by job system)
+S32 static i_actor_update_worker(void *arg) {
+    auto *data = (ActorUpdateJobData *)arg;
+    F32 const dt = data->dt;
+
+    for (U32 idx = data->start_idx; idx < data->end_idx; ++idx) {
+        EID const id = g_world->active_entities[idx];
+
+        if (!ENTITY_HAS_FLAG(g_world->flags[id], ENTITY_FLAG_ACTOR)) { continue; }
+
+        entity_actor_update(id, dt);
+    }
+
+    return 0;
+}
+
 void world_update(F32 dt, F32 dtu) {
     g_render.visible_vertex_count = 0;
 
@@ -181,7 +204,7 @@ void world_update(F32 dt, F32 dtu) {
                                               : ENTITY_CLEAR_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM);
 
         if (ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM)) { g_render.visible_vertex_count += asset_get_model_by_hash(g_world->model_name_hash[i])->vertex_count; }
-        if (ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_ACTOR))      { entity_actor_update(i, dt); }
+        // NOTE: entity_actor_update moved to separate pass below for multithreading
         if (g_world->type[i] == ENTITY_TYPE_BUILDING_LUMBERYARD)        { entity_building_update(i, dt); }
 
 #if OURO_TALK
@@ -311,6 +334,43 @@ void world_update(F32 dt, F32 dtu) {
             }
 
             PEND("anim_update_ST");
+        }
+    }
+
+    // Update all entity actors
+    if (g_world->active_entity_count > 0) {
+        if (c_general__multithreaded) {
+            PBEGIN("actor_update_MT");
+            U32 const worker_count = job_system_get_worker_count();
+            SZ const entities_per_worker = (g_world->active_entity_count + worker_count - 1) / worker_count;
+
+            auto *job_data = mmta(ActorUpdateJobData *, sizeof(ActorUpdateJobData) * worker_count);
+
+            for (U32 i = 0; i < worker_count; ++i) {
+                SZ const start_idx = i * entities_per_worker;
+                SZ const end_idx = glm::min(start_idx + entities_per_worker, g_world->active_entity_count);
+
+                if (start_idx >= g_world->active_entity_count) { break; }
+
+                job_data[i].dt = dt;
+                job_data[i].start_idx = (U32)start_idx;
+                job_data[i].end_idx = (U32)end_idx;
+
+                job_system_submit(i_actor_update_worker, &job_data[i]);
+            }
+
+            job_system_wait();
+            PEND("actor_update_MT");
+        } else {
+            PBEGIN("actor_update_ST");
+            for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
+                EID const id = g_world->active_entities[idx];
+
+                if (!ENTITY_HAS_FLAG(g_world->flags[id], ENTITY_FLAG_ACTOR)) { continue; }
+
+                entity_actor_update(id, dt);
+            }
+            PEND("actor_update_ST");
         }
     }
 }
