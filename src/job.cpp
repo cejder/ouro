@@ -3,8 +3,6 @@
 #include "log.hpp"
 #include "memory.hpp"
 
-#include <tinycthread.h>
-
 JobSystem g_job_system = {};
 
 S32 static i_job_worker_thread(void *arg) {

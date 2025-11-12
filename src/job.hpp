@@ -4,6 +4,11 @@
 
 #include <tinycthread.h>
 
+// Need for tinycthread on macOS
+#ifdef call_once
+#undef call_once
+#endif
+
 // Job system for parallel task execution
 // Uses persistent worker threads to avoid thread creation overhead
 

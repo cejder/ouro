@@ -14,6 +14,11 @@
 #include <raymath.h>
 #include <tinycthread.h>
 
+// Need for tinycthread on macOS
+#ifdef call_once
+#undef call_once
+#endif
+
 // ===============================================================
 // ===================== TEXT MEASURE CACHE ======================
 // ===============================================================

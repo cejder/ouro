@@ -4,6 +4,11 @@
 
 #include <tinycthread.h>
 
+// Need for tinycthread on macOS
+#ifdef call_once
+#undef call_once
+#endif
+
 enum MemoryType : U8 {
     MEMORY_TYPE_ARENA_PERMANENT,
     MEMORY_TYPE_ARENA_TRANSIENT,

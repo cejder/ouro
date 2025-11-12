@@ -5,6 +5,11 @@
 
 #include <tinycthread.h>
 
+// Need for tinycthread on macOS
+#ifdef call_once
+#undef call_once
+#endif
+
 fwd_decl(ATerrain);
 
 #define ENTITY_SPAWN_COMMAND_QUEUE_MAX 16384

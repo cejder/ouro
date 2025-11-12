@@ -129,8 +129,3 @@ using EID =                                 U32;
 #define FLAG_TOGGLE(flags, flag)            ((flags) ^= (flag))
 #define FLAG_HAS(flags, flag)               (((flags) & (flag)) != 0)
 #define FLAG_ADD_IF(flags, flag, condition) do { if (condition) FLAG_SET(flags, flag); } while(0)
-
-// Need for tinycthread on macOS
-#ifdef call_once
-#undef call_once
-#endif

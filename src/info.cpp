@@ -10,6 +10,11 @@
 #include <glm/detail/setup.hpp>
 #include <tinycthread.h>
 
+// Need for tinycthread on macOS
+#ifdef call_once
+#undef call_once
+#endif
+
 #include <external/glad.h>
 #include <external/glfw/include/GLFW/glfw3.h>
 

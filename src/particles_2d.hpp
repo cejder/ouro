@@ -9,6 +9,11 @@
 #include <raylib.h>
 #include <tinycthread.h>
 
+// Need for tinycthread on macOS
+#ifdef call_once
+#undef call_once
+#endif
+
 #define PARTICLES_2D_MAX 500'000
 #define PARTICLES_2D_SPAWN_RATE_HISTORY_SIZE 128
 #define PARTICLES_2D_COMMAND_QUEUE_MAX 16384

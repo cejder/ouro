@@ -6,6 +6,11 @@
 #include <fmod.hpp>
 #include <tinycthread.h>
 
+// Need for tinycthread on macOS
+#ifdef call_once
+#undef call_once
+#endif
+
 #define AUDIO_CHANNEL_GROUP_MAX 128
 #define AUDIO_VOLUME_DEFAULT_VALUE 0.5F
 #define AUDIO_PITCH_DEFAULT_VALUE 1.0F
