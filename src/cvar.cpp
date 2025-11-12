@@ -168,7 +168,7 @@ CVarMeta const cvar_meta_table[CVAR_COUNT] = {
 
 void cvar_load() {
     // Try to load user config first, fall back to default
-    U8 *content = LoadFileText(CVAR_FILE_NAME);
+    C8 *content = LoadFileText(CVAR_FILE_NAME);
     BOOL from_default = false;
 
     if (!content) {
@@ -184,7 +184,7 @@ void cvar_load() {
 
     // Parse the INI file
     C8 current_section[CVAR_NAME_MAX_LENGTH] = "";
-    C8 *line = (C8 *)content;
+    C8 *line = content;
     C8 *end = line;
 
     while (*line) {
@@ -217,7 +217,7 @@ void cvar_load() {
                 section_end++;
             }
             if (*section_end == ']') {
-                SZ section_len = section_end - section_start;
+                SZ section_len = (SZ)(section_end - section_start);
                 ou_strncpy(current_section, section_start, section_len);
                 current_section[section_len] = '\0';
             }
@@ -242,7 +242,7 @@ void cvar_load() {
                 }
 
                 C8 key[CVAR_NAME_MAX_LENGTH];
-                SZ key_len = (key_end - key_start) + 1;
+                SZ key_len = (SZ)((key_end - key_start) + 1);
                 ou_strncpy(key, key_start, key_len);
                 key[key_len] = '\0';
 
@@ -263,15 +263,13 @@ void cvar_load() {
                 }
 
                 C8 value[CVAR_STR_MAX_LENGTH];
-                SZ value_len = (value_end - value_start) + 1;
+                SZ value_len = (SZ)((value_end - value_start) + 1);
                 ou_strncpy(value, value_start, value_len);
                 value[value_len] = '\0';
 
                 // Build full cvar name: section__key
                 C8 full_name[CVAR_NAME_MAX_LENGTH];
-                ou_strcpy(full_name, current_section);
-                ou_strcat(full_name, "__");
-                ou_strcat(full_name, key);
+                ou_snprintf(full_name, CVAR_NAME_MAX_LENGTH, "%s__%s", current_section, key);
 
                 // Find and update the cvar
                 for (const auto &cvar : cvar_meta_table) {
@@ -285,10 +283,10 @@ void cvar_load() {
                                 }
                             } break;
                             case CVAR_TYPE_S32: {
-                                *(S32 *)(cvar.address) = atoi(value);
+                                *(S32 *)(cvar.address) = ou_atoi(value);
                             } break;
                             case CVAR_TYPE_F32: {
-                                *(F32 *)(cvar.address) = (F32)atof(value);
+                                *(F32 *)(cvar.address) = (F32)ou_atof(value);
                             } break;
                             case CVAR_TYPE_CVARSTR: {
                                 ou_strncpy(((CVarStr *)(cvar.address))->cstr, value, CVAR_STR_MAX_LENGTH - 1);
