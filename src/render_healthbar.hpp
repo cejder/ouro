@@ -4,6 +4,12 @@
 #include "world.hpp"
 
 #include <raylib.h>
+#include <tinycthread.h>
+
+// Need for tinycthread on macOS
+#ifdef call_once
+#undef call_once
+#endif
 
 fwd_decl(AShader);
 
@@ -30,6 +36,7 @@ struct RenderHealthbar {
 
     // State
     SZ count;  // Current number of healthbars to draw this frame
+    mtx_t count_mutex;  // Protects count for multithreaded adds
 };
 
 extern RenderHealthbar g_render_healthbar;

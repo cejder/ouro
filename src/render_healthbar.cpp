@@ -59,6 +59,12 @@ void render_healthbar_init() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
+    // Initialize mutex for thread-safe adds
+    if (mtx_init(&g_render_healthbar.count_mutex, mtx_plain) != thrd_success) {
+        lle("Failed to initialize healthbar mutex!");
+        return;
+    }
+
     // Clear initial state
     render_healthbar_clear();
 
@@ -71,20 +77,26 @@ void render_healthbar_clear() {
 }
 
 void render_healthbar_add(Vector2 screen_pos, Vector2 bar_size, F32 health_perc) {
+    // Thread-safe: acquire next slot atomically
+    mtx_lock(&g_render_healthbar.count_mutex);
+
     if (g_render_healthbar.count >= HEALTHBAR_MAX) {
+        mtx_unlock(&g_render_healthbar.count_mutex);
         llw("Healthbar buffer full! Max: %d", HEALTHBAR_MAX);
         return;
     }
 
-    HealthbarInstance *hb = &g_render_healthbar.mapped_data[g_render_healthbar.count];
+    SZ const slot = g_render_healthbar.count++;
+    mtx_unlock(&g_render_healthbar.count_mutex);
+
+    // Write data outside critical section (no contention)
+    HealthbarInstance *hb = &g_render_healthbar.mapped_data[slot];
     hb->screen_pos = screen_pos;
     hb->bar_size = bar_size;
     hb->health_perc = health_perc;
     hb->padding[0] = 0.0F;
     hb->padding[1] = 0.0F;
     hb->padding[2] = 0.0F;
-
-    g_render_healthbar.count++;
 }
 
 void render_healthbar_draw() {
