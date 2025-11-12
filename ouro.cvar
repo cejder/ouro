@@ -77,11 +77,11 @@ tboy                         : false
 [video]
 fps_info                     : true
 fps_max                      : 0
-render_resolution_height     : 1140
-render_resolution_width      : 2129
+render_resolution_height     : 2160
+render_resolution_width      : 3840
 vsync                        : false
-window_resolution_height     : 1140
-window_resolution_width      : 2129
+window_resolution_height     : 2160
+window_resolution_width      : 3840
 
 [world]
 actor_healthbar              : true

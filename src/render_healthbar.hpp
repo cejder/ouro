@@ -1,12 +1,13 @@
 #pragma once
 
 #include "common.hpp"
+#include "world.hpp"
 
 #include <raylib.h>
 
 fwd_decl(AShader);
 
-#define HEALTHBAR_MAX 1000
+#define HEALTHBAR_MAX WORLD_MAX_ENTITIES
 
 // GPU-aligned healthbar instance structure (must match shader)
 // Total size: 48 bytes (multiple of 16)
