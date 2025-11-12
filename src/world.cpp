@@ -184,42 +184,86 @@ void world_update(F32 dt, F32 dtu) {
         if (ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_USE)) { g_world->active_entities[g_world->active_entity_count++] = i; }
     }
 
-    // Update all entity animations using job system
+    // Update all entity animations (single-threaded or multi-threaded based on cvar)
     if (g_world->active_entity_count > 0) {
-        // Pre-warm bone matrix cache (single-threaded to avoid allocator race conditions)
-        // After warming, worker threads hit cache instead of allocating (thread-safe)
-        for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
-            EID const id = g_world->active_entities[idx];
-            if (g_world->animation[id].has_animations && g_world->animation[id].anim_playing) {
+        if (c_general__multithreaded) {
+            // Multi-threaded path using job system
+            U32 const worker_count = job_system_get_worker_count();
+            SZ const entities_per_worker = (g_world->active_entity_count + worker_count - 1) / worker_count;
+
+            // Allocate job data on transient arena (will be freed this frame)
+            auto *job_data = mmta(AnimationUpdateJobData *, sizeof(AnimationUpdateJobData) * worker_count);
+
+            // Submit jobs for each worker
+            for (U32 i = 0; i < worker_count; ++i) {
+                SZ const start_idx = i * entities_per_worker;
+                SZ const end_idx = (start_idx + entities_per_worker < g_world->active_entity_count)
+                    ? start_idx + entities_per_worker
+                    : g_world->active_entity_count;
+
+                // Skip if this worker has no entities to process
+                if (start_idx >= g_world->active_entity_count) { break; }
+
+                job_data[i].dt = dt;
+                job_data[i].start_idx = start_idx;
+                job_data[i].end_idx = end_idx;
+
+                job_system_submit(i_animation_update_worker, &job_data[i]);
+            }
+
+            // Wait for all animation jobs to complete
+            job_system_wait();
+        } else {
+            // Single-threaded path (original code for comparison)
+            for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
+                EID const id = g_world->active_entities[idx];
+
+                if (!g_world->animation[id].has_animations) { continue; }
+                if (!g_world->animation[id].anim_playing)   { continue; }
+
+                AModel *model      = asset_get_model_by_hash(g_world->model_name_hash[id]);
+                U32 const anim_idx = g_world->animation[id].anim_index;
+
+                if (anim_idx >= (U32)model->animation_count) { continue; }
+
+                ModelAnimation const& anim = model->animations[anim_idx];
+
+                // Update animation time (frame-time independent)
+                g_world->animation[id].anim_time += dt * g_world->animation[id].anim_speed;
+
+                // Calculate frame from time using entity's animation FPS
+                F32 const fps            = g_world->animation[id].anim_fps;
+                F32 const frame_duration = 1.0F / fps;
+                F32 const total_duration = (F32)anim.frameCount * frame_duration;
+
+                // Handle looping
+                if (g_world->animation[id].anim_time >= total_duration) {
+                    if (g_world->animation[id].anim_loop) {
+                        // Preserve overflow time for smooth looping
+                        g_world->animation[id].anim_time = math_mod_f32(g_world->animation[id].anim_time, total_duration);
+                    } else {
+                        g_world->animation[id].anim_time = total_duration - frame_duration;
+                        g_world->animation[id].anim_playing = false;
+                    }
+                }
+
+                // Convert time to frame (always valid due to loop handling above)
+                U32 new_frame                     = (U32)(g_world->animation[id].anim_time * fps);
+                new_frame                         = glm::min(new_frame, (U32)anim.frameCount - 1);
+                g_world->animation[id].anim_frame = new_frame;
+
+                // Update blend timer if blending
+                if (g_world->animation[id].is_blending) {
+                    g_world->animation[id].blend_time += dt;
+                    if (g_world->animation[id].blend_time >= g_world->animation[id].blend_duration) {
+                        g_world->animation[id].is_blending = false;  // Blending complete
+                    }
+                }
+
+                // Compute bone matrices for this entity
                 math_compute_entity_bone_matrices(id);
             }
         }
-
-        U32 const worker_count = job_system_get_worker_count();
-        SZ const entities_per_worker = (g_world->active_entity_count + worker_count - 1) / worker_count;
-
-        // Allocate job data on transient arena (will be freed this frame)
-        auto *job_data = mmta(AnimationUpdateJobData *, sizeof(AnimationUpdateJobData) * worker_count);
-
-        // Submit jobs for each worker
-        for (U32 i = 0; i < worker_count; ++i) {
-            SZ const start_idx = i * entities_per_worker;
-            SZ const end_idx = (start_idx + entities_per_worker < g_world->active_entity_count)
-                ? start_idx + entities_per_worker
-                : g_world->active_entity_count;
-
-            // Skip if this worker has no entities to process
-            if (start_idx >= g_world->active_entity_count) { break; }
-
-            job_data[i].dt = dt;
-            job_data[i].start_idx = start_idx;
-            job_data[i].end_idx = end_idx;
-
-            job_system_submit(i_animation_update_worker, &job_data[i]);
-        }
-
-        // Wait for all animation jobs to complete
-        job_system_wait();
     }
 }
 
