@@ -105,7 +105,7 @@ void main() {
             right = normalize(right);
             up = normalize(cross(terrain_normal, right));
         }
-    }    // Billboard mode 0: camera-facing (default)
+    }  // Billboard mode 0: camera-facing (default)
     // Already set above
 
     // Apply rotation

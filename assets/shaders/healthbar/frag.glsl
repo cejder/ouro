@@ -100,18 +100,14 @@ void main() {
     float border_mask = (1.0 - smoothstep(-aa_width, aa_width, border_dist)) * bg_mask;
 
     // Discard if completely outside background shape
-    if (bg_mask < 0.01) {
-        discard;
-    }
+    if (bg_mask < 0.01) { discard; }
 
     // Layer composition: background -> fill -> border
     // Use proper alpha blending so all layers fade together
     vec4 out_color = u_bg_color * bg_mask;
 
     // Fill overwrites background where it exists
-    if (frag_health_perc > 0.01) {
-        out_color = mix(out_color, frag_fill_color, fill_mask);
-    }
+    if (frag_health_perc > 0.01) { out_color = mix(out_color, frag_fill_color, fill_mask); }
 
     // Border is additive on top
     out_color = mix(out_color, u_border_color, border_mask * u_border_color.a);

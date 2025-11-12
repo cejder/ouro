@@ -7,10 +7,10 @@ layout(location = 1) in vec2 vertex_texcoord;  // Base quad texture coordinates
 // Healthbar instance data structure matching C++ side
 // Total size: 32 bytes (multiple of 16 for GPU alignment)
 struct HealthbarInstance {
-    vec2 screen_pos;        // 8 bytes - screen position (center)
-    vec2 bar_size;          // 8 bytes - bar width and height in pixels
-    float health_perc;      // 4 bytes - health percentage (0.0 - 1.0)
-    float padding[3];       // 12 bytes - padding to align to 32 bytes
+    vec2 screen_pos;    // 8 bytes - screen position (center)
+    vec2 bar_size;      // 8 bytes - bar width and height in pixels
+    float health_perc;  // 4 bytes - health percentage (0.0 - 1.0)
+    float padding[3];   // 12 bytes - padding to align to 32 bytes
 };
 
 // Healthbar buffer
@@ -18,7 +18,7 @@ layout(std430, binding = 4) restrict readonly buffer HealthbarBuffer {
     HealthbarInstance healthbars[];
 };
 
-out vec2 frag_uv;           // 0-1 uv coordinates for the quad
+out vec2 frag_uv;  // 0-1 uv coordinates for the quad
 flat out float frag_health_perc;
 flat out vec2 frag_size;
 

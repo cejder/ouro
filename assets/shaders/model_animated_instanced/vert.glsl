@@ -15,7 +15,7 @@ in mat4 instanceTransform;
 in vec4 instanceTint;  // Per-instance tint color
 
 // Input uniform values
-uniform mat4 mvp;  // View-projection matrix (shared across all instances)
+uniform mat4 mvp;                         // View-projection matrix (shared across all instances)
 uniform mat4 boneMatrices[MAX_BONE_NUM];  // Shared bone matrices for all instances
 
 // Output vertex attributes (to fragment shader)
