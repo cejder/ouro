@@ -270,11 +270,12 @@ void entity_spawn_npc(SZ count, BOOL notify) {
             return;
         }
 
-        // Calculate position in circle
-        F32 const angle = ((F32)i / (F32)count) * 2.0F * PI;
+        // Calculate position spread in circle (uniform distribution)
+        F32 const angle = random_f32(0.0F, 2.0F * PI);
+        F32 const radius = math_sqrt_f32(random_f32(0.0F, 1.0F)) * spawn_radius;
         Vector3 position = center_position;
-        position.x += math_cos_f32(angle) * spawn_radius;
-        position.z += math_sin_f32(angle) * spawn_radius;
+        position.x += math_cos_f32(angle) * radius;
+        position.z += math_sin_f32(angle) * radius;
 
         Color const tint      = color_random_vibrant();
         F32 const rotation    = random_f32(0.0F, 360.0F);
