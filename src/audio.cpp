@@ -28,6 +28,8 @@ struct AudioState {
     BOOL needs_update[ACG_COUNT];
 } static i_state = {};
 
+AudioCommandQueue static g_audio_command_queue = {};
+
 // Helper macros for FMOD error checking
 #define FC(call, msg)                              \
     do {                                                   \
@@ -822,4 +824,73 @@ void audio_draw_3d_dbg() {
         // Draw max distance sphere (red wireframe)
         d3d_sphere(sound_pos, c_audio__max_distance, Fade(RED, 0.33F));
     }
+}
+
+// Thread-safe audio command queue implementation
+void static i_audio_queue_command(AudioCommandType type, AudioChannelGroup channel_group, C8 const *name, Vector3 position, EID entity_id) {
+    // Lazy mutex initialization
+    static BOOL mutex_initialized = false;
+    if (!mutex_initialized) {
+        mtx_init(&g_audio_command_queue.mutex, mtx_plain);
+        mutex_initialized = true;
+    }
+
+    mtx_lock(&g_audio_command_queue.mutex);
+    {
+        if (g_audio_command_queue.count < AUDIO_COMMAND_QUEUE_MAX) {
+            AudioCommand *cmd = &g_audio_command_queue.commands[g_audio_command_queue.count++];
+            cmd->type = type;
+            cmd->channel_group = channel_group;
+            cmd->position = position;
+            cmd->entity_id = entity_id;
+
+            // Copy name safely
+            strncpy(cmd->name, name, AUDIO_NAME_MAX_LENGTH - 1);
+            cmd->name[AUDIO_NAME_MAX_LENGTH - 1] = '\0';
+        } else {
+            llw("Audio command queue full, dropping command");
+        }
+    }
+    mtx_unlock(&g_audio_command_queue.mutex);
+}
+
+void audio_queue_play_3d_at_position(AudioChannelGroup channel_group, C8 const *name, Vector3 position) {
+    i_audio_queue_command(AUDIO_CMD_PLAY_3D_AT_POSITION, channel_group, name, position, INVALID_EID);
+}
+
+void audio_queue_play_3d_at_entity(AudioChannelGroup channel_group, C8 const *name, EID entity_id) {
+    i_audio_queue_command(AUDIO_CMD_PLAY_3D_AT_ENTITY, channel_group, name, {}, entity_id);
+}
+
+void audio_process_command_queue() {
+    // Get command count and take snapshot
+    mtx_lock(&g_audio_command_queue.mutex);
+    U32 const cmd_count = g_audio_command_queue.count;
+    mtx_unlock(&g_audio_command_queue.mutex);
+
+    if (cmd_count == 0) { return; }
+
+    // Process all commands
+    for (U32 i = 0; i < cmd_count; ++i) {
+        AudioCommand const *cmd = &g_audio_command_queue.commands[i];
+
+        switch (cmd->type) {
+            case AUDIO_CMD_PLAY_3D_AT_POSITION: {
+                audio_play_3d_at_position(cmd->channel_group, cmd->name, cmd->position);
+            } break;
+
+            case AUDIO_CMD_PLAY_3D_AT_ENTITY: {
+                audio_play_3d_at_entity(cmd->channel_group, cmd->name, cmd->entity_id);
+            } break;
+
+            default: {
+                llw("Unknown audio command type: %d", cmd->type);
+            } break;
+        }
+    }
+
+    // Clear the queue
+    mtx_lock(&g_audio_command_queue.mutex);
+    g_audio_command_queue.count = 0;
+    mtx_unlock(&g_audio_command_queue.mutex);
 }
