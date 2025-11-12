@@ -5,6 +5,7 @@
 #include "log.hpp"
 #include "render.hpp"
 #include "std.hpp"
+#include "time.hpp"
 
 #include <external/glad.h>
 #include <glm/gtc/type_ptr.hpp>
@@ -12,15 +13,10 @@
 
 RenderHealthbar g_render_healthbar = {};
 
-void render_healthbar_init() {
-    // Load shader and cache uniform locations
-    g_render_healthbar.shader.shader = asset_get_shader("healthbar");
+#ifndef __APPLE__
 
-    g_render_healthbar.shader.projection_loc = GetShaderLocation(g_render_healthbar.shader.shader->base, "u_projection");
-    g_render_healthbar.shader.healthbar_count_loc = GetShaderLocation(g_render_healthbar.shader.shader->base, "u_healthbar_count");
-    g_render_healthbar.shader.bg_color_loc = GetShaderLocation(g_render_healthbar.shader.shader->base, "u_bg_color");
-    g_render_healthbar.shader.border_color_loc = GetShaderLocation(g_render_healthbar.shader.shader->base, "u_border_color");
-    g_render_healthbar.shader.border_thickness_loc = GetShaderLocation(g_render_healthbar.shader.shader->base, "u_border_thickness");
+void render_healthbar_init() {
+    // Shader is already initialized in render_init()
 
     // Base quad vertices for instanced rendering (0-1 range)
     F32 const quad_vertices[] = {
@@ -63,6 +59,12 @@ void render_healthbar_init() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
+    // Initialize mutex for thread-safe adds
+    if (mtx_init(&g_render_healthbar.count_mutex, mtx_plain) != thrd_success) {
+        lle("Failed to initialize healthbar mutex!");
+        return;
+    }
+
     // Clear initial state
     render_healthbar_clear();
 
@@ -74,56 +76,62 @@ void render_healthbar_clear() {
     g_render_healthbar.count = 0;
 }
 
-void render_healthbar_add(Vector2 screen_pos, Vector2 size, Color fill_color, F32 health_perc, F32 roundness, BOOL is_multi_select) {
+void render_healthbar_add(Vector2 screen_pos, Vector2 bar_size, F32 health_perc) {
+    // Thread-safe: acquire next slot atomically
+    mtx_lock(&g_render_healthbar.count_mutex);
+
     if (g_render_healthbar.count >= HEALTHBAR_MAX) {
+        mtx_unlock(&g_render_healthbar.count_mutex);
         llw("Healthbar buffer full! Max: %d", HEALTHBAR_MAX);
         return;
     }
 
-    HealthbarInstance *hb = &g_render_healthbar.mapped_data[g_render_healthbar.count];
+    SZ const slot = g_render_healthbar.count++;
+    mtx_unlock(&g_render_healthbar.count_mutex);
+
+    // Write data outside critical section (no contention)
+    HealthbarInstance *hb = &g_render_healthbar.mapped_data[slot];
     hb->screen_pos = screen_pos;
-    hb->size = size;
-
-    // Convert Color (4 bytes) to vec4 (16 bytes) for GPU
-    hb->fill_color[0] = (F32)fill_color.r / 255.0F;
-    hb->fill_color[1] = (F32)fill_color.g / 255.0F;
-    hb->fill_color[2] = (F32)fill_color.b / 255.0F;
-    hb->fill_color[3] = (F32)fill_color.a / 255.0F;
-
+    hb->bar_size = bar_size;
     hb->health_perc = health_perc;
-    hb->roundness = roundness;
-    hb->is_multi_select = is_multi_select ? 1U : 0U;
-    hb->padding = 0U;
-
-    g_render_healthbar.count++;
+    hb->padding[0] = 0.0F;
+    hb->padding[1] = 0.0F;
+    hb->padding[2] = 0.0F;
 }
 
 void render_healthbar_draw() {
     if (!g_render_healthbar.initialized) { return; }
     if (g_render_healthbar.count == 0) { return; }
 
-    BeginShaderMode(g_render_healthbar.shader.shader->base);
+    RenderHealthbarShader const *shader = &g_render.healthbar_shader;
+    BeginShaderMode(shader->shader->base);
 
-    // Set projection matrix
+    // Get render resolution for screen projection
     Vector2 const render_res = render_get_render_resolution();
+
+    // Screen-space orthographic projection matrix
     Matrix const projection = MatrixOrtho(0.0F, render_res.x, render_res.y, 0.0F, -1.0F, 1.0F);
-    SetShaderValueMatrix(g_render_healthbar.shader.shader->base, g_render_healthbar.shader.projection_loc, projection);
+    SetShaderValueMatrix(shader->shader->base, shader->view_proj_loc, projection);
+
+    // Set time for pulsing animation
+    F32 const current_time = time_get();
+    SetShaderValue(shader->shader->base, shader->time_loc, &current_time, SHADER_UNIFORM_FLOAT);
 
     // Set healthbar count
     U32 const count = (U32)g_render_healthbar.count;
-    SetShaderValue(g_render_healthbar.shader.shader->base, g_render_healthbar.shader.healthbar_count_loc, &count, SHADER_UNIFORM_UINT);
+    SetShaderValue(shader->shader->base, shader->healthbar_count_loc, &count, SHADER_UNIFORM_UINT);
 
     // Set background color (dark semi-transparent)
     F32 const bg_color[4] = {30.0F / 255.0F, 30.0F / 255.0F, 30.0F / 255.0F, 0.88F};
-    SetShaderValue(g_render_healthbar.shader.shader->base, g_render_healthbar.shader.bg_color_loc, bg_color, SHADER_UNIFORM_VEC4);
+    SetShaderValue(shader->shader->base, shader->bg_color_loc, bg_color, SHADER_UNIFORM_VEC4);
 
     // Set border color (beige semi-transparent)
     F32 const border_color[4] = {245.0F / 255.0F, 245.0F / 255.0F, 220.0F / 255.0F, 0.20F};
-    SetShaderValue(g_render_healthbar.shader.shader->base, g_render_healthbar.shader.border_color_loc, border_color, SHADER_UNIFORM_VEC4);
+    SetShaderValue(shader->shader->base, shader->border_color_loc, border_color, SHADER_UNIFORM_VEC4);
 
     // Set border thickness
     F32 const border_thickness = ui_scale_x(0.20F);
-    SetShaderValue(g_render_healthbar.shader.shader->base, g_render_healthbar.shader.border_thickness_loc, &border_thickness, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(shader->shader->base, shader->border_thickness_loc, &border_thickness, SHADER_UNIFORM_FLOAT);
 
     // Bind healthbar data SSBO (binding point 4)
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, g_render_healthbar.ssbo);
@@ -138,3 +146,12 @@ void render_healthbar_draw() {
 
     INCREMENT_DRAW_CALL;
 }
+
+#else
+
+void render_healthbar_init() { llw("Healthbar rendering is not supported on macOS!"); }
+void render_healthbar_clear() {}
+void render_healthbar_add(Vector2 screen_pos, Vector2 bar_size, F32 health_perc) {}
+void render_healthbar_draw() {}
+
+#endif

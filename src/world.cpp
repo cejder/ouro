@@ -105,6 +105,32 @@ struct ActorUpdateJobData {
     U32 end_idx;
 };
 
+// Healthbar collection job data
+struct HealthbarCollectionJobData {
+    U32 start_idx;       // Start index in selected entities array
+    U32 end_idx;         // End index in selected entities array
+    EID *selected_eids;  // Pointer to selected entities array
+};
+
+// Worker function for healthbar collection (executed by job system)
+S32 static i_healthbar_collection_worker(void *arg) {
+    auto *data = (HealthbarCollectionJobData *)arg;
+
+    // Process each selected entity in this worker's range
+    for (U32 idx = data->start_idx; idx < data->end_idx; ++idx) {
+        EID const id = data->selected_eids[idx];
+
+        // Only process NPC entities
+        if (g_world->type[id] != ENTITY_TYPE_NPC) { continue; }
+
+        // d2d_healthbar_batched() will do all validation and add to buffer
+        // (thread-safe via mutex in render_healthbar_add)
+        d2d_healthbar_batched(id);
+    }
+
+    return 0;
+}
+
 // Worker function for entity updates (executed by job system)
 S32 static i_entity_update_worker(void *arg) {
     auto *data = (EntityUpdateJobData *)arg;
@@ -353,17 +379,37 @@ void world_draw_2d_hud() {
             entity_actor_draw_2d_hud(i);
 
             // For single selection: use original complex healthbar (doesn't matter for perf)
-            // For multi-selection: collect for batched rendering (fast)
-            if (g_world->selected_entity_count == 1) {
+            if (g_world->selected_entity_count == 1 && world_is_entity_selected(i)) {
                 d2d_healthbar(i);  // Original with text, icons, etc.
-            } else {
-                d2d_healthbar_batched(i);  // Collect for batch
             }
         }
     }
 
-    // Draw all collected multi-selection healthbars in one draw call
+    // For multi-selection: collect healthbars in parallel, then draw
     if (g_world->selected_entity_count > 1) {
+        PBEGIN("healthbar_collection_MT");
+        U32 const worker_count = job_system_get_worker_count();
+        SZ const entities_per_worker = (g_world->selected_entity_count + worker_count - 1) / worker_count;
+
+        auto *job_data = mmta(HealthbarCollectionJobData *, sizeof(HealthbarCollectionJobData) * worker_count);
+
+        for (U32 i = 0; i < worker_count; ++i) {
+            SZ const start_idx = i * entities_per_worker;
+            SZ const end_idx = glm::min(start_idx + entities_per_worker, g_world->selected_entity_count);
+
+            if (start_idx >= g_world->selected_entity_count) { break; }
+
+            job_data[i].start_idx = (U32)start_idx;
+            job_data[i].end_idx = (U32)end_idx;
+            job_data[i].selected_eids = g_world->selected_entities;
+
+            job_system_submit(i_healthbar_collection_worker, &job_data[i]);
+        }
+
+        job_system_wait();
+        PEND("healthbar_collection_MT");
+
+        // Draw all collected healthbars in one instanced draw call
         d2d_healthbar_draw_batched();
     }
 

@@ -147,6 +147,18 @@ struct RenderSkyboxShader {
     AShader *shader;
 };
 
+struct RenderHealthbarShader {
+    AShader *shader;
+    S32 view_proj_loc;
+    S32 camera_fov_loc;
+    S32 healthbar_count_loc;
+    S32 time_loc;
+    S32 render_resolution_loc;
+    S32 bg_color_loc;
+    S32 border_color_loc;
+    S32 border_thickness_loc;
+};
+
 struct Render {
     BOOL initialized;
 
@@ -157,6 +169,7 @@ struct Render {
     RenderModelShader model_shader;
     RenderModelInstancedShader model_instanced_shader;
     RenderModelAnimatedInstancedShader model_animated_instanced_shader;
+    RenderHealthbarShader healthbar_shader;
 
     BOOL wireframe_mode;
     F32 aspect_ratio;

@@ -52,6 +52,7 @@ struct ArenaAllocator {
     SZ arena_capacity;
     ArenaStats previous_stats;
     ArenaTimeline timeline;
+    mtx_t mutex;  // Thread-safe allocations for this allocator
 };
 
 // ===============================================================
@@ -71,7 +72,6 @@ struct MemorySetup {
 struct Memory {
     MemorySetup setup;
     ArenaAllocator arena_allocators[MEMORY_TYPE_COUNT];
-    mtx_t transient_mutex;
 };
 
 void memory_init(MemorySetup setup);
