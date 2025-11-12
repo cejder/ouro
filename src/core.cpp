@@ -59,6 +59,9 @@ void core_init(U8 major, U8 minor, U8 patch, C8 const *build_type) {
     LLogLevel const rl_level = llog_get_level();
     SetTraceLogLevel(rl_level);
 
+    // Load cvars from config file before using any cvar values
+    cvar_load();
+
     U32 flags = FLAG_WINDOW_RESIZABLE;
 #ifdef __APPLE__
     flags |= FLAG_WINDOW_HIGHDPI | FLAG_FULLSCREEN_MODE;
