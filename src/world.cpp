@@ -165,6 +165,9 @@ S32 static i_animation_update_worker(void *arg) {
 
         // Compute bone matrices for this entity
         math_compute_entity_bone_matrices(id);
+
+        // Update previous state for next frame comparison
+        g_world->animation[id].prev_anim_index = anim_idx;
     }
 
     return 0;
@@ -320,6 +323,9 @@ void world_update(F32 dt, F32 dtu) {
                 }
 
                 math_compute_entity_bone_matrices(id);
+
+                // Update previous state for next frame comparison
+                g_world->animation[id].prev_anim_index = anim_idx;
             }
 
             U32 const computed = total - culled - unchanged;
