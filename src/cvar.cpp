@@ -58,7 +58,6 @@ S32     c_debug__small_font_size                 = 16;
 BOOL    c_debug__terrain_info                    = false;
 BOOL    c_debug__texture_widget_dark_bg          = true;
 BOOL    c_debug__windows_sticky                  = false;
-BOOL    c_general__multithreaded                 = true;
 BOOL    c_profiler__flame_graph_enabled          = false;
 CVarStr c_profiler__flame_graph_font             = {"GoMono"};
 S32     c_profiler__flame_graph_font_size        = 18;
@@ -137,7 +136,6 @@ CVarMeta const cvar_meta_table[CVAR_COUNT] = {
     {"debug__terrain_info",                     &c_debug__terrain_info,                     CVAR_TYPE_BOOL,     ""},
     {"debug__texture_widget_dark_bg",           &c_debug__texture_widget_dark_bg,           CVAR_TYPE_BOOL,     ""},
     {"debug__windows_sticky",                   &c_debug__windows_sticky,                   CVAR_TYPE_BOOL,     ""},
-    {"general__multithreaded",                  &c_general__multithreaded,                  CVAR_TYPE_BOOL,     ""},
     {"profiler__flame_graph_enabled",           &c_profiler__flame_graph_enabled,           CVAR_TYPE_BOOL,     ""},
     {"profiler__flame_graph_font",              &c_profiler__flame_graph_font,              CVAR_TYPE_CVARSTR,  ""},
     {"profiler__flame_graph_font_size",         &c_profiler__flame_graph_font_size,         CVAR_TYPE_S32,      ""},
