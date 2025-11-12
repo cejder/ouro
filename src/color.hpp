@@ -6,7 +6,8 @@
 #include <raylib.h>
 #include <glm/fwd.hpp>
 
-#define COLOR_HEX_SIZE 9  // 8 chars for RRGGBBAA + 1 for null terminator
+// 8 chars for RRGGBBAA + 1 for null terminator
+#define COLOR_HEX_SIZE 9
 
 fwd_decl(ATexture);
 

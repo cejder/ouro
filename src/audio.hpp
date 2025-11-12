@@ -97,7 +97,6 @@ struct Audio {
     ActiveSound active_sounds[AUDIO_MAX_ACTIVE_SOUNDS];
     U32 next_handle;
 
-    // Background music/ambience tracking (for the old API compatibility)
     C8 current_music_name[AUDIO_NAME_MAX_LENGTH];
     C8 current_ambience_name[AUDIO_NAME_MAX_LENGTH];
     AudioHandle current_music_handle;

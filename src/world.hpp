@@ -18,8 +18,8 @@
 #undef call_once
 #endif
 
-#define WORLD_MAX_ENTITIES 50000
-#define WORLD_MAX_DEFERRED_DESTRUCTIONS 1024
+#define WORLD_MAX_ENTITIES 15000
+#define WORLD_MAX_DEFERRED_DESTRUCTIONS WORLD_MAX_ENTITIES
 
 fwd_decl(ATerrain);
 fwd_decl(ASound);

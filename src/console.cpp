@@ -23,7 +23,6 @@
 #include "world.hpp"
 
 #include <raymath.h>
-#include <algorithm>
 
 #define CONSOLE_LINE_COUNT_MIN 5
 #define CONSOLE_SCROLLBAR_COLOR Fade(SOFTLAVENDER, 0.95F)

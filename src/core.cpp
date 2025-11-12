@@ -7,6 +7,7 @@
 #include "debug.hpp"
 #include "entity_spawn.hpp"
 #include "input.hpp"
+#include "job.hpp"
 #include "log.hpp"
 #include "math.hpp"
 #include "memory.hpp"
@@ -130,6 +131,7 @@ void core_init(U8 major, U8 minor, U8 patch, C8 const *build_type) {
 void core_quit() {
     i_exit_if_not_initialized();
 
+    job_system_quit();
     dbg_quit();
     CloseWindow();
     audio_quit();
@@ -172,20 +174,20 @@ void core_update() {
 
     PP(time_update(dt, dtu));
     PP(profiler_update());
+    PP(math_update());
     PP(option_update());
     PP(input_update());
-    PP(asset_update());
     PP(audio_update(dt));
+    PP(asset_update());
     PP(color_update(dtu));
     PP(render_update(dt));
     PP(particles2d_update(dt));
     PP(particles3d_update(dt));
-    PP(math_update());
     PP(scenes_update(dt, dtu));
-    PP(particles3d_process_command_queue());
-    PP(particles2d_process_command_queue());
-    PP(entity_spawn_process_command_queue());
     PP(audio_process_command_queue());
+    PP(entity_spawn_process_command_queue());
+    PP(particles2d_process_command_queue());
+    PP(particles3d_process_command_queue());
     PP(messages_update(dtu));
     PP(dbg_update());
 }

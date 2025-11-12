@@ -256,6 +256,14 @@ S32 static i_actor_update_worker(void *arg) {
 }
 
 void world_update(F32 dt, F32 dtu) {
+    g_world->active_entity_count = 0;
+    for (EID i = 0; i < WORLD_MAX_ENTITIES; ++i) {
+        if (ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_USE)) { g_world->active_entities[g_world->active_entity_count++] = i; }
+    }
+
+    SZ const worker_count        = g_job_system.workers.count;
+    SZ const entities_per_worker = (g_world->active_entity_count + worker_count - 1) / worker_count;
+
     g_render.visible_vertex_count = 0;
 
     world_recorder_update();  // WARN: This needs to happen before anything that changes the world.
@@ -268,8 +276,6 @@ void world_update(F32 dt, F32 dtu) {
     // Multithreaded entity updates (lifetime, frustum culling, counting)
     if (g_world->active_entity_count > 0) {
         PBEGIN("entity_update_MT");
-        U32 const worker_count = job_system_get_worker_count();
-        SZ const entities_per_worker = (g_world->active_entity_count + worker_count - 1) / worker_count;
 
         auto *job_data = mmta(EntityUpdateJobData *, sizeof(EntityUpdateJobData) * worker_count);
 
@@ -301,17 +307,9 @@ void world_update(F32 dt, F32 dtu) {
         PEND("entity_update_MT");
     }
 
-    // Build active entities array for draw functions to use
-    g_world->active_entity_count = 0;
-    for (EID i = 0; i < WORLD_MAX_ENTITIES; ++i) {
-        if (ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_USE)) { g_world->active_entities[g_world->active_entity_count++] = i; }
-    }
-
     // Update all entity animations (multithreaded)
     if (g_world->active_entity_count > 0) {
         PBEGIN("anim_update_MT");
-        U32 const worker_count = job_system_get_worker_count();
-        SZ const entities_per_worker = (g_world->active_entity_count + worker_count - 1) / worker_count;
 
         auto *job_data = mmta(AnimationUpdateJobData *, sizeof(AnimationUpdateJobData) * worker_count);
 
@@ -335,8 +333,6 @@ void world_update(F32 dt, F32 dtu) {
     // Update all entity actors (multithreaded)
     if (g_world->active_entity_count > 0) {
         PBEGIN("actor_update_MT");
-        U32 const worker_count = job_system_get_worker_count();
-        SZ const entities_per_worker = (g_world->active_entity_count + worker_count - 1) / worker_count;
 
         auto *job_data = mmta(ActorUpdateJobData *, sizeof(ActorUpdateJobData) * worker_count);
 
@@ -376,6 +372,9 @@ void world_draw_2d() {
 }
 
 void world_draw_2d_hud() {
+    SZ const worker_count        = g_job_system.workers.count;
+    SZ const entities_per_worker = (g_world->active_entity_count + worker_count - 1) / worker_count;
+
     world_recorder_draw_2d_hud();
 
     for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
@@ -404,8 +403,6 @@ void world_draw_2d_hud() {
     // For multi-selection: collect healthbars in parallel, then draw
     if (g_world->selected_entity_count > 1) {
         PBEGIN("healthbar_collection_MT");
-        U32 const worker_count = job_system_get_worker_count();
-        SZ const entities_per_worker = (g_world->selected_entity_count + worker_count - 1) / worker_count;
 
         auto *job_data = mmta(HealthbarCollectionJobData *, sizeof(HealthbarCollectionJobData) * worker_count);
 
