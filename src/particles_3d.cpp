@@ -1822,9 +1822,19 @@ void particles3d_process_command_queue() {
         }
     }
 
-    // Clear queue
+    // Remove processed commands and shift remaining ones to the front
     mtx_lock(&g_particle3d_command_queue.mutex);
-    g_particle3d_command_queue.count = 0;
+    if (cmd_count < g_particle3d_command_queue.count) {
+        // New commands were added while we were processing - shift them to the front
+        U32 const remaining = g_particle3d_command_queue.count - cmd_count;
+        ou_memmove(&g_particle3d_command_queue.commands[0],
+                   &g_particle3d_command_queue.commands[cmd_count],
+                   remaining * sizeof(Particle3DCommand));
+        g_particle3d_command_queue.count = remaining;
+    } else {
+        // No new commands added, just clear
+        g_particle3d_command_queue.count = 0;
+    }
     mtx_unlock(&g_particle3d_command_queue.mutex);
 }
 
