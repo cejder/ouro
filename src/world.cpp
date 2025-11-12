@@ -87,15 +87,15 @@ struct AnimationUpdateJobData {
     SZ end_idx;
 };
 
-// Animation state key for batching entities with identical animation state
-struct AnimationStateKey {
+// Animation batch key for grouping entities with identical bone computation
+struct AnimationBatchKey {
     U32 model_hash;
     U32 anim_index;
     U32 anim_frame;
     BOOL is_blending;
 };
 
-U32 static inline i_animation_state_key_hash(AnimationStateKey key) {
+U32 static inline i_animation_batch_key_hash(AnimationBatchKey key) {
     U32 hash = 2166136261u;
     hash ^= key.model_hash; hash *= 16777619u;
     hash ^= key.anim_index; hash *= 16777619u;
@@ -104,14 +104,14 @@ U32 static inline i_animation_state_key_hash(AnimationStateKey key) {
     return hash;
 }
 
-BOOL static inline i_animation_state_key_equal(AnimationStateKey a, AnimationStateKey b) {
+BOOL static inline i_animation_batch_key_equal(AnimationBatchKey a, AnimationBatchKey b) {
     return a.model_hash == b.model_hash &&
            a.anim_index == b.anim_index &&
            a.anim_frame == b.anim_frame &&
            a.is_blending == b.is_blending;
 }
 
-MAP_DECLARE(AnimationStateBatchMap, AnimationStateKey, EIDArray, i_animation_state_key_hash, i_animation_state_key_equal);
+MAP_DECLARE(AnimationBatchMap, AnimationBatchKey, EIDArray, i_animation_batch_key_hash, i_animation_batch_key_equal);
 
 // Worker function for animation updates (executed by job system)
 S32 static i_animation_update_worker(void *arg) {
@@ -260,33 +260,33 @@ void world_update(F32 dt, F32 dtu) {
             }
 
             // Step 2: Batch entities by animation state
-            AnimationStateBatchMap batches;
-            AnimationStateBatchMap_init(&batches, MEMORY_TYPE_ARENA_TRANSIENT, 256);
+            AnimationBatchMap batches;
+            AnimationBatchMap_init(&batches, MEMORY_TYPE_ARENA_TRANSIENT, 256);
 
             for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
                 EID const id = g_world->active_entities[idx];
                 if (!g_world->animation[id].has_animations) { continue; }
                 if (!g_world->animation[id].anim_playing)   { continue; }
 
-                AnimationStateKey key = {
+                AnimationBatchKey key = {
                     .model_hash = g_world->model_name_hash[id],
                     .anim_index = g_world->animation[id].anim_index,
                     .anim_frame = g_world->animation[id].anim_frame,
                     .is_blending = g_world->animation[id].is_blending
                 };
 
-                EIDArray *batch = AnimationStateBatchMap_get(&batches, key);
+                EIDArray *batch = AnimationBatchMap_get(&batches, key);
                 if (!batch) {
                     EIDArray new_batch = {};
                     array_init(MEMORY_TYPE_ARENA_TRANSIENT, &new_batch, 64);
-                    AnimationStateBatchMap_insert(&batches, key, new_batch);
-                    batch = AnimationStateBatchMap_get(&batches, key);
+                    AnimationBatchMap_insert(&batches, key, new_batch);
+                    batch = AnimationBatchMap_get(&batches, key);
                 }
                 array_push(batch, id);
             }
 
             // Step 3: Process each batch (compute bones once per unique state, copy to all entities)
-            AnimationStateKey key = {};
+            AnimationBatchKey key = {};
             EIDArray batch = {};
             MAP_EACH(&batches, key, batch) {
                 if (batch.count == 0) { continue; }
