@@ -86,6 +86,9 @@ struct AnimationUpdateJobData {
     F32 dt;
     U32 start_idx;
     U32 end_idx;
+    U32 stat_total;
+    U32 stat_culled;
+    U32 stat_unchanged;
 };
 
 // Worker function for animation updates (executed by job system)
@@ -93,11 +96,23 @@ S32 static i_animation_update_worker(void *arg) {
     auto *data = (AnimationUpdateJobData *)arg;
     F32 const dt = data->dt;
 
+    data->stat_total = 0;
+    data->stat_culled = 0;
+    data->stat_unchanged = 0;
+
     for (U32 idx = data->start_idx; idx < data->end_idx; ++idx) {
         EID const id = g_world->active_entities[idx];
 
         if (!g_world->animation[id].has_animations) { continue; }
         if (!g_world->animation[id].anim_playing)   { continue; }
+
+        data->stat_total++;
+
+        // Frustum culling: Skip off-screen entities
+        if (!ENTITY_HAS_FLAG(g_world->flags[id], ENTITY_FLAG_IN_FRUSTUM)) {
+            data->stat_culled++;
+            continue;
+        }
 
         AModel *model      = asset_get_model_by_hash(g_world->model_name_hash[id]);
         U32 const anim_idx = g_world->animation[id].anim_index;
@@ -105,6 +120,9 @@ S32 static i_animation_update_worker(void *arg) {
         if (anim_idx >= (U32)model->animation_count) { continue; }
 
         ModelAnimation const& anim = model->animations[anim_idx];
+
+        U32 const prev_frame = g_world->animation[id].anim_frame;
+        U32 const prev_idx   = g_world->animation[id].prev_anim_index;
 
         // Update animation time (frame-time independent)
         g_world->animation[id].anim_time += dt * g_world->animation[id].anim_speed;
@@ -136,6 +154,13 @@ S32 static i_animation_update_worker(void *arg) {
             if (g_world->animation[id].blend_time >= g_world->animation[id].blend_duration) {
                 g_world->animation[id].is_blending = false;  // Blending complete
             }
+        }
+
+        // Skip bone matrix computation if animation state unchanged and not blending
+        BOOL const state_unchanged = (anim_idx == prev_idx && new_frame == prev_frame);
+        if (state_unchanged && !g_world->animation[id].is_blending) {
+            data->stat_unchanged++;
+            continue;
         }
 
         // Compute bone matrices for this entity
@@ -198,9 +223,7 @@ void world_update(F32 dt, F32 dtu) {
 
             for (U32 i = 0; i < worker_count; ++i) {
                 SZ const start_idx = i * entities_per_worker;
-                SZ const end_idx = (start_idx + entities_per_worker < g_world->active_entity_count)
-                    ? start_idx + entities_per_worker
-                    : g_world->active_entity_count;
+                SZ const end_idx = glm::min(start_idx + entities_per_worker, g_world->active_entity_count);
 
                 if (start_idx >= g_world->active_entity_count) { break; }
 
@@ -212,15 +235,46 @@ void world_update(F32 dt, F32 dtu) {
             }
 
             job_system_wait();
+
+            // Collect statistics from all jobs
+            U32 total = 0, culled = 0, unchanged = 0;
+            for (U32 i = 0; i < worker_count; ++i) {
+                total += job_data[i].stat_total;
+                culled += job_data[i].stat_culled;
+                unchanged += job_data[i].stat_unchanged;
+            }
+            U32 const computed = total - culled - unchanged;
+
+            // Log statistics periodically (every 120 frames ~ 2 seconds at 60fps)
+            static U32 frame_counter = 0;
+            if (++frame_counter >= 120) {
+                frame_counter = 0;
+                F32 const cull_pct = total > 0 ? (culled * 100.0F / total) : 0.0F;
+                F32 const unch_pct = total > 0 ? (unchanged * 100.0F / total) : 0.0F;
+                F32 const comp_pct = total > 0 ? (computed * 100.0F / total) : 0.0F;
+                lld("Anim MT: total=%u culled=%u(%.1f%%) unchanged=%u(%.1f%%) computed=%u(%.1f%%)",
+                    total, culled, cull_pct, unchanged, unch_pct, computed, comp_pct);
+            }
+
             PEND("anim_update_MT");
         } else {
             PBEGIN("anim_update_ST");
             // Single-threaded fallback
+            U32 total = 0, culled = 0, unchanged = 0;
+
             for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
                 EID const id = g_world->active_entities[idx];
 
                 if (!g_world->animation[id].has_animations) { continue; }
                 if (!g_world->animation[id].anim_playing)   { continue; }
+
+                total++;
+
+                // Frustum culling: Skip off-screen entities
+                if (!ENTITY_HAS_FLAG(g_world->flags[id], ENTITY_FLAG_IN_FRUSTUM)) {
+                    culled++;
+                    continue;
+                }
 
                 AModel *model      = asset_get_model_by_hash(g_world->model_name_hash[id]);
                 U32 const anim_idx = g_world->animation[id].anim_index;
@@ -228,6 +282,9 @@ void world_update(F32 dt, F32 dtu) {
                 if (anim_idx >= (U32)model->animation_count) { continue; }
 
                 ModelAnimation const& anim = model->animations[anim_idx];
+
+                U32 const prev_frame = g_world->animation[id].anim_frame;
+                U32 const prev_idx   = g_world->animation[id].prev_anim_index;
 
                 g_world->animation[id].anim_time += dt * g_world->animation[id].anim_speed;
 
@@ -255,8 +312,29 @@ void world_update(F32 dt, F32 dtu) {
                     }
                 }
 
+                // Skip bone matrix computation if animation state unchanged and not blending
+                BOOL const state_unchanged = (anim_idx == prev_idx && new_frame == prev_frame);
+                if (state_unchanged && !g_world->animation[id].is_blending) {
+                    unchanged++;
+                    continue;
+                }
+
                 math_compute_entity_bone_matrices(id);
             }
+
+            U32 const computed = total - culled - unchanged;
+
+            // Log statistics periodically (every 120 frames ~ 2 seconds at 60fps)
+            static U32 frame_counter = 0;
+            if (++frame_counter >= 120) {
+                frame_counter = 0;
+                F32 const cull_pct = total > 0 ? (culled * 100.0F / total) : 0.0F;
+                F32 const unch_pct = total > 0 ? (unchanged * 100.0F / total) : 0.0F;
+                F32 const comp_pct = total > 0 ? (computed * 100.0F / total) : 0.0F;
+                lld("Anim ST: total=%u culled=%u(%.1f%%) unchanged=%u(%.1f%%) computed=%u(%.1f%%)",
+                    total, culled, cull_pct, unchanged, unch_pct, computed, comp_pct);
+            }
+
             PEND("anim_update_ST");
         }
     }
