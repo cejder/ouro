@@ -1751,6 +1751,8 @@ void particles3d_queue_spawn(Vector3 center, Color start_color, Color end_color,
 
 // Main thread only: process all queued commands
 void particles3d_process_command_queue() {
+    PP(particles3d_process_command_queue());
+
     mtx_lock(&g_particle3d_command_queue.mutex);
     U32 const cmd_count = g_particle3d_command_queue.count;
     mtx_unlock(&g_particle3d_command_queue.mutex);

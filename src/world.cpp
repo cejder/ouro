@@ -318,6 +318,7 @@ void world_update(F32 dt, F32 dtu) {
 
             // Process any particle spawn commands queued by worker threads (must be on main thread for OpenGL)
             particles3d_process_command_queue();
+            particles2d_process_command_queue();
 
             PEND("actor_update_MT");
         } else {

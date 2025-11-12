@@ -14,10 +14,14 @@
 #include <glm/gtc/type_ptr.hpp>
 
 Particles2D g_particles2d = {};
+Particle2DCommandQueue static g_particle2d_command_queue = {};
 
 #ifndef __APPLE__
 
 void particles2d_init() {
+    // Initialize command queue mutex
+    mtx_init(&g_particle2d_command_queue.mutex, mtx_plain);
+    g_particle2d_command_queue.count = 0;
     // Load bindless texture extension
     if (!render_load_bindless_texture_extension()) { return; }
 
@@ -634,6 +638,83 @@ void particles2d_add_spiral(Rectangle spawn_rect, Color start_color, Color end_c
     particles2d_add(positions, velocities, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, count);
 }
 
+// Thread-safe command queue functions (safe to call from worker threads)
+
+void static i_particles2d_queue_command(Particle2DCommandType type, Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+    mtx_lock(&g_particle2d_command_queue.mutex);
+    if (g_particle2d_command_queue.count < PARTICLES_2D_COMMAND_QUEUE_MAX) {
+        Particle2DCommand *cmd = &g_particle2d_command_queue.commands[g_particle2d_command_queue.count++];
+        cmd->type = type;
+        cmd->spawn_rect = spawn_rect;
+        cmd->start_color = start_color;
+        cmd->end_color = end_color;
+        cmd->size_multiplier = size_multiplier;
+        cmd->count = count;
+    } else {
+        llw("Particle2D command queue full, dropping command");
+    }
+    mtx_unlock(&g_particle2d_command_queue.mutex);
+}
+
+void particles2d_queue_explosion(Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+    i_particles2d_queue_command(PARTICLE2D_CMD_EXPLOSION, spawn_rect, start_color, end_color, size_multiplier, count);
+}
+
+void particles2d_queue_smoke(Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+    i_particles2d_queue_command(PARTICLE2D_CMD_SMOKE, spawn_rect, start_color, end_color, size_multiplier, count);
+}
+
+void particles2d_queue_sparkle(Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+    i_particles2d_queue_command(PARTICLE2D_CMD_SPARKLE, spawn_rect, start_color, end_color, size_multiplier, count);
+}
+
+void particles2d_queue_fire(Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+    i_particles2d_queue_command(PARTICLE2D_CMD_FIRE, spawn_rect, start_color, end_color, size_multiplier, count);
+}
+
+void particles2d_queue_spiral(Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+    i_particles2d_queue_command(PARTICLE2D_CMD_SPIRAL, spawn_rect, start_color, end_color, size_multiplier, count);
+}
+
+// Main thread only: process all queued commands
+void particles2d_process_command_queue() {
+    PP(particles2d_process_command_queue());
+
+    mtx_lock(&g_particle2d_command_queue.mutex);
+    U32 const cmd_count = g_particle2d_command_queue.count;
+    mtx_unlock(&g_particle2d_command_queue.mutex);
+
+    // Process commands without holding lock (main thread is the only processor)
+    for (U32 i = 0; i < cmd_count; ++i) {
+        Particle2DCommand const *cmd = &g_particle2d_command_queue.commands[i];
+
+        switch (cmd->type) {
+            case PARTICLE2D_CMD_EXPLOSION:
+                particles2d_add_explosion(cmd->spawn_rect, cmd->start_color, cmd->end_color, cmd->size_multiplier, cmd->count);
+                break;
+            case PARTICLE2D_CMD_SMOKE:
+                particles2d_add_smoke(cmd->spawn_rect, cmd->start_color, cmd->end_color, cmd->size_multiplier, cmd->count);
+                break;
+            case PARTICLE2D_CMD_SPARKLE:
+                particles2d_add_sparkle(cmd->spawn_rect, cmd->start_color, cmd->end_color, cmd->size_multiplier, cmd->count);
+                break;
+            case PARTICLE2D_CMD_FIRE:
+                particles2d_add_fire(cmd->spawn_rect, cmd->start_color, cmd->end_color, cmd->size_multiplier, cmd->count);
+                break;
+            case PARTICLE2D_CMD_SPIRAL:
+                particles2d_add_spiral(cmd->spawn_rect, cmd->start_color, cmd->end_color, cmd->size_multiplier, cmd->count);
+                break;
+            default:
+                break;
+        }
+    }
+
+    // Clear queue
+    mtx_lock(&g_particle2d_command_queue.mutex);
+    g_particle2d_command_queue.count = 0;
+    mtx_unlock(&g_particle2d_command_queue.mutex);
+}
+
 #else
 
 void particles2d_init() { llw("Particle2D is not supported on macOS!"); }
@@ -658,5 +739,12 @@ void particles2d_add_smoke    (Rectangle spawn_rect, Color start_color, Color en
 void particles2d_add_sparkle  (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
 void particles2d_add_fire     (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
 void particles2d_add_spiral   (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+
+void particles2d_queue_explosion(Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles2d_queue_smoke    (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles2d_queue_sparkle  (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles2d_queue_fire     (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles2d_queue_spiral   (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles2d_process_command_queue() {}
 
 #endif

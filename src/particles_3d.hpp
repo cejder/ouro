@@ -12,7 +12,7 @@
 
 #define PARTICLES_3D_MAX 500'000
 #define PARTICLES_3D_SPAWN_RATE_HISTORY_SIZE 128
-#define PARTICLES_3D_COMMAND_QUEUE_MAX 1024
+#define PARTICLES_3D_COMMAND_QUEUE_MAX 16384
 
 enum Particle3DBillboardMode : U32 { // NOLINT(performance-enum-size)
     PARTICLE3D_BILLBOARD_CAMERA_FACING    = 0,  // Spherical billboard - faces camera
