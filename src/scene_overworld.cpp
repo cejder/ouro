@@ -1,3 +1,4 @@
+#include "arg.hpp"
 #include "asset.hpp"
 #include "audio.hpp"
 #include "console.hpp"
@@ -578,6 +579,15 @@ SKIP_OTHER_INPUT:
     //         particles2d_add_effect_spiral   (spawn_rect, DARKBLUE, CYAN, scale, count);
     //     }
     // }
+
+    // HACK:
+    if (input_is_action_pressed(IA_YES)) {
+        mqf("AAAAAAA");
+        C8 const* platform = args_get_string("Platform");
+        if (ou_strcmp(platform, "steamdeck") == 0) {
+            i_harvest_trees(nullptr);
+        }
+    }
 }
 
 SCENE_DRAW(overworld) {
