@@ -193,12 +193,21 @@ void world_draw_2d_hud() {
 
         if (g_world->type[i] == ENTITY_TYPE_NPC) {
             entity_actor_draw_2d_hud(i);
-            d2d_healthbar_batched(i);  // Collect healthbar data for batched rendering
+
+            // For single selection: use original complex healthbar (doesn't matter for perf)
+            // For multi-selection: collect for batched rendering (fast)
+            if (g_world->selected_entity_count == 1) {
+                d2d_healthbar(i);  // Original with text, icons, etc.
+            } else {
+                d2d_healthbar_batched(i);  // Collect for batch
+            }
         }
     }
 
-    // Draw all healthbars in a single batched draw call
-    d2d_healthbar_draw_batched();
+    // Draw all collected multi-selection healthbars in one draw call
+    if (g_world->selected_entity_count > 1) {
+        d2d_healthbar_draw_batched();
+    }
 
     edit_draw_2d_hud();
 }
