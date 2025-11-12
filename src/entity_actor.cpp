@@ -525,7 +525,15 @@ void static inline i_evaluate_behavior_transitions(EID id) {
                 Vector3 const target_pos = g_world->position[behavior->target_id];
                 particles3d_queue_harvest_complete(target_pos, GREEN, BROWN, HARVEST_COMPLETE_SIZE_MULTIPLIER, (SZ)(HARVEST_COMPLETE_PARTICLE_COUNT * 2));
                 audio_queue_play_3d_at_position(ACG_SFX, "plop.ogg", g_world->position[behavior->target_id]);
-                entity_destroy(behavior->target_id);
+
+                // Defer entity destruction to avoid race conditions in multithreaded actor updates
+                mtx_lock(&g_world->mt_sync.destruction_mutex);
+                if (g_world->mt_sync.destruction_count < WORLD_MAX_DEFERRED_DESTRUCTIONS) {
+                    g_world->mt_sync.entities_to_destroy[g_world->mt_sync.destruction_count] = behavior->target_id;
+                    g_world->mt_sync.destruction_count++;
+                }
+                mtx_unlock(&g_world->mt_sync.destruction_mutex);
+
                 behavior->wood_count++;
 
                 if (i_actor_is_full(id)) { behavior->target_entity_type = ENTITY_TYPE_BUILDING_LUMBERYARD; }
@@ -547,6 +555,8 @@ void static inline i_evaluate_behavior_transitions(EID id) {
                 // Delivery complete
                 SZ const wood_delivered = behavior->wood_count;
 
+                // Thread-safe lumberyard wood count modification
+                mtx_lock(&g_world->mt_sync.building_mutex);
                 g_world->building[behavior->target_id].lumberyard.wood_count += wood_delivered;
 
                 // Scale lumberyard by wood count with easing animation
@@ -599,6 +609,8 @@ void static inline i_evaluate_behavior_transitions(EID id) {
                         "\\ouc{#ff9500ff}wood:%zu",
                         id, behavior->target_id, wood_delivered);
                 }
+
+                mtx_unlock(&g_world->mt_sync.building_mutex);
 
                 behavior->wood_count = 0;
                 audio_queue_play_3d_at_position(ACG_SFX, "mario_coin.ogg", g_world->position[behavior->target_id]);
@@ -850,6 +862,8 @@ void entity_actor_update(EID id, F32 dt) {
                 F32 lowest_timer           = F32_MAX;
                 U32 const harvesters_count = i_count_harvesters_for_target(target_id, &lowest_timer);
 
+                // Thread-safe scale modification (only one harvester modifies scale at a time)
+                mtx_lock(&g_world->mt_sync.entity_mutation_mutex);
                 if (behavior->action_timer == lowest_timer) {
                     F32 const progress      = 1.0F - (behavior->action_timer / ACTION_DURATION_HARVEST);
                     // Use expo ease-in to keep scale high until the very end, then drop quickly
@@ -879,6 +893,7 @@ void entity_actor_update(EID id, F32 dt) {
                         behavior->particle_spawn_timer -= spawn_interval;
                     }
                 }
+                mtx_unlock(&g_world->mt_sync.entity_mutation_mutex);
 
                 behavior->action_timer -= dt * (F32)harvesters_count;
             }

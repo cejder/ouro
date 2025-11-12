@@ -11,8 +11,15 @@
 #include "talk.hpp"
 
 #include <raylib.h>
+#include <tinycthread.h>
+
+// Need for tinycthread on macOS
+#ifdef call_once
+#undef call_once
+#endif
 
 #define WORLD_MAX_ENTITIES 50000
+#define WORLD_MAX_DEFERRED_DESTRUCTIONS 1024
 
 fwd_decl(ATerrain);
 fwd_decl(ASound);
@@ -63,6 +70,20 @@ struct World {
         EID actors[MAX_ACTORS_PER_TARGET];
         U8 count;
     } target_trackers[WORLD_MAX_ENTITIES];
+
+    // Multithreading synchronization for actor updates
+    struct {
+        // Deferred entity destruction to avoid race conditions
+        EID entities_to_destroy[WORLD_MAX_DEFERRED_DESTRUCTIONS];
+        U32 destruction_count;
+        mtx_t destruction_mutex;
+
+        // Mutex for building modifications (e.g., lumberyard wood count)
+        mtx_t building_mutex;
+
+        // Mutex for entity scale modifications during harvesting
+        mtx_t entity_mutation_mutex;
+    } mt_sync;
 };
 
 struct WorldState {
