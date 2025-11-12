@@ -80,7 +80,7 @@ void entity_spawn_random_vegetation_on_terrain(ATerrain *terrain, SZ count, BOOL
     }
 
     F32 constexpr max_slope              = 0.5F;                        // Maximum allowed slope for vegetation placement
-    F32 constexpr min_spacing            = 5.0F;                        // Minimum distance between things
+    F32 constexpr min_spacing            = 1.0F;                        // Minimum distance between things
     SZ constexpr max_attempts            = (SZ)WORLD_MAX_ENTITIES * 2;  // Reduced since grid makes this more efficient
     F32 constexpr bush_bias              = 0.33F;
     S32 constexpr tree_variant           = 5;
