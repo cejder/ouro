@@ -12,6 +12,7 @@
 #include "world.hpp"
 
 #include <raymath.h>
+#include <tinycthread.h>
 
 // ===============================================================
 // ===================== TEXT MEASURE CACHE ======================
@@ -72,11 +73,13 @@ struct IMathCache {
 };
 
 IMathCache static i_cache = {};
+mtx_t static i_bone_cache_write_mutex = {};
 
 void math_init() {
     random_seed(RANDOM_SEED);
     ITextCache_init(&i_cache.text, MEMORY_TYPE_ARENA_MATH, TEXT_CACHE_INITIAL_CAPACITY);
     IBoneMatrixCache_init(&i_cache.bone_matrices, MEMORY_TYPE_ARENA_PERMANENT, BONE_MATRIX_CACHE_INITIAL_CAPACITY);
+    mtx_init(&i_bone_cache_write_mutex, mtx_plain);
 }
 
 void math_update() {
@@ -761,8 +764,16 @@ void  math_compute_entity_bone_matrices(EID id) {
         // Cache hit - use cached matrices directly
         source_matrices = cached->bone_matrices;
     } else {
-        // Cache miss - compute and store in cache
-        Matrix *allocated_matrices = mcpa(Matrix *, (SZ)bone_count, sizeof(Matrix));
+        // Cache miss - compute and store in cache (thread-safe with mutex)
+        mtx_lock(&i_bone_cache_write_mutex);
+
+        // Double-check cache after acquiring lock (another thread may have inserted)
+        cached = IBoneMatrixCache_get(&i_cache.bone_matrices, key);
+        if (cached != nullptr) {
+            mtx_unlock(&i_bone_cache_write_mutex);
+            source_matrices = cached->bone_matrices;
+        } else {
+            Matrix *allocated_matrices = mcpa(Matrix *, (SZ)bone_count, sizeof(Matrix));
 
         for (S32 bone_id = 0; bone_id < bone_count; bone_id++) {
             Transform *bind_transform = &model->base.bindPose[bone_id];
@@ -780,12 +791,14 @@ void  math_compute_entity_bone_matrices(EID id) {
             allocated_matrices[bone_id] = MatrixMultiply(MatrixInvert(bind_matrix), target_matrix);
         }
 
-        IBoneMatrixCacheValue value = {};
-        value.bone_matrices         = allocated_matrices;
-        value.bone_count            = bone_count;
-        IBoneMatrixCache_insert(&i_cache.bone_matrices, key, value);
+            IBoneMatrixCacheValue value = {};
+            value.bone_matrices         = allocated_matrices;
+            value.bone_count            = bone_count;
+            IBoneMatrixCache_insert(&i_cache.bone_matrices, key, value);
 
-        source_matrices = allocated_matrices;
+            mtx_unlock(&i_bone_cache_write_mutex);
+            source_matrices = allocated_matrices;
+        }
     }
 
     // If blending, interpolate between previous and new bone matrices
