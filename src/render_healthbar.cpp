@@ -12,6 +12,8 @@
 
 RenderHealthbar g_render_healthbar = {};
 
+#ifndef __APPLE__
+
 void render_healthbar_init() {
     // Load shader and cache uniform locations
     g_render_healthbar.shader.shader = asset_get_shader("healthbar");
@@ -138,3 +140,12 @@ void render_healthbar_draw() {
 
     INCREMENT_DRAW_CALL;
 }
+
+#else
+
+void render_healthbar_init() { llw("Healthbar rendering is not supported on macOS!"); }
+void render_healthbar_clear() {}
+void render_healthbar_add(Vector2 screen_pos, Vector2 size, Color fill_color, F32 health_perc, F32 roundness, BOOL is_multi_select) {}
+void render_healthbar_draw() {}
+
+#endif
