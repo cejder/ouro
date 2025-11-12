@@ -698,7 +698,7 @@ BOOL entity_damage(EID id, S32 damage) {
 
     if (g_world->type[id] == ENTITY_TYPE_NPC) {
         audio_set_pitch(ACG_VOICE, 1.5F);
-        audio_play_3d_at_position(ACG_VOICE, TS("hurt_%d.ogg", random_s32(0, 2))->c, g_world->position[id]);
+        audio_queue_play_3d_at_position(ACG_VOICE, TS("hurt_%d.ogg", random_s32(0, 2))->c, g_world->position[id]);
     }
 
     Vector3 const hit_pos = g_world->position[id];
@@ -707,10 +707,10 @@ BOOL entity_damage(EID id, S32 damage) {
         if (g_world->type[id] == ENTITY_TYPE_NPC) {
             if (random_s32(0, 9) == 0) {
                 audio_set_pitch(ACG_VOICE, 1.5F);
-                audio_play_3d_at_position(ACG_VOICE, "death_0.ogg", g_world->position[id]);
+                audio_queue_play_3d_at_position(ACG_VOICE, "death_0.ogg", g_world->position[id]);
             }
         }
-        audio_play_3d_at_position(ACG_SFX, "plop.ogg", g_world->position[id]);
+        audio_queue_play_3d_at_position(ACG_SFX, "plop.ogg", g_world->position[id]);
 
         // Spawn a headstone where the entity was
         Vector3 const death_pos = g_world->position[id];

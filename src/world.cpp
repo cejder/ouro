@@ -841,11 +841,9 @@ void world_vegetation_collision() {
             Vector3 pos              = g_world->position[entity_id];
             pos.y                   += g_world->obb[entity_id].extents.y;
 
-            FMOD::Channel *channel = audio_play_3d_at_position(ACG_SFX, rustle_str->c, pos);
-            if (channel) {
-                F32 const pitch_shift = random_f32(0.8F, 1.2F);
-                channel->setPitch(pitch_shift);
-            }
+            // Queue audio playback (pitch adjustment will use default)
+            // TODO: Add pitch parameter to audio queue if per-sound pitch control is needed
+            audio_queue_play_3d_at_position(ACG_SFX, rustle_str->c, pos);
             ENTITY_SET_FLAG(g_world->flags[entity_id], ENTITY_FLAG_COLLIDING_PLAYER);
         } else if (!is_colliding && was_colliding) {
             // Collision ended
