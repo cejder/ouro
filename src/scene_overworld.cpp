@@ -512,7 +512,7 @@ SKIP_OTHER_INPUT:
         F32 const fall_height    = 2000.0F; // Max spawn height above ground
         F32 const spread_radius  = 1.0F;
 
-        particles3d_add_ambient_rain(
+        particles3d_queue_ambient_rain(
                                             ground_pos,
                                             spread_radius,
                                             fall_height,

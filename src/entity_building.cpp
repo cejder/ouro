@@ -71,7 +71,7 @@ void entity_building_update(EID id, F32 dt) {
             // Calculate particle scale (cube root for very slow growth: wood=1000 -> 2x scale)
             F32 const scale_multiplier = particle_scale_base + (math_pow_f32((F32)lumberyard->wood_count, 1.0F / 3.0F) * particle_scale_growth);
 
-            particles3d_add_smoke(peak_pos, g_world->radius[id], smoke_color_start, smoke_color_end, scale_multiplier, particles_to_spawn);
+            particles3d_queue_smoke(peak_pos, g_world->radius[id], smoke_color_start, smoke_color_end, scale_multiplier, particles_to_spawn);
         }
     } break;
     default: {

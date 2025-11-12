@@ -5,11 +5,14 @@
 #include "cvar.hpp"
 #include "dungeon.hpp"
 #include "edit.hpp"
+#include "job.hpp"
 #include "log.hpp"
 #include "map.hpp"
 #include "memory.hpp"
 #include "message.hpp"
+#include "particles_2d.hpp"
 #include "particles_3d.hpp"
+#include "profiler.hpp"
 #include "render.hpp"
 #include "std.hpp"
 #include "string.hpp"
@@ -44,6 +47,9 @@ void world_init() {
     grid_init({A_TERRAIN_DEFAULT_SIZE, A_TERRAIN_DEFAULT_SIZE}); // TODO: We need to make sure that we set the proper size. Right now we are defaulting.
     g_world_state.initialized = true;
 
+    // Initialize job system for multithreaded work (0 = auto-detect CPU cores)
+    job_system_init(0);
+
     player_init();
 }
 
@@ -76,31 +82,57 @@ void world_reset() {
     grid_clear();
 }
 
-void world_update(F32 dt, F32 dtu) {
-    g_render.visible_vertex_count = 0;
+// Animation update job data
+// Entity update job data (lifetime, frustum, counting)
+struct EntityUpdateJobData {
+    F32 dt;
+    U32 start_idx;
+    U32 end_idx;
+    U32 entity_type_counts[ENTITY_TYPE_COUNT];  // Per-thread counters
+    U32 visible_vertex_count;                    // Per-thread counter
+};
 
-    world_recorder_update();  // WARN: This needs to happen before anything that changes the world.
-    grid_populate();
-    edit_update(dt, dtu);
-    c3d_update_frustum();
+struct AnimationUpdateJobData {
+    F32 dt;
+    U32 start_idx;
+    U32 end_idx;
+};
 
-    for (U32 &count : g_world->entity_type_counts) { count = 0; }
+// Actor update job data
+struct ActorUpdateJobData {
+    F32 dt;
+    U32 start_idx;
+    U32 end_idx;
+};
 
-    // Use active entities from last frame
-    for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
+// Worker function for entity updates (executed by job system)
+S32 static i_entity_update_worker(void *arg) {
+    auto *data = (EntityUpdateJobData *)arg;
+    F32 const dt = data->dt;
+
+    // Initialize per-thread counters to zero
+    for (U32 i = 0; i < ENTITY_TYPE_COUNT; ++i) {
+        data->entity_type_counts[i] = 0;
+    }
+    data->visible_vertex_count = 0;
+
+    for (U32 idx = data->start_idx; idx < data->end_idx; ++idx) {
         EID const i = g_world->active_entities[idx];
-        if (!ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_USE)) { continue; }  // Safety check for entities that died during edit update
+        if (!ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_USE)) { continue; }
 
         g_world->lifetime[i] += dt;
-        g_world->entity_type_counts[g_world->type[i]]++;
+        data->entity_type_counts[g_world->type[i]]++;
 
-        // TODO: Do we really need to check here if they are instanced?
         c3d_is_obb_in_frustum(g_world->obb[i]) ? ENTITY_SET_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM)
                                               : ENTITY_CLEAR_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM);
 
-        if (ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM)) { g_render.visible_vertex_count += asset_get_model_by_hash(g_world->model_name_hash[i])->vertex_count; }
-        if (ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_ACTOR))      { entity_actor_update(i, dt); }
-        if (g_world->type[i] == ENTITY_TYPE_BUILDING_LUMBERYARD)        { entity_building_update(i, dt); }
+        if (ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM)) {
+            data->visible_vertex_count += asset_get_model_by_hash(g_world->model_name_hash[i])->vertex_count;
+        }
+
+        if (g_world->type[i] == ENTITY_TYPE_BUILDING_LUMBERYARD) {
+            entity_building_update(i, dt);
+        }
 
 #if OURO_TALK
         if (g_world->type[i] == ENTITY_TYPE_NPC) {
@@ -110,19 +142,24 @@ void world_update(F32 dt, F32 dtu) {
 #endif
     }
 
-    // Build active entities array for draw functions to use
-    g_world->active_entity_count = 0;
-    for (EID i = 0; i < WORLD_MAX_ENTITIES; ++i) {
-        if (ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_USE)) { g_world->active_entities[g_world->active_entity_count++] = i; }
-    }
+    return 0;
+}
 
-    // TODO: Multithread or compute shader? Compute shader would mean that we cannot run this on modern Apple devices though
-    // Update all entity animations
-    for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
+// Worker function for animation updates (executed by job system)
+S32 static i_animation_update_worker(void *arg) {
+    auto *data = (AnimationUpdateJobData *)arg;
+    F32 const dt = data->dt;
+
+    for (U32 idx = data->start_idx; idx < data->end_idx; ++idx) {
         EID const id = g_world->active_entities[idx];
 
         if (!g_world->animation[id].has_animations) { continue; }
         if (!g_world->animation[id].anim_playing)   { continue; }
+
+        // Frustum culling: Skip off-screen entities
+        if (!ENTITY_HAS_FLAG(g_world->flags[id], ENTITY_FLAG_IN_FRUSTUM)) {
+            continue;
+        }
 
         AModel *model      = asset_get_model_by_hash(g_world->model_name_hash[id]);
         U32 const anim_idx = g_world->animation[id].anim_index;
@@ -165,6 +202,127 @@ void world_update(F32 dt, F32 dtu) {
 
         // Compute bone matrices for this entity
         math_compute_entity_bone_matrices(id);
+    }
+
+    return 0;
+}
+
+// Worker function for actor updates (executed by job system)
+S32 static i_actor_update_worker(void *arg) {
+    auto *data = (ActorUpdateJobData *)arg;
+    F32 const dt = data->dt;
+
+    for (U32 idx = data->start_idx; idx < data->end_idx; ++idx) {
+        EID const id = g_world->active_entities[idx];
+
+        if (!ENTITY_HAS_FLAG(g_world->flags[id], ENTITY_FLAG_ACTOR)) { continue; }
+
+        entity_actor_update(id, dt);
+    }
+
+    return 0;
+}
+
+void world_update(F32 dt, F32 dtu) {
+    g_render.visible_vertex_count = 0;
+
+    world_recorder_update();  // WARN: This needs to happen before anything that changes the world.
+    grid_populate();
+    edit_update(dt, dtu);
+    c3d_update_frustum();
+
+    for (U32 &count : g_world->entity_type_counts) { count = 0; }
+
+    // Multithreaded entity updates (lifetime, frustum culling, counting)
+    if (g_world->active_entity_count > 0) {
+        PBEGIN("entity_update_MT");
+        U32 const worker_count = job_system_get_worker_count();
+        SZ const entities_per_worker = (g_world->active_entity_count + worker_count - 1) / worker_count;
+
+        auto *job_data = mmta(EntityUpdateJobData *, sizeof(EntityUpdateJobData) * worker_count);
+
+        for (U32 i = 0; i < worker_count; ++i) {
+            SZ const start_idx = i * entities_per_worker;
+            SZ const end_idx = glm::min(start_idx + entities_per_worker, g_world->active_entity_count);
+
+            if (start_idx >= g_world->active_entity_count) { break; }
+
+            job_data[i].dt = dt;
+            job_data[i].start_idx = (U32)start_idx;
+            job_data[i].end_idx = (U32)end_idx;
+
+            job_system_submit(i_entity_update_worker, &job_data[i]);
+        }
+
+        job_system_wait();
+
+        // Merge per-thread counters
+        for (U32 i = 0; i < worker_count; ++i) {
+            if (job_data[i].start_idx >= g_world->active_entity_count) { break; }
+
+            for (U32 type_idx = 0; type_idx < ENTITY_TYPE_COUNT; ++type_idx) {
+                g_world->entity_type_counts[type_idx] += job_data[i].entity_type_counts[type_idx];
+            }
+            g_render.visible_vertex_count += job_data[i].visible_vertex_count;
+        }
+
+        PEND("entity_update_MT");
+    }
+
+    // Build active entities array for draw functions to use
+    g_world->active_entity_count = 0;
+    for (EID i = 0; i < WORLD_MAX_ENTITIES; ++i) {
+        if (ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_USE)) { g_world->active_entities[g_world->active_entity_count++] = i; }
+    }
+
+    // Update all entity animations (multithreaded)
+    if (g_world->active_entity_count > 0) {
+        PBEGIN("anim_update_MT");
+        U32 const worker_count = job_system_get_worker_count();
+        SZ const entities_per_worker = (g_world->active_entity_count + worker_count - 1) / worker_count;
+
+        auto *job_data = mmta(AnimationUpdateJobData *, sizeof(AnimationUpdateJobData) * worker_count);
+
+        for (U32 i = 0; i < worker_count; ++i) {
+            SZ const start_idx = i * entities_per_worker;
+            SZ const end_idx = glm::min(start_idx + entities_per_worker, g_world->active_entity_count);
+
+            if (start_idx >= g_world->active_entity_count) { break; }
+
+            job_data[i].dt = dt;
+            job_data[i].start_idx = (U32)start_idx;
+            job_data[i].end_idx = (U32)end_idx;
+
+            job_system_submit(i_animation_update_worker, &job_data[i]);
+        }
+
+        job_system_wait();
+        PEND("anim_update_MT");
+    }
+
+    // Update all entity actors (multithreaded)
+    if (g_world->active_entity_count > 0) {
+        PBEGIN("actor_update_MT");
+        U32 const worker_count = job_system_get_worker_count();
+        SZ const entities_per_worker = (g_world->active_entity_count + worker_count - 1) / worker_count;
+
+        auto *job_data = mmta(ActorUpdateJobData *, sizeof(ActorUpdateJobData) * worker_count);
+
+        for (U32 i = 0; i < worker_count; ++i) {
+            SZ const start_idx = i * entities_per_worker;
+            SZ const end_idx = glm::min(start_idx + entities_per_worker, g_world->active_entity_count);
+
+            if (start_idx >= g_world->active_entity_count) { break; }
+
+            job_data[i].dt = dt;
+            job_data[i].start_idx = (U32)start_idx;
+            job_data[i].end_idx = (U32)end_idx;
+
+            job_system_submit(i_actor_update_worker, &job_data[i]);
+        }
+
+        job_system_wait();
+        PEND("actor_update_MT");
     }
 }
 
@@ -678,11 +836,9 @@ void world_vegetation_collision() {
             Vector3 pos              = g_world->position[entity_id];
             pos.y                   += g_world->obb[entity_id].extents.y;
 
-            FMOD::Channel *channel = audio_play_3d_at_position(ACG_SFX, rustle_str->c, pos);
-            if (channel) {
-                F32 const pitch_shift = random_f32(0.8F, 1.2F);
-                channel->setPitch(pitch_shift);
-            }
+            // Queue audio playback (pitch adjustment will use default)
+            // TODO: Add pitch parameter to audio queue if per-sound pitch control is needed
+            audio_queue_play_3d_at_position(ACG_SFX, rustle_str->c, pos);
             ENTITY_SET_FLAG(g_world->flags[entity_id], ENTITY_FLAG_COLLIDING_PLAYER);
         } else if (!is_colliding && was_colliding) {
             // Collision ended

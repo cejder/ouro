@@ -17,10 +17,14 @@
 #include <glm/gtc/type_ptr.hpp>
 
 Particles3D g_particles3d = {};
+Particle3DCommandQueue static g_particle3d_command_queue = {};
 
 #ifndef __APPLE__
 
 void particles3d_init() {
+    // Initialize command queue mutex
+    mtx_init(&g_particle3d_command_queue.mutex, mtx_plain);
+    g_particle3d_command_queue.count = 0;
     // Load bindless texture extension
     if (!render_load_bindless_texture_extension()) { return; }
 
@@ -1648,6 +1652,192 @@ void particles3d_add_spawn(Vector3 center, Color start_color, Color end_color, F
     particles3d_add(positions, velocities, accelerations, sizes, start_colors, end_colors, lives, texture_indices, gravities, rotation_speeds, air_resistances, billboard_modes, stretch_factors, count);
 }
 
+// Thread-safe command queue functions (safe to call from worker threads)
+
+void static i_particles3d_queue_command_full(Particle3DCommandType type, Vector3 center, Vector3 extra_vec, Color start_color, Color end_color, F32 param1, F32 param2, F32 size_multiplier, SZ count) {
+    mtx_lock(&g_particle3d_command_queue.mutex);
+    if (g_particle3d_command_queue.count < PARTICLES_3D_COMMAND_QUEUE_MAX) {
+        Particle3DCommand *cmd = &g_particle3d_command_queue.commands[g_particle3d_command_queue.count++];
+        cmd->type = type;
+        cmd->center = center;
+        cmd->extra_vec = extra_vec;
+        cmd->start_color = start_color;
+        cmd->end_color = end_color;
+        cmd->param1 = param1;
+        cmd->param2 = param2;
+        cmd->size_multiplier = size_multiplier;
+        cmd->count = count;
+    } else {
+        llt("Particle3D command queue full, dropping command");
+    }
+    mtx_unlock(&g_particle3d_command_queue.mutex);
+}
+
+void particles3d_queue_explosion(Vector3 center, F32 radius, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+    i_particles3d_queue_command_full(PARTICLE3D_CMD_EXPLOSION, center, {}, start_color, end_color, radius, 0.0F, size_multiplier, count);
+}
+
+void particles3d_queue_smoke(Vector3 origin, F32 spread, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+    i_particles3d_queue_command_full(PARTICLE3D_CMD_SMOKE, origin, {}, start_color, end_color, spread, 0.0F, size_multiplier, count);
+}
+
+void particles3d_queue_sparkle(Vector3 center, F32 radius, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+    i_particles3d_queue_command_full(PARTICLE3D_CMD_SPARKLE, center, {}, start_color, end_color, radius, 0.0F, size_multiplier, count);
+}
+
+void particles3d_queue_fire(Vector3 origin, F32 radius, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+    i_particles3d_queue_command_full(PARTICLE3D_CMD_FIRE, origin, {}, start_color, end_color, radius, 0.0F, size_multiplier, count);
+}
+
+void particles3d_queue_spiral(Vector3 center, F32 radius, F32 height, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+    i_particles3d_queue_command_full(PARTICLE3D_CMD_SPIRAL, center, {}, start_color, end_color, radius, height, size_multiplier, count);
+}
+
+void particles3d_queue_fountain(Vector3 origin, F32 spread_angle, F32 power, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+    i_particles3d_queue_command_full(PARTICLE3D_CMD_FOUNTAIN, origin, {}, start_color, end_color, spread_angle, power, size_multiplier, count);
+}
+
+void particles3d_queue_trail(Vector3 start, Vector3 velocity, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+    i_particles3d_queue_command_full(PARTICLE3D_CMD_TRAIL, start, velocity, start_color, end_color, 0.0F, 0.0F, size_multiplier, count);
+}
+
+void particles3d_queue_dust_cloud(Vector3 center, F32 radius, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+    i_particles3d_queue_command_full(PARTICLE3D_CMD_DUST_CLOUD, center, {}, start_color, end_color, radius, 0.0F, size_multiplier, count);
+}
+
+void particles3d_queue_magic_burst(Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+    i_particles3d_queue_command_full(PARTICLE3D_CMD_MAGIC_BURST, center, {}, start_color, end_color, 0.0F, 0.0F, size_multiplier, count);
+}
+
+void particles3d_queue_debris(Vector3 center, Vector3 impulse, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+    i_particles3d_queue_command_full(PARTICLE3D_CMD_DEBRIS, center, impulse, start_color, end_color, 0.0F, 0.0F, size_multiplier, count);
+}
+
+void particles3d_queue_ambient_rain(Vector3 origin, F32 spread_radius, F32 fall_height, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+    i_particles3d_queue_command_full(PARTICLE3D_CMD_AMBIENT_RAIN, origin, {}, start_color, end_color, spread_radius, fall_height, size_multiplier, count);
+}
+
+void particles3d_queue_chaos_stress_test(Vector3 center, F32 radius, SZ count) {
+    i_particles3d_queue_command_full(PARTICLE3D_CMD_CHAOS_STRESS_TEST, center, {}, {}, {}, radius, 0.0F, 0.0F, count);
+}
+
+void particles3d_queue_harvest_impact(Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+    i_particles3d_queue_command_full(PARTICLE3D_CMD_HARVEST_IMPACT, center, {}, start_color, end_color, 0.0F, 0.0F, size_multiplier, count);
+}
+
+void particles3d_queue_harvest_active(Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+    i_particles3d_queue_command_full(PARTICLE3D_CMD_HARVEST_ACTIVE, center, {}, start_color, end_color, 0.0F, 0.0F, size_multiplier, count);
+}
+
+void particles3d_queue_harvest_complete(Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+    i_particles3d_queue_command_full(PARTICLE3D_CMD_HARVEST_COMPLETE, center, {}, start_color, end_color, 0.0F, 0.0F, size_multiplier, count);
+}
+
+void particles3d_queue_click_indicator(Vector3 position, F32 radius, Color start_color, Color end_color, SZ count) {
+    i_particles3d_queue_command_full(PARTICLE3D_CMD_CLICK_INDICATOR, position, {}, start_color, end_color, radius, 0.0F, 0.0F, count);
+}
+
+void particles3d_queue_blood_hit(Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+    i_particles3d_queue_command_full(PARTICLE3D_CMD_BLOOD_HIT, center, {}, start_color, end_color, 0.0F, 0.0F, size_multiplier, count);
+}
+
+void particles3d_queue_blood_death(Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+    i_particles3d_queue_command_full(PARTICLE3D_CMD_BLOOD_DEATH, center, {}, start_color, end_color, 0.0F, 0.0F, size_multiplier, count);
+}
+
+void particles3d_queue_spawn(Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {
+    i_particles3d_queue_command_full(PARTICLE3D_CMD_SPAWN, center, {}, start_color, end_color, 0.0F, 0.0F, size_multiplier, count);
+}
+
+// Main thread only: process all queued commands
+void particles3d_process_command_queue() {
+    mtx_lock(&g_particle3d_command_queue.mutex);
+    U32 const cmd_count = g_particle3d_command_queue.count;
+    mtx_unlock(&g_particle3d_command_queue.mutex);
+
+    // Process commands without holding lock (main thread is the only processor)
+    for (U32 i = 0; i < cmd_count; ++i) {
+        Particle3DCommand const *cmd = &g_particle3d_command_queue.commands[i];
+
+        switch (cmd->type) {
+            case PARTICLE3D_CMD_EXPLOSION:
+                particles3d_add_explosion(cmd->center, cmd->param1, cmd->start_color, cmd->end_color, cmd->size_multiplier, cmd->count);
+                break;
+            case PARTICLE3D_CMD_SMOKE:
+                particles3d_add_smoke(cmd->center, cmd->param1, cmd->start_color, cmd->end_color, cmd->size_multiplier, cmd->count);
+                break;
+            case PARTICLE3D_CMD_SPARKLE:
+                particles3d_add_sparkle(cmd->center, cmd->param1, cmd->start_color, cmd->end_color, cmd->size_multiplier, cmd->count);
+                break;
+            case PARTICLE3D_CMD_FIRE:
+                particles3d_add_fire(cmd->center, cmd->param1, cmd->start_color, cmd->end_color, cmd->size_multiplier, cmd->count);
+                break;
+            case PARTICLE3D_CMD_SPIRAL:
+                particles3d_add_spiral(cmd->center, cmd->param1, cmd->param2, cmd->start_color, cmd->end_color, cmd->size_multiplier, cmd->count);
+                break;
+            case PARTICLE3D_CMD_FOUNTAIN:
+                particles3d_add_fountain(cmd->center, cmd->param1, cmd->param2, cmd->start_color, cmd->end_color, cmd->size_multiplier, cmd->count);
+                break;
+            case PARTICLE3D_CMD_TRAIL:
+                particles3d_add_trail(cmd->center, cmd->extra_vec, cmd->start_color, cmd->end_color, cmd->size_multiplier, cmd->count);
+                break;
+            case PARTICLE3D_CMD_DUST_CLOUD:
+                particles3d_add_dust_cloud(cmd->center, cmd->param1, cmd->start_color, cmd->end_color, cmd->size_multiplier, cmd->count);
+                break;
+            case PARTICLE3D_CMD_MAGIC_BURST:
+                particles3d_add_magic_burst(cmd->center, cmd->start_color, cmd->end_color, cmd->size_multiplier, cmd->count);
+                break;
+            case PARTICLE3D_CMD_DEBRIS:
+                particles3d_add_debris(cmd->center, cmd->extra_vec, cmd->start_color, cmd->end_color, cmd->size_multiplier, cmd->count);
+                break;
+            case PARTICLE3D_CMD_AMBIENT_RAIN:
+                particles3d_add_ambient_rain(cmd->center, cmd->param1, cmd->param2, cmd->start_color, cmd->end_color, cmd->size_multiplier, cmd->count);
+                break;
+            case PARTICLE3D_CMD_CHAOS_STRESS_TEST:
+                particles3d_add_chaos_stress_test(cmd->center, cmd->param1, cmd->count);
+                break;
+            case PARTICLE3D_CMD_HARVEST_IMPACT:
+                particles3d_add_harvest_impact(cmd->center, cmd->start_color, cmd->end_color, cmd->size_multiplier, cmd->count);
+                break;
+            case PARTICLE3D_CMD_HARVEST_ACTIVE:
+                particles3d_add_harvest_active(cmd->center, cmd->start_color, cmd->end_color, cmd->size_multiplier, cmd->count);
+                break;
+            case PARTICLE3D_CMD_HARVEST_COMPLETE:
+                particles3d_add_harvest_complete(cmd->center, cmd->start_color, cmd->end_color, cmd->size_multiplier, cmd->count);
+                break;
+            case PARTICLE3D_CMD_CLICK_INDICATOR:
+                particles3d_add_click_indicator(cmd->center, cmd->param1, cmd->start_color, cmd->end_color, cmd->count);
+                break;
+            case PARTICLE3D_CMD_BLOOD_HIT:
+                particles3d_add_blood_hit(cmd->center, cmd->start_color, cmd->end_color, cmd->size_multiplier, cmd->count);
+                break;
+            case PARTICLE3D_CMD_BLOOD_DEATH:
+                particles3d_add_blood_death(cmd->center, cmd->start_color, cmd->end_color, cmd->size_multiplier, cmd->count);
+                break;
+            case PARTICLE3D_CMD_SPAWN:
+                particles3d_add_spawn(cmd->center, cmd->start_color, cmd->end_color, cmd->size_multiplier, cmd->count);
+                break;
+            default:
+                break;
+        }
+    }
+
+    // Remove processed commands and shift remaining ones to the front
+    mtx_lock(&g_particle3d_command_queue.mutex);
+    if (cmd_count < g_particle3d_command_queue.count) {
+        // New commands were added while we were processing - shift them to the front
+        U32 const remaining = g_particle3d_command_queue.count - cmd_count;
+        ou_memmove(&g_particle3d_command_queue.commands[0],
+                   &g_particle3d_command_queue.commands[cmd_count],
+                   remaining * sizeof(Particle3DCommand));
+        g_particle3d_command_queue.count = remaining;
+    } else {
+        // No new commands added, just clear
+        g_particle3d_command_queue.count = 0;
+    }
+    mtx_unlock(&g_particle3d_command_queue.mutex);
+}
+
 #else
 
 void particles3d_init() { llw("Particle3D is not supported on macOS!"); }
@@ -1689,5 +1879,26 @@ void particles3d_add_click_indicator     (Vector3 position, F32 radius, Color st
 void particles3d_add_blood_hit           (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
 void particles3d_add_blood_death         (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
 void particles3d_add_spawn               (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+
+void particles3d_queue_explosion         (Vector3 center, F32 radius, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_queue_smoke             (Vector3 origin, F32 spread, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_queue_sparkle           (Vector3 center, F32 radius, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_queue_fire              (Vector3 origin, F32 radius, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_queue_spiral            (Vector3 center, F32 radius, F32 height, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_queue_fountain          (Vector3 origin, F32 spread_angle, F32 power, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_queue_trail             (Vector3 start, Vector3 velocity, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_queue_dust_cloud        (Vector3 center, F32 radius, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_queue_magic_burst       (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_queue_debris            (Vector3 center, Vector3 impulse, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_queue_ambient_rain      (Vector3 origin, F32 spread_radius, F32 fall_height, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_queue_chaos_stress_test (Vector3 center, F32 radius, SZ count) {}
+void particles3d_queue_harvest_impact    (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_queue_harvest_active    (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_queue_harvest_complete  (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_queue_click_indicator   (Vector3 position, F32 radius, Color start_color, Color end_color, SZ count) {}
+void particles3d_queue_blood_hit         (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_queue_blood_death       (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_queue_spawn             (Vector3 center, Color start_color, Color end_color, F32 size_multiplier, SZ count) {}
+void particles3d_process_command_queue   () {}
 
 #endif

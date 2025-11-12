@@ -4,6 +4,7 @@
 
 #include <raylib.h>
 #include <fmod.hpp>
+#include <tinycthread.h>
 
 #define AUDIO_CHANNEL_GROUP_MAX 128
 #define AUDIO_VOLUME_DEFAULT_VALUE 0.5F
@@ -17,6 +18,8 @@
 #define AUDIO_3D_MAX_DISTANCE 250.0f
 #define AUDIO_3D_ROLLOFF_SCALE 1.0f
 #define AUDIO_3D_DOPPLER_SCALE 0.1F
+
+#define AUDIO_COMMAND_QUEUE_MAX 16384
 
 using AudioHandle = U32;
 
@@ -35,6 +38,27 @@ enum AudioChannelGroup : U8 {
     ACG_AMBIENCE,
     ACG_VOICE,
     ACG_COUNT,
+};
+
+// Command queue for thread-safe audio playback
+enum AudioCommandType : U8 {
+    AUDIO_CMD_PLAY_3D_AT_POSITION,
+    AUDIO_CMD_PLAY_3D_AT_ENTITY,
+    AUDIO_CMD_COUNT
+};
+
+struct AudioCommand {
+    AudioCommandType type;
+    AudioChannelGroup channel_group;
+    C8 name[AUDIO_NAME_MAX_LENGTH];
+    Vector3 position;  // Used for PLAY_3D_AT_POSITION
+    EID entity_id;     // Used for PLAY_3D_AT_ENTITY
+};
+
+struct AudioCommandQueue {
+    AudioCommand commands[AUDIO_COMMAND_QUEUE_MAX];
+    U32 count;
+    mtx_t mutex;
 };
 
 struct ActiveSound {
@@ -118,3 +142,10 @@ void audio_3d_set_rolloff_type(Audio3DRolloff rolloff);
 void audio_3d_set_doppler_enabled(BOOL enabled);
 void audio_3d_set_doppler_scale(F32 scale);
 void audio_draw_3d_dbg();
+
+// Thread-safe command queue API (safe to call from worker threads)
+void audio_queue_play_3d_at_position(AudioChannelGroup channel_group, C8 const *name, Vector3 position);
+void audio_queue_play_3d_at_entity(AudioChannelGroup channel_group, C8 const *name, EID entity_id);
+
+// Main thread only: process all queued commands
+void audio_process_command_queue();

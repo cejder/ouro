@@ -239,7 +239,7 @@ void edit_update(F32 dt, F32 dtu) {
 
         // Spawn indicator particles at click location (only if no entity is selected, otherwise handled in command section)
         if (g_world->selected_entity_count == 0) {
-            particles3d_add_click_indicator(collision.point, 0.5F, PINK, PURPLE, 5);
+            particles3d_queue_click_indicator(collision.point, 0.5F, PINK, PURPLE, 5);
         }
     }
 
@@ -384,7 +384,7 @@ void edit_update(F32 dt, F32 dtu) {
 
             if (g_world->type[clicked_entity] == ENTITY_TYPE_VEGETATION) {
                 // Right clicked on vegetation/tree - harvest it
-                particles3d_add_click_indicator(target_pos, target_radius, GREEN, LIME, 5);
+                particles3d_queue_click_indicator(target_pos, target_radius, GREEN, LIME, 5);
                 for (SZ i = 0; i < g_world->selected_entity_count; ++i) {
                     EID const id = g_world->selected_entities[i];
                     entity_actor_start_looking_for_target(id, ENTITY_TYPE_VEGETATION);
@@ -392,7 +392,7 @@ void edit_update(F32 dt, F32 dtu) {
                 i_print_entity_command_message(g_world->selected_entities[0], "Gathering resources", "#ffaa00ff", MESSAGE_TYPE_WARN);
             } else if (g_world->type[clicked_entity] == ENTITY_TYPE_NPC) {
                 // Right clicked on NPC - attack it
-                particles3d_add_click_indicator(target_pos, target_radius, RED, MAROON, 5);
+                particles3d_queue_click_indicator(target_pos, target_radius, RED, MAROON, 5);
                 for (SZ i = 0; i < g_world->selected_entity_count; ++i) {
                     EID const id = g_world->selected_entities[i];
                     entity_actor_set_attack_target_npc(id, clicked_entity);
@@ -400,7 +400,7 @@ void edit_update(F32 dt, F32 dtu) {
                 i_print_entity_command_message_with_target(g_world->selected_entities[0], "Attacking", "#ff3030ff", clicked_entity, MESSAGE_TYPE_ERROR);
             } else {
                 // Other entity type, just move to the position
-                particles3d_add_click_indicator(collision.point, 0.5F, PINK, PURPLE, 5);
+                particles3d_queue_click_indicator(collision.point, 0.5F, PINK, PURPLE, 5);
                 for (SZ i = 0; i < g_world->selected_entity_count; ++i) {
                     EID const id = g_world->selected_entities[i];
                     entity_actor_set_move_target(id, collision.point);
@@ -409,7 +409,7 @@ void edit_update(F32 dt, F32 dtu) {
             }
         } else {
             // No entity clicked, or clicked on self - just move to position
-            particles3d_add_click_indicator(collision.point, 0.5F, PINK, PURPLE, 5);
+            particles3d_queue_click_indicator(collision.point, 0.5F, PINK, PURPLE, 5);
             for (SZ i = 0; i < g_world->selected_entity_count; ++i) {
                 EID const id = g_world->selected_entities[i];
                 entity_actor_set_move_target(id, collision.point);

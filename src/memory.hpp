@@ -2,6 +2,8 @@
 
 #include "common.hpp"
 
+#include <tinycthread.h>
+
 enum MemoryType : U8 {
     MEMORY_TYPE_ARENA_PERMANENT,
     MEMORY_TYPE_ARENA_TRANSIENT,
@@ -64,6 +66,7 @@ struct MemorySetup {
 struct Memory {
     MemorySetup setup;
     ArenaAllocator arena_allocators[MEMORY_TYPE_COUNT];
+    mtx_t transient_mutex;
 };
 
 void memory_init(MemorySetup setup);

@@ -10,12 +10,12 @@ pan_voice                    : 0.00000000
 pitch_ambience               : 1.00000000
 pitch_music                  : 1.00000000
 pitch_sfx                    : 1.00000000
-pitch_voice                  : 1.50000000
+pitch_voice                  : 1.00000000
 rolloff_scale                : 1.00000000
 volume_ambience              : 0.00000000
 volume_music                 : 0.00000000
-volume_sfx                   : 0.00000000
-volume_voice                 : 0.00000000
+volume_sfx                   : 0.50000000
+volume_voice                 : 0.50000000
 
 [console]
 enabled                      : false
@@ -56,7 +56,7 @@ windows_sticky               : false
 flame_graph_enabled          : false
 flame_graph_font             : GoMono
 flame_graph_font_size        : 18
-flame_graph_position_y       : 0.81166267
+flame_graph_position_y       : 0.28573692
 frame_graph_button_font      : GoMono
 frame_graph_button_font_size : 22
 frame_graph_legend_font      : GoMono

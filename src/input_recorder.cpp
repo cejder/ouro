@@ -63,14 +63,14 @@ void mouse_recorder_load(MouseTape *tape, C8 const *name) {
     String *path = TS("%s%s.out", MOUSE_TAPES_PATH, tape->name->c);
 
     if (!FileExists(path->c)) {
-        lle("Failed to load mouse tape data for tape '%s': File not found (%s)", name, path->c);
+        llw("Failed to load mouse tape data for tape '%s': File not found (%s)", name, path->c);
         return;
     }
 
     S32 comp_data_size = 0;
     U8 *comp_data = LoadFileData(path->c, &comp_data_size);
     if (comp_data == nullptr) {
-        lle("Failed to load mouse tape data for tape '%s': LoadFileData failed (%s)", name, path->c);
+        llw("Failed to load mouse tape data for tape '%s': LoadFileData failed (%s)", name, path->c);
         return;
     }
 
@@ -78,7 +78,7 @@ void mouse_recorder_load(MouseTape *tape, C8 const *name) {
     U8 *data = DecompressData(comp_data, comp_data_size, &data_size);
     UnloadFileData(comp_data);
     if (data == nullptr) {
-        lle("Failed to decompress mouse tape data for tape '%s'", name);
+        llw("Failed to decompress mouse tape data for tape '%s'", name);
         return;
     }
 

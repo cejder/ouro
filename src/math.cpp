@@ -12,6 +12,7 @@
 #include "world.hpp"
 
 #include <raymath.h>
+#include <tinycthread.h>
 
 // ===============================================================
 // ===================== TEXT MEASURE CACHE ======================
@@ -72,11 +73,13 @@ struct IMathCache {
 };
 
 IMathCache static i_cache = {};
+mtx_t static i_bone_cache_write_mutex = {};
 
 void math_init() {
     random_seed(RANDOM_SEED);
     ITextCache_init(&i_cache.text, MEMORY_TYPE_ARENA_MATH, TEXT_CACHE_INITIAL_CAPACITY);
     IBoneMatrixCache_init(&i_cache.bone_matrices, MEMORY_TYPE_ARENA_PERMANENT, BONE_MATRIX_CACHE_INITIAL_CAPACITY);
+    mtx_init(&i_bone_cache_write_mutex, mtx_plain);
 }
 
 void math_update() {
@@ -761,8 +764,16 @@ void  math_compute_entity_bone_matrices(EID id) {
         // Cache hit - use cached matrices directly
         source_matrices = cached->bone_matrices;
     } else {
-        // Cache miss - compute and store in cache
-        Matrix *allocated_matrices = mcpa(Matrix *, (SZ)bone_count, sizeof(Matrix));
+        // Cache miss - compute and store in cache (thread-safe with mutex)
+        mtx_lock(&i_bone_cache_write_mutex);
+
+        // Double-check cache after acquiring lock (another thread may have inserted)
+        cached = IBoneMatrixCache_get(&i_cache.bone_matrices, key);
+        if (cached != nullptr) {
+            mtx_unlock(&i_bone_cache_write_mutex);
+            source_matrices = cached->bone_matrices;
+        } else {
+            Matrix *allocated_matrices = mcpa(Matrix *, (SZ)bone_count, sizeof(Matrix));
 
         for (S32 bone_id = 0; bone_id < bone_count; bone_id++) {
             Transform *bind_transform = &model->base.bindPose[bone_id];
@@ -780,12 +791,14 @@ void  math_compute_entity_bone_matrices(EID id) {
             allocated_matrices[bone_id] = MatrixMultiply(MatrixInvert(bind_matrix), target_matrix);
         }
 
-        IBoneMatrixCacheValue value = {};
-        value.bone_matrices         = allocated_matrices;
-        value.bone_count            = bone_count;
-        IBoneMatrixCache_insert(&i_cache.bone_matrices, key, value);
+            IBoneMatrixCacheValue value = {};
+            value.bone_matrices         = allocated_matrices;
+            value.bone_count            = bone_count;
+            IBoneMatrixCache_insert(&i_cache.bone_matrices, key, value);
 
-        source_matrices = allocated_matrices;
+            mtx_unlock(&i_bone_cache_write_mutex);
+            source_matrices = allocated_matrices;
+        }
     }
 
     // If blending, interpolate between previous and new bone matrices
@@ -848,24 +861,24 @@ BOOL math_get_bone_world_position_by_index(EID id, S32 bone_index, Vector3 *out_
 
     // Get bone transforms
     Transform *bone_transform = &anim.framePoses[frame][bone_index];
-    Quaternion inRotation = model->base.bindPose[bone_index].rotation;
-    Quaternion outRotation = bone_transform->rotation;
+    Quaternion in_rotation = model->base.bindPose[bone_index].rotation;
+    Quaternion out_rotation = bone_transform->rotation;
 
     // Calculate socket rotation (angle between bone in initial pose and current frame)
-    Quaternion rotate = QuaternionMultiply(outRotation, QuaternionInvert(inRotation));
-    Matrix matrixTransform = QuaternionToMatrix(rotate);
+    Quaternion rotate = QuaternionMultiply(out_rotation, QuaternionInvert(in_rotation));
+    Matrix matrix_transform = QuaternionToMatrix(rotate);
 
     // Translate socket to its position in the current animation
-    matrixTransform = MatrixMultiply(matrixTransform,
+    matrix_transform = MatrixMultiply(matrix_transform,
                       MatrixTranslate(bone_transform->translation.x,
                                      bone_transform->translation.y,
                                      bone_transform->translation.z));
 
     // Transform using the entity's world transform
-    matrixTransform = MatrixMultiply(matrixTransform, entity_transform);
+    matrix_transform = MatrixMultiply(matrix_transform, entity_transform);
 
     // Extract world position
-    Vector3 bone_pos = (Vector3){matrixTransform.m12, matrixTransform.m13, matrixTransform.m14};
+    Vector3 bone_pos = (Vector3){matrix_transform.m12, matrix_transform.m13, matrix_transform.m14};
 
     // If blending, compute previous animation's bone position using raylib socket method
     if (g_world->animation[id].is_blending) {
@@ -878,24 +891,24 @@ BOOL math_get_bone_world_position_by_index(EID id, S32 bone_index, Vector3 *out_
 
             // Get previous bone transforms using raylib socket method
             Transform *prev_bone_transform = &prev_anim.framePoses[prev_frame][bone_index];
-            Quaternion prev_inRotation = model->base.bindPose[bone_index].rotation;
-            Quaternion prev_outRotation = prev_bone_transform->rotation;
+            Quaternion prev_in_rotation = model->base.bindPose[bone_index].rotation;
+            Quaternion prev_out_rotation = prev_bone_transform->rotation;
 
             // Calculate socket rotation for previous frame
-            Quaternion prev_rotate = QuaternionMultiply(prev_outRotation, QuaternionInvert(prev_inRotation));
-            Matrix prev_matrixTransform = QuaternionToMatrix(prev_rotate);
+            Quaternion prev_rotate = QuaternionMultiply(prev_out_rotation, QuaternionInvert(prev_in_rotation));
+            Matrix prev_matrix_transform = QuaternionToMatrix(prev_rotate);
 
             // Translate socket to its position in the previous animation
-            prev_matrixTransform = MatrixMultiply(prev_matrixTransform,
+            prev_matrix_transform = MatrixMultiply(prev_matrix_transform,
                                   MatrixTranslate(prev_bone_transform->translation.x,
                                                  prev_bone_transform->translation.y,
                                                  prev_bone_transform->translation.z));
 
             // Transform using the entity's world transform
-            prev_matrixTransform = MatrixMultiply(prev_matrixTransform, entity_transform);
+            prev_matrix_transform = MatrixMultiply(prev_matrix_transform, entity_transform);
 
             // Extract previous world position
-            Vector3 prev_bone_pos = (Vector3){prev_matrixTransform.m12, prev_matrixTransform.m13, prev_matrixTransform.m14};
+            Vector3 prev_bone_pos = (Vector3){prev_matrix_transform.m12, prev_matrix_transform.m13, prev_matrix_transform.m14};
 
             // Interpolate between previous and current position
             F32 blend_t = g_world->animation[id].blend_time / g_world->animation[id].blend_duration;

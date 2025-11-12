@@ -7,9 +7,36 @@
 #include "asset.hpp"
 
 #include <raylib.h>
+#include <tinycthread.h>
 
 #define PARTICLES_2D_MAX 500'000
 #define PARTICLES_2D_SPAWN_RATE_HISTORY_SIZE 128
+#define PARTICLES_2D_COMMAND_QUEUE_MAX 16384
+
+// Command queue for thread-safe particle spawning
+enum Particle2DCommandType : U8 {
+    PARTICLE2D_CMD_EXPLOSION,
+    PARTICLE2D_CMD_SMOKE,
+    PARTICLE2D_CMD_SPARKLE,
+    PARTICLE2D_CMD_FIRE,
+    PARTICLE2D_CMD_SPIRAL,
+    PARTICLE2D_CMD_COUNT
+};
+
+struct Particle2DCommand {
+    Particle2DCommandType type;
+    Rectangle spawn_rect;
+    Color start_color;
+    Color end_color;
+    F32 size_multiplier;
+    SZ count;
+};
+
+struct Particle2DCommandQueue {
+    Particle2DCommand commands[PARTICLES_2D_COMMAND_QUEUE_MAX];
+    U32 count;
+    mtx_t mutex;
+};
 
 // GPU-aligned particle structure (must match compute shader)
 // Total size: 96 bytes for GPU alignment (multiple of 16)
@@ -87,3 +114,13 @@ void particles2d_add_smoke    (Rectangle spawn_rect, Color start_color, Color en
 void particles2d_add_sparkle  (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count);
 void particles2d_add_fire     (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count);
 void particles2d_add_spiral   (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count);
+
+// Thread-safe command queue API (safe to call from worker threads)
+void particles2d_queue_explosion(Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count);
+void particles2d_queue_smoke    (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count);
+void particles2d_queue_sparkle  (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count);
+void particles2d_queue_fire     (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count);
+void particles2d_queue_spiral   (Rectangle spawn_rect, Color start_color, Color end_color, F32 size_multiplier, SZ count);
+
+// Main thread only: process all queued commands
+void particles2d_process_command_queue();

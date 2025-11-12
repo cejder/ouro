@@ -5,6 +5,7 @@
 #include "console.hpp"
 #include "cvar.hpp"
 #include "debug.hpp"
+#include "entity_spawn.hpp"
 #include "input.hpp"
 #include "log.hpp"
 #include "math.hpp"
@@ -178,6 +179,10 @@ void core_update() {
     PP(particles3d_update(dt));
     PP(math_update());
     PP(scenes_update(dt, dtu));
+    PP(particles3d_process_command_queue());
+    PP(particles2d_process_command_queue());
+    PP(entity_spawn_process_command_queue());
+    PP(audio_process_command_queue());
     PP(messages_update(dtu));
     PP(dbg_update());
 }

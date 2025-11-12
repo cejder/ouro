@@ -65,7 +65,7 @@ void static inline i_play_agree(EID id) {
     last_time_index            = rand_index;
 
     audio_set_pitch(ACG_VOICE, random_f32(1.25F, 1.75F));
-    audio_play_3d_at_entity(ACG_VOICE, TS("agree_%d.ogg", rand_index)->c, id);
+    audio_queue_play_3d_at_entity(ACG_VOICE, TS("agree_%d.ogg", rand_index)->c, id);
 }
 
 EID static inline i_find_target(EID searcher_id, EntityType target_type) {
@@ -270,9 +270,9 @@ Vector3 static inline i_calculate_separation_force(EID id) {
             if (this_time - last_time >= 5.0F) {
                 if (random_s32(0, 1)) {
                     audio_set_pitch(ACG_SFX, random_f32(1.5F, 2.0F));
-                    audio_play_3d_at_position(ACG_SFX, TS("agree_%d.ogg", random_s32(0, 7))->c, current_pos);
+                    audio_queue_play_3d_at_position(ACG_SFX, TS("agree_%d.ogg", random_s32(0, 7))->c, current_pos);
                 } else {
-                    audio_play_3d_at_position(ACG_SFX, TS("cute_%d.ogg", random_s32(0, 6))->c, current_pos);
+                    audio_queue_play_3d_at_position(ACG_SFX, TS("cute_%d.ogg", random_s32(0, 6))->c, current_pos);
                 }
 
                 last_time = this_time;
@@ -523,8 +523,8 @@ void static inline i_evaluate_behavior_transitions(EID id) {
 
                 // Final destruction burst when entity is actually destroyed
                 Vector3 const target_pos = g_world->position[behavior->target_id];
-                particles3d_add_harvest_complete(target_pos, GREEN, BROWN, HARVEST_COMPLETE_SIZE_MULTIPLIER, (SZ)(HARVEST_COMPLETE_PARTICLE_COUNT * 2));
-                audio_play_3d_at_position(ACG_SFX, "plop.ogg", g_world->position[behavior->target_id]);
+                particles3d_queue_harvest_complete(target_pos, GREEN, BROWN, HARVEST_COMPLETE_SIZE_MULTIPLIER, (SZ)(HARVEST_COMPLETE_PARTICLE_COUNT * 2));
+                audio_queue_play_3d_at_position(ACG_SFX, "plop.ogg", g_world->position[behavior->target_id]);
                 entity_destroy(behavior->target_id);
                 behavior->wood_count++;
 
@@ -535,7 +535,7 @@ void static inline i_evaluate_behavior_transitions(EID id) {
                 entity_actor_search_and_transition_to_target(id, TS("Harvested tree, wood: %zu/%d", behavior->wood_count, ACTOR_WOOD_COLLECTED_MAX)->c);
 
                 // TODO: Remove this later
-                entity_spawn_random_vegetation_on_terrain(g_world->base_terrain, 1, false);
+                entity_spawn_queue_random_vegetation_on_terrain(g_world->base_terrain, 1, false);
             }
         } break;
 
@@ -601,7 +601,7 @@ void static inline i_evaluate_behavior_transitions(EID id) {
                 }
 
                 behavior->wood_count = 0;
-                audio_play_3d_at_position(ACG_SFX, "mario_coin.ogg", g_world->position[behavior->target_id]);
+                audio_queue_play_3d_at_position(ACG_SFX, "mario_coin.ogg", g_world->position[behavior->target_id]);
 
                 // Clear the old target (lumberyard) before searching for new target
                 entity_actor_clear_actor_target(id);
@@ -624,7 +624,7 @@ void static inline i_evaluate_behavior_transitions(EID id) {
                     entity_actor_behavior_transition_to_state(id, ENTITY_BEHAVIOR_STATE_GOING_TO_TARGET, "Target moved out of attack range");
                 } else if (behavior->action_timer <= 0.0F) {
                     // Attack complete
-                    audio_play_3d_at_position(ACG_SFX, "hit.ogg", g_world->position[behavior->target_id]);
+                    audio_queue_play_3d_at_position(ACG_SFX, "hit.ogg", g_world->position[behavior->target_id]);
                     behavior->action_timer = asset_get_animation_duration_by_hash(g_world->model_name_hash[id], 3, g_world->animation[id].anim_fps, CESIUM_ANIMATION_SPEED);
 
                     BOOL const is_dead =  entity_damage(behavior->target_id, ATTACK_DAMAGE);
@@ -875,7 +875,7 @@ void entity_actor_update(EID id, F32 dt) {
                     F32 const spawn_interval        = 1.0F / HARVEST_ACTIVE_PARTICLES_PER_SECOND;
                     behavior->particle_spawn_timer += dt;
                     while (behavior->particle_spawn_timer >= spawn_interval) {
-                        particles3d_add_harvest_active(target_pos, GREEN, BROWN, HARVEST_ACTIVE_SIZE_MULTIPLIER, HARVEST_ACTIVE_PARTICLE_COUNT);
+                        particles3d_queue_harvest_active(target_pos, GREEN, BROWN, HARVEST_ACTIVE_SIZE_MULTIPLIER, HARVEST_ACTIVE_PARTICLE_COUNT);
                         behavior->particle_spawn_timer -= spawn_interval;
                     }
                 }
@@ -928,7 +928,7 @@ void entity_actor_behavior_transition_to_state(EID id, EntityBehaviorState new_s
     // Handle behavior state exit
     switch (old_state) {
         case ENTITY_BEHAVIOR_STATE_DELIVERING_TO_LUMBERYARD: {
-            audio_play_3d_at_entity(ACG_VOICE, "wah.ogg", id);
+            audio_queue_play_3d_at_entity(ACG_VOICE, "wah.ogg", id);
         } break;
         default: {
             break;
@@ -954,11 +954,11 @@ void entity_actor_behavior_transition_to_state(EID id, EntityBehaviorState new_s
             audio_set_pitch(ACG_VOICE, 1.5F);
             S32 rand = random_s32(0, 100);
             if ( rand == 0) {
-                audio_play_3d_at_entity(ACG_VOICE, "chikipao.ogg", id);
+                audio_queue_play_3d_at_entity(ACG_VOICE, "chikipao.ogg", id);
             } else if (rand == 1) {
-                audio_play_3d_at_entity(ACG_VOICE, "babababam.ogg", id);
+                audio_queue_play_3d_at_entity(ACG_VOICE, "babababam.ogg", id);
             } else {
-                audio_play_3d_at_entity(ACG_VOICE, TS("uhh_%d.ogg", random_s32(0, 4))->c, id);
+                audio_queue_play_3d_at_entity(ACG_VOICE, TS("uhh_%d.ogg", random_s32(0, 4))->c, id);
             }
 
             behavior->action_timer = ACTION_DURATION_HARVEST;
@@ -970,7 +970,7 @@ void entity_actor_behavior_transition_to_state(EID id, EntityBehaviorState new_s
 
                 // Spawn initial impact particles using actor's color
                 Vector3 const target_pos = g_world->position[behavior->target_id];
-                particles3d_add_harvest_impact(target_pos, GREEN, BROWN, HARVEST_IMPACT_SIZE_MULTIPLIER, HARVEST_IMPACT_PARTICLE_COUNT);
+                particles3d_queue_harvest_impact(target_pos, GREEN, BROWN, HARVEST_IMPACT_SIZE_MULTIPLIER, HARVEST_IMPACT_PARTICLE_COUNT);
 
                 // Reset particle spawn timer for active effect
                 behavior->particle_spawn_timer = 0.0F;

@@ -15,6 +15,74 @@
 #include <raymath.h>
 #include <glm/gtc/type_ptr.hpp>
 
+EntitySpawnCommandQueue static g_entity_spawn_command_queue = {};
+
+void static i_entity_spawn_queue_command(EntitySpawnCommandType type, ATerrain *terrain, SZ count, BOOL notify) {
+    // Lazy mutex initialization
+    static BOOL mutex_initialized = false;
+    if (!mutex_initialized) {
+        mtx_init(&g_entity_spawn_command_queue.mutex, mtx_plain);
+        mutex_initialized = true;
+    }
+
+    mtx_lock(&g_entity_spawn_command_queue.mutex);
+    {
+        if (g_entity_spawn_command_queue.count < ENTITY_SPAWN_COMMAND_QUEUE_MAX) {
+            EntitySpawnCommand *cmd = &g_entity_spawn_command_queue.commands[g_entity_spawn_command_queue.count++];
+            cmd->type = type;
+            cmd->terrain = terrain;
+            cmd->count = count;
+            cmd->notify = notify;
+        } else {
+            llt("EntitySpawn command queue full, dropping command");
+        }
+    }
+    mtx_unlock(&g_entity_spawn_command_queue.mutex);
+}
+
+void entity_spawn_queue_random_vegetation_on_terrain(ATerrain *terrain, SZ count, BOOL notify) {
+    i_entity_spawn_queue_command(ENTITY_SPAWN_CMD_RANDOM_VEGETATION, terrain, count, notify);
+}
+
+void entity_spawn_process_command_queue() {
+    // Get command count and take snapshot
+    mtx_lock(&g_entity_spawn_command_queue.mutex);
+    U32 const cmd_count = g_entity_spawn_command_queue.count;
+    mtx_unlock(&g_entity_spawn_command_queue.mutex);
+
+    if (cmd_count == 0) { return; }
+
+    // Process all commands
+    for (U32 i = 0; i < cmd_count; ++i) {
+        EntitySpawnCommand const *cmd = &g_entity_spawn_command_queue.commands[i];
+
+        switch (cmd->type) {
+            case ENTITY_SPAWN_CMD_RANDOM_VEGETATION: {
+                entity_spawn_random_vegetation_on_terrain(cmd->terrain, cmd->count, cmd->notify);
+            } break;
+
+            default: {
+                llw("Unknown entity spawn command type: %d", cmd->type);
+            } break;
+        }
+    }
+
+    // Remove processed commands and shift remaining ones to the front
+    mtx_lock(&g_entity_spawn_command_queue.mutex);
+    if (cmd_count < g_entity_spawn_command_queue.count) {
+        // New commands were added while we were processing - shift them to the front
+        U32 const remaining = g_entity_spawn_command_queue.count - cmd_count;
+        ou_memmove(&g_entity_spawn_command_queue.commands[0],
+                   &g_entity_spawn_command_queue.commands[cmd_count],
+                   remaining * sizeof(EntitySpawnCommand));
+        g_entity_spawn_command_queue.count = remaining;
+    } else {
+        // No new commands added, just clear
+        g_entity_spawn_command_queue.count = 0;
+    }
+    mtx_unlock(&g_entity_spawn_command_queue.mutex);
+}
+
 void entity_spawn_random_vegetation_on_terrain(ATerrain *terrain, SZ count, BOOL notify) {
     if (g_world->active_ent_count >= WORLD_MAX_ENTITIES) {
         mwod("Could not spawn entity, world is full.", ORANGE, 5.0F);
@@ -22,7 +90,7 @@ void entity_spawn_random_vegetation_on_terrain(ATerrain *terrain, SZ count, BOOL
     }
 
     F32 constexpr max_slope              = 0.5F;                        // Maximum allowed slope for vegetation placement
-    F32 constexpr min_spacing            = 5.0F;                        // Minimum distance between things
+    F32 constexpr min_spacing            = 1.0F;                        // Minimum distance between things
     SZ constexpr max_attempts            = (SZ)WORLD_MAX_ENTITIES * 2;  // Reduced since grid makes this more efficient
     F32 constexpr bush_bias              = 0.33F;
     S32 constexpr tree_variant           = 5;
