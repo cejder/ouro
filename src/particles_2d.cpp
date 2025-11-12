@@ -651,7 +651,7 @@ void static i_particles2d_queue_command(Particle2DCommandType type, Rectangle sp
         cmd->size_multiplier = size_multiplier;
         cmd->count = count;
     } else {
-        llw("Particle2D command queue full, dropping command");
+        llt("Particle2D command queue full, dropping command");
     }
     mtx_unlock(&g_particle2d_command_queue.mutex);
 }

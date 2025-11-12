@@ -1668,7 +1668,7 @@ void static i_particles3d_queue_command_full(Particle3DCommandType type, Vector3
         cmd->size_multiplier = size_multiplier;
         cmd->count = count;
     } else {
-        llw("Particle3D command queue full, dropping command");
+        llt("Particle3D command queue full, dropping command");
     }
     mtx_unlock(&g_particle3d_command_queue.mutex);
 }

@@ -34,7 +34,7 @@ void static i_entity_spawn_queue_command(EntitySpawnCommandType type, ATerrain *
             cmd->count = count;
             cmd->notify = notify;
         } else {
-            llw("EntitySpawn command queue full, dropping command");
+            llt("EntitySpawn command queue full, dropping command");
         }
     }
     mtx_unlock(&g_entity_spawn_command_queue.mutex);
