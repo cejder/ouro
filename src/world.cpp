@@ -11,6 +11,7 @@
 #include "memory.hpp"
 #include "message.hpp"
 #include "particles_3d.hpp"
+#include "profiler.hpp"
 #include "render.hpp"
 #include "std.hpp"
 #include "string.hpp"
@@ -187,6 +188,7 @@ void world_update(F32 dt, F32 dtu) {
     // Update all entity animations
     if (g_world->active_entity_count > 0) {
         if (c_general__multithreaded) {
+            PBEGIN("anim_update_MT");
             // Multithreaded: Divide entities across worker threads
             // NOTE: Potential thread-safety issue with bone matrix cache allocation
             U32 const worker_count = job_system_get_worker_count();
@@ -210,7 +212,9 @@ void world_update(F32 dt, F32 dtu) {
             }
 
             job_system_wait();
+            PEND("anim_update_MT");
         } else {
+            PBEGIN("anim_update_ST");
             // Single-threaded fallback
             for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
                 EID const id = g_world->active_entities[idx];
@@ -253,6 +257,7 @@ void world_update(F32 dt, F32 dtu) {
 
                 math_compute_entity_bone_matrices(id);
             }
+            PEND("anim_update_ST");
         }
     }
 }
