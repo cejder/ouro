@@ -257,13 +257,22 @@ void entity_spawn_npc(SZ count, BOOL notify) {
     Vector2 const mouse_pos = input_get_mouse_position_screen();
     Ray const ray           = GetScreenToWorldRay(mouse_pos, g_player.cameras[g_scenes.current_scene_type]);
     RayCollision collision  = GetRayCollisionMesh(ray, g_world->base_terrain->mesh, g_world->base_terrain->transform);
-    Vector3 const position  = collision.point;
+    Vector3 const center_position = collision.point;
+
+    // Spawn in circle pattern to avoid overlap
+    F32 const spawn_radius = 3.0F;  // Radius of spawn circle
 
     for (SZ i = 0; i < count; ++i) {
         if (g_world->active_ent_count >= WORLD_MAX_ENTITIES) {
             mwod("Could not spawn entity, world is full.", ORANGE, 5.0F);
             return;
         }
+
+        // Calculate position in circle
+        F32 const angle = ((F32)i / (F32)count) * 2.0F * PI;
+        Vector3 position = center_position;
+        position.x += math_cos_f32(angle) * spawn_radius;
+        position.z += math_sin_f32(angle) * spawn_radius;
 
         Color const tint      = color_random_vibrant();
         F32 const rotation    = random_f32(0.0F, 360.0F);
