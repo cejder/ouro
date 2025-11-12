@@ -31,7 +31,7 @@ bone_label_font_size         : 24
 camera_info                  : false
 cursor_info                  : false
 dungeon_info                 : true
-enabled                      : false
+enabled                      : true
 gizmo_info                   : false
 grid_info                    : false
 keybindings_info             : false
@@ -52,11 +52,14 @@ terrain_info                 : false
 texture_widget_dark_bg       : true
 windows_sticky               : false
 
+[general]
+multithreaded                : true
+
 [profiler]
-flame_graph_enabled          : false
+flame_graph_enabled          : true
 flame_graph_font             : GoMono
 flame_graph_font_size        : 18
-flame_graph_position_y       : 0.81166267
+flame_graph_position_y       : 0.11675540
 frame_graph_button_font      : GoMono
 frame_graph_button_font_size : 22
 frame_graph_legend_font      : GoMono

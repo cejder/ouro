@@ -4,7 +4,7 @@
 
 // WARN: DO NOT EDIT - THIS IS A GENERATED FILE!
 
-#define CVAR_COUNT 76
+#define CVAR_COUNT 77
 #define CVAR_FILE_NAME "ouro.cvar"
 #define CVAR_NAME_MAX_LENGTH 128
 #define CVAR_STR_MAX_LENGTH 128
@@ -79,6 +79,7 @@ extern S32     c_debug__small_font_size;
 extern BOOL    c_debug__terrain_info;
 extern BOOL    c_debug__texture_widget_dark_bg;
 extern BOOL    c_debug__windows_sticky;
+extern BOOL    c_general__multithreaded;
 extern BOOL    c_profiler__flame_graph_enabled;
 extern CVarStr c_profiler__flame_graph_font;
 extern S32     c_profiler__flame_graph_font_size;

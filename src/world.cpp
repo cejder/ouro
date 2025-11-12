@@ -205,8 +205,8 @@ void world_update(F32 dt, F32 dtu) {
                 if (start_idx >= g_world->active_entity_count) { break; }
 
                 job_data[i].dt = dt;
-                job_data[i].start_idx = start_idx;
-                job_data[i].end_idx = end_idx;
+                job_data[i].start_idx = (U32)start_idx;
+                job_data[i].end_idx = (U32)end_idx;
 
                 job_system_submit(i_animation_update_worker, &job_data[i]);
             }

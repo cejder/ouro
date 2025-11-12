@@ -21,7 +21,7 @@ F32     c_audio__pan_voice                       = 0.00000000F;
 F32     c_audio__pitch_ambience                  = 1.00000000F;
 F32     c_audio__pitch_music                     = 1.00000000F;
 F32     c_audio__pitch_sfx                       = 1.00000000F;
-F32     c_audio__pitch_voice                     = 1.50000000F;
+F32     c_audio__pitch_voice                     = 1.63700008F;
 F32     c_audio__rolloff_scale                   = 1.00000000F;
 F32     c_audio__volume_ambience                 = 0.00000000F;
 F32     c_audio__volume_music                    = 0.00000000F;
@@ -38,7 +38,7 @@ S32     c_debug__bone_label_font_size            = 24;
 BOOL    c_debug__camera_info                     = false;
 BOOL    c_debug__cursor_info                     = false;
 BOOL    c_debug__dungeon_info                    = true;
-BOOL    c_debug__enabled                         = false;
+BOOL    c_debug__enabled                         = true;
 BOOL    c_debug__gizmo_info                      = false;
 BOOL    c_debug__grid_info                       = false;
 BOOL    c_debug__keybindings_info                = false;
@@ -58,7 +58,8 @@ S32     c_debug__small_font_size                 = 16;
 BOOL    c_debug__terrain_info                    = false;
 BOOL    c_debug__texture_widget_dark_bg          = true;
 BOOL    c_debug__windows_sticky                  = false;
-BOOL    c_profiler__flame_graph_enabled          = false;
+BOOL    c_general__multithreaded                 = true;
+BOOL    c_profiler__flame_graph_enabled          = true;
 CVarStr c_profiler__flame_graph_font             = {"GoMono"};
 S32     c_profiler__flame_graph_font_size        = 18;
 F32     c_profiler__flame_graph_position_y       = 0.81166267F;
@@ -78,11 +79,11 @@ BOOL    c_render__skybox_night                   = true;
 BOOL    c_render__tboy                           = false;
 BOOL    c_video__fps_info                        = true;
 S32     c_video__fps_max                         = 0;
-S32     c_video__render_resolution_height        = 1140;
-S32     c_video__render_resolution_width         = 2129;
+S32     c_video__render_resolution_height        = 2160;
+S32     c_video__render_resolution_width         = 3840;
 BOOL    c_video__vsync                           = false;
-S32     c_video__window_resolution_height        = 1140;
-S32     c_video__window_resolution_width         = 2129;
+S32     c_video__window_resolution_height        = 2160;
+S32     c_video__window_resolution_width         = 3840;
 BOOL    c_world__actor_healthbar                 = true;
 BOOL    c_world__actor_info                      = false;
 BOOL    c_world__verbose_actors                  = false;
@@ -136,6 +137,7 @@ CVarMeta const cvar_meta_table[CVAR_COUNT] = {
     {"debug__terrain_info",                     &c_debug__terrain_info,                     CVAR_TYPE_BOOL,     ""},
     {"debug__texture_widget_dark_bg",           &c_debug__texture_widget_dark_bg,           CVAR_TYPE_BOOL,     ""},
     {"debug__windows_sticky",                   &c_debug__windows_sticky,                   CVAR_TYPE_BOOL,     ""},
+    {"general__multithreaded",                  &c_general__multithreaded,                  CVAR_TYPE_BOOL,     ""},
     {"profiler__flame_graph_enabled",           &c_profiler__flame_graph_enabled,           CVAR_TYPE_BOOL,     ""},
     {"profiler__flame_graph_font",              &c_profiler__flame_graph_font,              CVAR_TYPE_CVARSTR,  ""},
     {"profiler__flame_graph_font_size",         &c_profiler__flame_graph_font_size,         CVAR_TYPE_S32,      ""},
