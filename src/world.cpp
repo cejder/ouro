@@ -79,6 +79,12 @@ void world_reset() {
     g_world->max_gen               = 0;
     g_world->selected_entity_count = 0;
 
+    // Initialize multithreading synchronization
+    g_world->mt_sync.destruction_count = 0;
+    mtx_init(&g_world->mt_sync.destruction_mutex, mtx_plain);
+    mtx_init(&g_world->mt_sync.building_mutex, mtx_plain);
+    mtx_init(&g_world->mt_sync.entity_mutation_mutex, mtx_plain);
+
     grid_clear();
 }
 
@@ -323,6 +329,16 @@ void world_update(F32 dt, F32 dtu) {
 
         job_system_wait();
         PEND("actor_update_MT");
+
+        // Process deferred entity destructions (must happen after all actor jobs complete)
+        mtx_lock(&g_world->mt_sync.destruction_mutex);
+        U32 const destruction_count = g_world->mt_sync.destruction_count;
+        for (U32 i = 0; i < destruction_count; ++i) {
+            EID const id = g_world->mt_sync.entities_to_destroy[i];
+            entity_destroy(id);
+        }
+        g_world->mt_sync.destruction_count = 0;
+        mtx_unlock(&g_world->mt_sync.destruction_mutex);
     }
 }
 
