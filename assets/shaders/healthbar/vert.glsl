@@ -49,8 +49,8 @@ void main() {
 
     HealthbarInstance hb = healthbars[gl_InstanceID];
 
-    // Calculate zoom scale based on FOV (default FOV is 45)
-    float zoom_scale = 45.0 / u_camera_fov;
+    // Calculate zoom scale based on FOV (default FOV is 65)
+    float zoom_scale = 65.0 / u_camera_fov;
 
     // Project entity center to screen space
     vec2 center_screen = worldToScreen(hb.world_pos);
@@ -63,8 +63,8 @@ void main() {
     // Calculate bar dimensions
     // Width: at most as wide as entity, minimum 40 pixels for visibility
     float bar_width = clamp(screen_radius * 2.0 * 0.8, 40.0, 200.0);
-    // Height: scaled by zoom
-    float bar_height = 0.5 * zoom_scale;
+    // Height: ui_scale_y(0.5) = 0.5% of screen height, scaled by zoom
+    float bar_height = (u_render_resolution.y * 0.005) * zoom_scale;
 
     vec2 bar_size = vec2(bar_width, bar_height);
 

@@ -13,9 +13,10 @@ fwd_decl(AShader);
 // Total size: 32 bytes (multiple of 16)
 struct HealthbarInstance {
     Vector3 world_pos;      // 12 bytes - world position
-    F32 entity_radius;      // 4 bytes - entity radius for size calculation
+    F32 entity_radius;      // 4 bytes - entity radius for horizontal size calculation
     F32 health_perc;        // 4 bytes - health percentage (0.0 - 1.0)
-    F32 padding[3];         // 12 bytes - padding to align to 32 bytes
+    F32 obb_extent_y;       // 4 bytes - vertical extent for healthbar offset
+    F32 padding[2];         // 8 bytes - padding to align to 32 bytes
 };
 
 struct RenderHealthbar {
