@@ -693,33 +693,50 @@ void entity_set_animation_frame(EID id, U32 frame) {
 }
 
 BOOL entity_damage(EID id, S32 damage) {
-    EntityHealth *health = &g_world->health[id];
+    mtx_lock(&g_world->mt_sync.entity_mutation_mutex);
 
+    EntityHealth *health = &g_world->health[id];
     health->current -= damage;
 
-    if (g_world->type[id] == ENTITY_TYPE_NPC) {
-        audio_set_pitch(ACG_VOICE, 1.5F);
-        audio_queue_play_3d_at_position(ACG_VOICE, TS("hurt_%d.ogg", random_s32(0, 2))->c, g_world->position[id]);
+    EntityType const entity_type = g_world->type[id];
+    Vector3 const entity_pos = g_world->position[id];
+    BOOL const is_dead = (health->current <= 0);
+
+    // If entity died, capture data for headstone before releasing lock
+    Vector3 death_pos = {0};
+    Color entity_color = WHITE;
+    Vector3 death_scale = {0};
+    F32 death_rotation = 0.0F;
+    C8 entity_name_copy[ENTITY_NAME_MAX_LENGTH] = {0};
+
+    if (is_dead) {
+        death_pos = entity_pos;
+        entity_color = g_world->tint[id];
+        death_scale = g_world->scale[id] / 2.0F;
+        death_rotation = g_world->rotation[id];
+        ou_strncpy(entity_name_copy, g_world->name[id], ENTITY_NAME_MAX_LENGTH - 1);
+        entity_name_copy[ENTITY_NAME_MAX_LENGTH - 1] = '\0';
     }
 
-    Vector3 const hit_pos = g_world->position[id];
+    mtx_unlock(&g_world->mt_sync.entity_mutation_mutex);
 
-    if (health->current <= 0) {
-        if (g_world->type[id] == ENTITY_TYPE_NPC) {
+    // Audio, particles, and destruction can happen outside the lock
+    if (entity_type == ENTITY_TYPE_NPC) {
+        audio_set_pitch(ACG_VOICE, 1.5F);
+        audio_queue_play_3d_at_position(ACG_VOICE, TS("hurt_%d.ogg", random_s32(0, 2))->c, entity_pos);
+    }
+
+    if (is_dead) {
+        if (entity_type == ENTITY_TYPE_NPC) {
             if (random_s32(0, 9) == 0) {
                 audio_set_pitch(ACG_VOICE, 1.5F);
-                audio_queue_play_3d_at_position(ACG_VOICE, "death_0.ogg", g_world->position[id]);
+                audio_queue_play_3d_at_position(ACG_VOICE, "death_0.ogg", entity_pos);
             }
         }
-        audio_queue_play_3d_at_position(ACG_SFX, "plop.ogg", g_world->position[id]);
+        audio_queue_play_3d_at_position(ACG_SFX, "plop.ogg", entity_pos);
 
         // Queue headstone spawn on main thread (can't load models in worker threads)
-        Vector3 const death_pos = g_world->position[id];
-        Color const entity_color = g_world->tint[id];
-        Vector3 const death_scale = g_world->scale[id] / 2.0F;
-        F32 const death_rotation = g_world->rotation[id];
-        String const *headstone_name = TS("Headstone for %s", g_world->name[id]);
-
+        String const *headstone_name = TS("Headstone for %s", entity_name_copy);
         entity_spawn_queue_arbitrary_entity(ENTITY_TYPE_PROP,
                                              headstone_name->c,
                                              death_pos,
@@ -728,16 +745,22 @@ BOOL entity_damage(EID id, S32 damage) {
                                              entity_color,
                                              "headstone.glb");
 
-        entity_destroy(id);
+        // Defer entity destruction to avoid race conditions in multithreaded actor updates
+        mtx_lock(&g_world->mt_sync.destruction_mutex);
+        if (g_world->mt_sync.destruction_count < WORLD_MAX_DEFERRED_DESTRUCTIONS) {
+            g_world->mt_sync.entities_to_destroy[g_world->mt_sync.destruction_count] = id;
+            g_world->mt_sync.destruction_count++;
+        }
+        mtx_unlock(&g_world->mt_sync.destruction_mutex);
 
         // Big blood explosion on death
-        particles3d_queue_blood_death(hit_pos, RED, MAROON, 0.3F, 150);
+        particles3d_queue_blood_death(entity_pos, RED, MAROON, 0.3F, 150);
 
         return true;
     }
 
     // Smaller blood spray on non-lethal hit
-    particles3d_queue_blood_hit(hit_pos, RED, PINK, 0.5F, 100);
+    particles3d_queue_blood_hit(entity_pos, RED, PINK, 0.5F, 100);
 
     return false;
 }
