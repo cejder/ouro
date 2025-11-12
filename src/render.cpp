@@ -158,6 +158,17 @@ void render_init() {
     render_sketch_set_minor_color(RENDER_DEFAULT_MINOR_COLOR);
     render_set_accent_color(BLACK);
 
+    RenderHealthbarShader *hbs = &g_render.healthbar_shader;
+    hbs->shader                = asset_get_shader("healthbar");
+    hbs->view_proj_loc         = GetShaderLocation(hbs->shader->base, "u_view_proj");
+    hbs->camera_fov_loc        = GetShaderLocation(hbs->shader->base, "u_camera_fov");
+    hbs->healthbar_count_loc   = GetShaderLocation(hbs->shader->base, "u_healthbar_count");
+    hbs->time_loc              = GetShaderLocation(hbs->shader->base, "u_time");
+    hbs->render_resolution_loc = GetShaderLocation(hbs->shader->base, "u_render_resolution");
+    hbs->bg_color_loc          = GetShaderLocation(hbs->shader->base, "u_bg_color");
+    hbs->border_color_loc      = GetShaderLocation(hbs->shader->base, "u_border_color");
+    hbs->border_thickness_loc  = GetShaderLocation(hbs->shader->base, "u_border_thickness");
+
     lighting_init();
     fog_init();
     render_set_ambient_color(RENDER_DEFAULT_AMBIENT_COLOR);

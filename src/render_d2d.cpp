@@ -644,63 +644,13 @@ void d2d_healthbar_batched(EID id) {
     if (!ENTITY_HAS_FLAG(g_world->flags[id], ENTITY_FLAG_IN_FRUSTUM)) { return; }
     if (!world_is_entity_selected(id))                                { return; }
 
-    Camera3D *cam                 = c3d_get_ptr();
-    Vector2 const render_res      = render_get_render_resolution();
-    Vector3 const position        = g_world->position[id];
-    OrientedBoundingBox const obb = g_world->obb[id];
+    // Get entity data
+    Vector3 const world_pos = g_world->position[id];
+    F32 const entity_radius = g_world->radius[id];
+    F32 const health_perc = glm::clamp((F32)g_world->health[id].current / (F32)g_world->health[id].max, 0.0F, 1.0F);
 
-    Vector3 const world_pos  = {position.x, position.y + (obb.extents.y * 3.5F), position.z};
-    Vector2 const screen_pos = GetWorldToScreenEx(world_pos, *cam, (S32)render_res.x, (S32)render_res.y);
-
-    if (screen_pos.x < -150 || screen_pos.x > render_res.x + 150 || screen_pos.y < -150 || screen_pos.y > render_res.y + 150) { return; }
-
-    // World-scale zoom handling: scale UI elements based on camera FOV
-    F32 const zoom_scale = CAMERA3D_DEFAULT_FOV / c3d_get_fov();
-
-    F32 const health_perc  = glm::clamp((F32)g_world->health[id].current / (F32)g_world->health[id].max, 0.0F, 1.0F);
-
-    // Use minimal healthbar style when multiple units are selected
-    BOOL const is_multi_selection = g_world->selected_entity_count > 1 && world_is_entity_selected(id);
-
-    F32 bar_width, bar_height;
-    if (is_multi_selection) {
-        // For multi-selection: make bar width based on entity size (at most as wide as entity)
-        // Project entity radius to screen space
-        F32 const entity_radius = g_world->radius[id];
-        Vector3 const radius_point = Vector3Add(position, {entity_radius, 0.0F, 0.0F});
-        Vector2 const center_screen = GetWorldToScreenEx(position, *cam, (S32)render_res.x, (S32)render_res.y);
-        Vector2 const radius_screen = GetWorldToScreenEx(radius_point, *cam, (S32)render_res.x, (S32)render_res.y);
-        F32 const screen_radius = glm::abs(radius_screen.x - center_screen.x);
-
-        // Healthbar is at most as wide as entity, minimum 40 pixels for visibility
-        bar_width = glm::clamp(screen_radius * 2.0F * 0.8F, 40.0F, 200.0F);
-        bar_height = ui_scale_y(0.5F) * zoom_scale;  // Thicker for better visibility
-    } else {
-        bar_width = ui_scale_x(8.0F) * zoom_scale;
-        bar_height = ui_scale_y(2.0F) * zoom_scale;
-    }
-
-    // Determine color based on health percentage
-    Color base_color;
-    if (health_perc > 0.7F) {
-        base_color = SPRINGLEAF;
-    } else if (health_perc > 0.4F) {
-        F32 const t = (health_perc - 0.4F) / 0.3F;
-        base_color  = color_lerp(SUNSETAMBER, SPRINGLEAF, ease_in_out_cubic(t, 0.0F, 1.0F, 1.0F));
-    } else if (health_perc > 0.15F) {
-        F32 const t = (health_perc - 0.15F) / 0.25F;
-        base_color  = color_lerp(PERSIMMON, SUNSETAMBER, ease_in_out_cubic(t, 0.0F, 1.0F, 1.0F));
-    } else {
-        F32 const pulse             = ease_in_out_sine((math_sin_f32(time_get() * 8.0F) + 1.0F) * 0.5F, 0.0F, 1.0F, 1.0F);
-        Color const critical_base   = color_saturated(PERSIMMON);
-        Color const critical_bright = color_blend(PERSIMMON, TANGERINE);
-        base_color                  = color_lerp(critical_base, critical_bright, pulse * 0.7F);
-    }
-
-    F32 const roundness = 0.5F;
-
-    // Add to batch render
-    render_healthbar_add(screen_pos, {bar_width, bar_height}, base_color, health_perc, roundness, is_multi_selection);
+    // Add to batch render - shader will handle projection, sizing, and coloring
+    render_healthbar_add(world_pos, entity_radius, health_perc);
 }
 
 void d2d_healthbar_draw_batched() {

@@ -10,24 +10,12 @@ fwd_decl(AShader);
 #define HEALTHBAR_MAX WORLD_MAX_ENTITIES
 
 // GPU-aligned healthbar instance structure (must match shader)
-// Total size: 48 bytes (multiple of 16)
+// Total size: 32 bytes (multiple of 16)
 struct HealthbarInstance {
-    Vector2 screen_pos;     // 8 bytes - center position on screen
-    Vector2 size;           // 8 bytes - width and height
-    F32 fill_color[4];      // 16 bytes - RGBA as vec4 (must match shader)
+    Vector3 world_pos;      // 12 bytes - world position
+    F32 entity_radius;      // 4 bytes - entity radius for size calculation
     F32 health_perc;        // 4 bytes - health percentage (0.0 - 1.0)
-    F32 roundness;          // 4 bytes - corner roundness
-    U32 is_multi_select;    // 4 bytes - 0 = single select (complex), 1 = multi select (minimal)
-    U32 padding;            // 4 bytes - padding to align to 48 bytes
-};
-
-struct RenderHealthbarShader {
-    AShader *shader;
-    S32 projection_loc;
-    S32 healthbar_count_loc;
-    S32 bg_color_loc;
-    S32 border_color_loc;
-    S32 border_thickness_loc;
+    F32 padding[3];         // 12 bytes - padding to align to 32 bytes
 };
 
 struct RenderHealthbar {
@@ -35,7 +23,6 @@ struct RenderHealthbar {
 
     // Rendering
     U32 vao;
-    RenderHealthbarShader shader;
 
     // GPU data
     U32 ssbo;
@@ -49,5 +36,5 @@ extern RenderHealthbar g_render_healthbar;
 
 void render_healthbar_init();
 void render_healthbar_clear();
-void render_healthbar_add(Vector2 screen_pos, Vector2 size, Color fill_color, F32 health_perc, F32 roundness, BOOL is_multi_select);
+void render_healthbar_add(Vector3 world_pos, F32 entity_radius, F32 health_perc);
 void render_healthbar_draw();
