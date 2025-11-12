@@ -83,8 +83,8 @@ void world_reset() {
 // Animation update job data
 struct AnimationUpdateJobData {
     F32 dt;
-    U32 start_idx;
-    U32 end_idx;
+    SZ start_idx;
+    SZ end_idx;
 };
 
 // Worker function for animation updates (executed by job system)
@@ -92,7 +92,7 @@ S32 static i_animation_update_worker(void *arg) {
     auto *data = (AnimationUpdateJobData *)arg;
     F32 const dt = data->dt;
 
-    for (U32 idx = data->start_idx; idx < data->end_idx; ++idx) {
+    for (SZ idx = data->start_idx; idx < data->end_idx; ++idx) {
         EID const id = g_world->active_entities[idx];
 
         if (!g_world->animation[id].has_animations) { continue; }
@@ -196,15 +196,17 @@ void world_update(F32 dt, F32 dtu) {
         }
 
         U32 const worker_count = job_system_get_worker_count();
-        U32 const entities_per_worker = (g_world->active_entity_count + worker_count - 1) / worker_count;
+        SZ const entities_per_worker = (g_world->active_entity_count + worker_count - 1) / worker_count;
 
         // Allocate job data on transient arena (will be freed this frame)
         auto *job_data = mmta(AnimationUpdateJobData *, sizeof(AnimationUpdateJobData) * worker_count);
 
         // Submit jobs for each worker
         for (U32 i = 0; i < worker_count; ++i) {
-            U32 const start_idx = i * entities_per_worker;
-            U32 const end_idx = glm::min(start_idx + entities_per_worker, g_world->active_entity_count);
+            SZ const start_idx = i * entities_per_worker;
+            SZ const end_idx = (start_idx + entities_per_worker < g_world->active_entity_count)
+                ? start_idx + entities_per_worker
+                : g_world->active_entity_count;
 
             // Skip if this worker has no entities to process
             if (start_idx >= g_world->active_entity_count) { break; }
