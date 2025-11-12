@@ -87,6 +87,32 @@ struct AnimationUpdateJobData {
     SZ end_idx;
 };
 
+// Animation state key for batching entities with identical animation state
+struct AnimationStateKey {
+    U32 model_hash;
+    U32 anim_index;
+    U32 anim_frame;
+    BOOL is_blending;
+
+    BOOL operator==(AnimationStateKey const& other) const {
+        return model_hash == other.model_hash &&
+               anim_index == other.anim_index &&
+               anim_frame == other.anim_frame &&
+               is_blending == other.is_blending;
+    }
+};
+
+static inline U32 animation_state_key_hash(AnimationStateKey key) {
+    U32 hash = 2166136261u;
+    hash ^= key.model_hash; hash *= 16777619u;
+    hash ^= key.anim_index; hash *= 16777619u;
+    hash ^= key.anim_frame; hash *= 16777619u;
+    hash ^= (U32)key.is_blending; hash *= 16777619u;
+    return hash;
+}
+
+MAP_DECLARE(AnimationStateBatchMap, AnimationStateKey, EIDArray, animation_state_key_hash, (AnimationStateKey a, AnimationStateKey b) { return a == b; });
+
 // Worker function for animation updates (executed by job system)
 S32 static i_animation_update_worker(void *arg) {
     auto *data = (AnimationUpdateJobData *)arg;
@@ -187,32 +213,98 @@ void world_update(F32 dt, F32 dtu) {
     // Update all entity animations (single-threaded or multi-threaded based on cvar)
     if (g_world->active_entity_count > 0) {
         if (c_general__multithreaded) {
-            // Multi-threaded path using job system
-            U32 const worker_count = job_system_get_worker_count();
-            SZ const entities_per_worker = (g_world->active_entity_count + worker_count - 1) / worker_count;
+            // Optimized multi-threaded path: Batch entities by animation state
+            // This reduces redundant cache lookups and bone matrix computations
 
-            // Allocate job data on transient arena (will be freed this frame)
-            auto *job_data = mmta(AnimationUpdateJobData *, sizeof(AnimationUpdateJobData) * worker_count);
+            // Step 1: Update animation time/frame for all entities (can be parallelized but overhead not worth it)
+            for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
+                EID const id = g_world->active_entities[idx];
+                if (!g_world->animation[id].has_animations) { continue; }
+                if (!g_world->animation[id].anim_playing)   { continue; }
 
-            // Submit jobs for each worker
-            for (U32 i = 0; i < worker_count; ++i) {
-                SZ const start_idx = i * entities_per_worker;
-                SZ const end_idx = (start_idx + entities_per_worker < g_world->active_entity_count)
-                    ? start_idx + entities_per_worker
-                    : g_world->active_entity_count;
+                AModel *model = asset_get_model_by_hash(g_world->model_name_hash[id]);
+                U32 const anim_idx = g_world->animation[id].anim_index;
+                if (anim_idx >= (U32)model->animation_count) { continue; }
 
-                // Skip if this worker has no entities to process
-                if (start_idx >= g_world->active_entity_count) { break; }
+                ModelAnimation const& anim = model->animations[anim_idx];
 
-                job_data[i].dt = dt;
-                job_data[i].start_idx = start_idx;
-                job_data[i].end_idx = end_idx;
+                // Update animation time
+                g_world->animation[id].anim_time += dt * g_world->animation[id].anim_speed;
 
-                job_system_submit(i_animation_update_worker, &job_data[i]);
+                F32 const fps = g_world->animation[id].anim_fps;
+                F32 const frame_duration = 1.0F / fps;
+                F32 const total_duration = (F32)anim.frameCount * frame_duration;
+
+                // Handle looping
+                if (g_world->animation[id].anim_time >= total_duration) {
+                    if (g_world->animation[id].anim_loop) {
+                        g_world->animation[id].anim_time = math_mod_f32(g_world->animation[id].anim_time, total_duration);
+                    } else {
+                        g_world->animation[id].anim_time = total_duration - frame_duration;
+                        g_world->animation[id].anim_playing = false;
+                    }
+                }
+
+                // Update frame
+                U32 new_frame = (U32)(g_world->animation[id].anim_time * fps);
+                new_frame = glm::min(new_frame, (U32)anim.frameCount - 1);
+                g_world->animation[id].anim_frame = new_frame;
+
+                // Update blend timer
+                if (g_world->animation[id].is_blending) {
+                    g_world->animation[id].blend_time += dt;
+                    if (g_world->animation[id].blend_time >= g_world->animation[id].blend_duration) {
+                        g_world->animation[id].is_blending = false;
+                    }
+                }
             }
 
-            // Wait for all animation jobs to complete
-            job_system_wait();
+            // Step 2: Batch entities by animation state
+            AnimationStateBatchMap batches;
+            AnimationStateBatchMap_init(&batches, MEMORY_TYPE_ARENA_TRANSIENT, 256);
+
+            for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
+                EID const id = g_world->active_entities[idx];
+                if (!g_world->animation[id].has_animations) { continue; }
+                if (!g_world->animation[id].anim_playing)   { continue; }
+
+                AnimationStateKey key = {
+                    .model_hash = g_world->model_name_hash[id],
+                    .anim_index = g_world->animation[id].anim_index,
+                    .anim_frame = g_world->animation[id].anim_frame,
+                    .is_blending = g_world->animation[id].is_blending
+                };
+
+                EIDArray *batch = AnimationStateBatchMap_get(&batches, key);
+                if (!batch) {
+                    EIDArray new_batch = {};
+                    array_init(MEMORY_TYPE_ARENA_TRANSIENT, &new_batch, 64);
+                    AnimationStateBatchMap_insert(&batches, key, new_batch);
+                    batch = AnimationStateBatchMap_get(&batches, key);
+                }
+                array_push(batch, id);
+            }
+
+            // Step 3: Process each batch (compute bones once per unique state, copy to all entities)
+            AnimationStateKey key = {};
+            EIDArray batch = {};
+            MAP_EACH(&batches, key, batch) {
+                if (batch.count == 0) { continue; }
+
+                // Pick first entity as representative to compute bones
+                EID const representative_id = batch.data[0];
+                math_compute_entity_bone_matrices(representative_id);
+
+                // Copy computed bones to all other entities in batch
+                for (SZ i = 1; i < batch.count; ++i) {
+                    EID const id = batch.data[i];
+                    ou_memcpy(
+                        g_animation_bones[id].bone_matrices,
+                        g_animation_bones[representative_id].bone_matrices,
+                        sizeof(Matrix) * (SZ)g_world->animation[representative_id].bone_count
+                    );
+                }
+            }
         } else {
             // Single-threaded path (original code for comparison)
             for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
