@@ -5,6 +5,7 @@
 #include "cvar.hpp"
 #include "dungeon.hpp"
 #include "edit.hpp"
+#include "job.hpp"
 #include "log.hpp"
 #include "map.hpp"
 #include "memory.hpp"
@@ -44,6 +45,9 @@ void world_init() {
     grid_init({A_TERRAIN_DEFAULT_SIZE, A_TERRAIN_DEFAULT_SIZE}); // TODO: We need to make sure that we set the proper size. Right now we are defaulting.
     g_world_state.initialized = true;
 
+    // Initialize job system for multithreaded work (0 = auto-detect CPU cores)
+    job_system_init(0);
+
     player_init();
 }
 
@@ -76,49 +80,19 @@ void world_reset() {
     grid_clear();
 }
 
-void world_update(F32 dt, F32 dtu) {
-    g_render.visible_vertex_count = 0;
+// Animation update job data
+struct AnimationUpdateJobData {
+    F32 dt;
+    U32 start_idx;
+    U32 end_idx;
+};
 
-    world_recorder_update();  // WARN: This needs to happen before anything that changes the world.
-    grid_populate();
-    edit_update(dt, dtu);
-    c3d_update_frustum();
+// Worker function for animation updates (executed by job system)
+S32 static i_animation_update_worker(void *arg) {
+    auto *data = (AnimationUpdateJobData *)arg;
+    F32 const dt = data->dt;
 
-    for (U32 &count : g_world->entity_type_counts) { count = 0; }
-
-    // Use active entities from last frame
-    for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
-        EID const i = g_world->active_entities[idx];
-        if (!ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_USE)) { continue; }  // Safety check for entities that died during edit update
-
-        g_world->lifetime[i] += dt;
-        g_world->entity_type_counts[g_world->type[i]]++;
-
-        // TODO: Do we really need to check here if they are instanced?
-        c3d_is_obb_in_frustum(g_world->obb[i]) ? ENTITY_SET_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM)
-                                              : ENTITY_CLEAR_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM);
-
-        if (ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM)) { g_render.visible_vertex_count += asset_get_model_by_hash(g_world->model_name_hash[i])->vertex_count; }
-        if (ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_ACTOR))      { entity_actor_update(i, dt); }
-        if (g_world->type[i] == ENTITY_TYPE_BUILDING_LUMBERYARD)        { entity_building_update(i, dt); }
-
-#if OURO_TALK
-        if (g_world->type[i] == ENTITY_TYPE_NPC) {
-            F32 const width = g_world->obb[i].extents.x * 2.0F;
-            talker_update(&g_world->talker[i], dt, g_world->position[i], width);
-        }
-#endif
-    }
-
-    // Build active entities array for draw functions to use
-    g_world->active_entity_count = 0;
-    for (EID i = 0; i < WORLD_MAX_ENTITIES; ++i) {
-        if (ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_USE)) { g_world->active_entities[g_world->active_entity_count++] = i; }
-    }
-
-    // TODO: Multithread or compute shader? Compute shader would mean that we cannot run this on modern Apple devices though
-    // Update all entity animations
-    for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
+    for (U32 idx = data->start_idx; idx < data->end_idx; ++idx) {
         EID const id = g_world->active_entities[idx];
 
         if (!g_world->animation[id].has_animations) { continue; }
@@ -165,6 +139,78 @@ void world_update(F32 dt, F32 dtu) {
 
         // Compute bone matrices for this entity
         math_compute_entity_bone_matrices(id);
+    }
+
+    return 0;
+}
+
+void world_update(F32 dt, F32 dtu) {
+    g_render.visible_vertex_count = 0;
+
+    world_recorder_update();  // WARN: This needs to happen before anything that changes the world.
+    grid_populate();
+    edit_update(dt, dtu);
+    c3d_update_frustum();
+
+    for (U32 &count : g_world->entity_type_counts) { count = 0; }
+
+    // Use active entities from last frame
+    for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
+        EID const i = g_world->active_entities[idx];
+        if (!ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_USE)) { continue; }  // Safety check for entities that died during edit update
+
+        g_world->lifetime[i] += dt;
+        g_world->entity_type_counts[g_world->type[i]]++;
+
+        // TODO: Do we really need to check here if they are instanced?
+        c3d_is_obb_in_frustum(g_world->obb[i]) ? ENTITY_SET_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM)
+                                              : ENTITY_CLEAR_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM);
+
+        if (ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM)) { g_render.visible_vertex_count += asset_get_model_by_hash(g_world->model_name_hash[i])->vertex_count; }
+        if (ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_ACTOR))      { entity_actor_update(i, dt); }
+        if (g_world->type[i] == ENTITY_TYPE_BUILDING_LUMBERYARD)        { entity_building_update(i, dt); }
+
+#if OURO_TALK
+        if (g_world->type[i] == ENTITY_TYPE_NPC) {
+            F32 const width = g_world->obb[i].extents.x * 2.0F;
+            talker_update(&g_world->talker[i], dt, g_world->position[i], width);
+        }
+#endif
+    }
+
+    // Build active entities array for draw functions to use
+    g_world->active_entity_count = 0;
+    for (EID i = 0; i < WORLD_MAX_ENTITIES; ++i) {
+        if (ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_USE)) { g_world->active_entities[g_world->active_entity_count++] = i; }
+    }
+
+    // Update all entity animations using job system
+    // TODO: math_compute_entity_bone_matrices() uses non-thread-safe arena allocator and cache
+    // Need to either: 1) Add mutex to cache/allocator, 2) Use lock-free cache, or 3) Pre-allocate bone matrices
+    if (g_world->active_entity_count > 0) {
+        U32 const worker_count = job_system_get_worker_count();
+        U32 const entities_per_worker = (g_world->active_entity_count + worker_count - 1) / worker_count;
+
+        // Allocate job data on transient arena (will be freed this frame)
+        auto *job_data = mmta(AnimationUpdateJobData *, sizeof(AnimationUpdateJobData) * worker_count);
+
+        // Submit jobs for each worker
+        for (U32 i = 0; i < worker_count; ++i) {
+            U32 const start_idx = i * entities_per_worker;
+            U32 const end_idx = glm::min(start_idx + entities_per_worker, g_world->active_entity_count);
+
+            // Skip if this worker has no entities to process
+            if (start_idx >= g_world->active_entity_count) { break; }
+
+            job_data[i].dt = dt;
+            job_data[i].start_idx = start_idx;
+            job_data[i].end_idx = end_idx;
+
+            job_system_submit(i_animation_update_worker, &job_data[i]);
+        }
+
+        // Wait for all animation jobs to complete
+        job_system_wait();
     }
 }
 
