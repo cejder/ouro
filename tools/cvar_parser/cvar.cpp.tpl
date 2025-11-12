@@ -16,6 +16,161 @@ CVarMeta const cvar_meta_table[CVAR_COUNT] = {
 {{CVAR_META_TABLE}}
 };
 
+void cvar_load() {
+    // Try to load user config first, fall back to default
+    C8 *content = LoadFileText(CVAR_FILE_NAME);
+    BOOL from_default = false;
+
+    if (!content) {
+        // First run - try to load defaults
+        content = LoadFileText("ouro.cvar.default");
+        from_default = true;
+
+        if (!content) {
+            // No config file exists, use compiled-in defaults
+            return;
+        }
+    }
+
+    // Parse the INI file
+    C8 current_section[CVAR_NAME_MAX_LENGTH] = "";
+    C8 *line = content;
+    C8 *end = line;
+
+    while (*line) {
+        // Find end of line
+        while (*end && *end != '\n' && *end != '\r') {
+            end++;
+        }
+
+        // Null-terminate the line
+        C8 line_end_char = *end;
+        if (*end) {
+            *end = '\0';
+        }
+
+        // Trim leading whitespace
+        while (*line == ' ' || *line == '\t') {
+            line++;
+        }
+
+        // Skip empty lines and comments
+        if (*line == '\0' || *line == '#') {
+            goto next_line;
+        }
+
+        // Check for section header [section]
+        if (*line == '[') {
+            C8 *section_start = line + 1;
+            C8 *section_end = section_start;
+            while (*section_end && *section_end != ']') {
+                section_end++;
+            }
+            if (*section_end == ']') {
+                SZ section_len = (SZ)(section_end - section_start);
+                ou_strncpy(current_section, section_start, section_len);
+                current_section[section_len] = '\0';
+            }
+            goto next_line;
+        }
+
+        // Parse key : value
+        if (current_section[0] != '\0') {
+            C8 *key_start = line;
+            C8 *sep = line;
+
+            // Find the separator ':'
+            while (*sep && *sep != ':') {
+                sep++;
+            }
+
+            if (*sep == ':') {
+                // Extract key name (trim trailing whitespace)
+                C8 *key_end = sep - 1;
+                while (key_end > key_start && (*key_end == ' ' || *key_end == '\t')) {
+                    key_end--;
+                }
+
+                C8 key[CVAR_NAME_MAX_LENGTH];
+                SZ key_len = (SZ)((key_end - key_start) + 1);
+                ou_strncpy(key, key_start, key_len);
+                key[key_len] = '\0';
+
+                // Extract value (skip leading whitespace after ':')
+                C8 *value_start = sep + 1;
+                while (*value_start == ' ' || *value_start == '\t') {
+                    value_start++;
+                }
+
+                // Trim trailing whitespace and comments
+                C8 *value_end = value_start;
+                while (*value_end && *value_end != '#') {
+                    value_end++;
+                }
+                value_end--;
+                while (value_end > value_start && (*value_end == ' ' || *value_end == '\t')) {
+                    value_end--;
+                }
+
+                C8 value[CVAR_STR_MAX_LENGTH];
+                SZ value_len = (SZ)((value_end - value_start) + 1);
+                ou_strncpy(value, value_start, value_len);
+                value[value_len] = '\0';
+
+                // Build full cvar name: section__key
+                C8 full_name[CVAR_NAME_MAX_LENGTH];
+                ou_snprintf(full_name, CVAR_NAME_MAX_LENGTH, "%s__%s", current_section, key);
+
+                // Find and update the cvar
+                for (const auto &cvar : cvar_meta_table) {
+                    if (ou_strcmp(cvar.name, full_name) == 0) {
+                        switch (cvar.type) {
+                            case CVAR_TYPE_BOOL: {
+                                if (ou_strcmp(value, "true") == 0) {
+                                    *(BOOL *)(cvar.address) = true;
+                                } else if (ou_strcmp(value, "false") == 0) {
+                                    *(BOOL *)(cvar.address) = false;
+                                }
+                            } break;
+                            case CVAR_TYPE_S32: {
+                                *(S32 *)(cvar.address) = ou_atoi(value);
+                            } break;
+                            case CVAR_TYPE_F32: {
+                                *(F32 *)(cvar.address) = (F32)ou_atof(value);
+                            } break;
+                            case CVAR_TYPE_CVARSTR: {
+                                ou_strncpy(((CVarStr *)(cvar.address))->cstr, value, CVAR_STR_MAX_LENGTH - 1);
+                                ((CVarStr *)(cvar.address))->cstr[CVAR_STR_MAX_LENGTH - 1] = '\0';
+                            } break;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+    next_line:
+        // Move to next line
+        if (line_end_char) {
+            line = end + 1;
+            // Skip '\r\n' or '\n\r'
+            if (*line && (*line == '\n' || *line == '\r') && *line != line_end_char) {
+                line++;
+            }
+            end = line;
+        } else {
+            break;
+        }
+    }
+
+    UnloadFileText(content);
+
+    // If we loaded from default, save it as user config for next time
+    if (from_default) {
+        cvar_save();
+    }
+}
+
 void cvar_save() {
     String *t = string_create_empty(MEMORY_TYPE_ARENA_TRANSIENT);
 

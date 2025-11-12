@@ -50,7 +50,7 @@ DIALOGUE_SRC_FOLDER = dialogues
 DIALOGUE_DST_FOLDER = src/dialogues
 DIALOGUE_CACHE_FOLDER = build/dialogues/
 
-CVAR_SRC_FILE = ouro.cvar
+CVAR_SRC_FILE = ouro.cvar.default
 CVAR_DST_FILE = src/cvar
 
 DIALOGUE_PARSER_BIN = ${CMAKE_BUILD_FOLDER}/dialogue_parser

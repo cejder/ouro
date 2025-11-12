@@ -35,4 +35,5 @@ struct CVarMeta {
 
 extern const CVarMeta cvar_meta_table[CVAR_COUNT];
 
+void cvar_load();
 void cvar_save();
