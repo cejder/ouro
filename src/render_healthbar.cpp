@@ -86,7 +86,13 @@ void render_healthbar_add(Vector2 screen_pos, Vector2 size, Color fill_color, F3
     HealthbarInstance *hb = &g_render_healthbar.mapped_data[g_render_healthbar.count];
     hb->screen_pos = screen_pos;
     hb->size = size;
-    hb->fill_color = fill_color;
+
+    // Convert Color (4 bytes) to vec4 (16 bytes) for GPU
+    hb->fill_color[0] = (F32)fill_color.r / 255.0F;
+    hb->fill_color[1] = (F32)fill_color.g / 255.0F;
+    hb->fill_color[2] = (F32)fill_color.b / 255.0F;
+    hb->fill_color[3] = (F32)fill_color.a / 255.0F;
+
     hb->health_perc = health_perc;
     hb->roundness = roundness;
     hb->is_multi_select = is_multi_select ? 1U : 0U;

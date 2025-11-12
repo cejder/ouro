@@ -13,7 +13,7 @@ fwd_decl(AShader);
 struct HealthbarInstance {
     Vector2 screen_pos;     // 8 bytes - center position on screen
     Vector2 size;           // 8 bytes - width and height
-    Color fill_color;       // 16 bytes (stored as vec4 in shader)
+    F32 fill_color[4];      // 16 bytes - RGBA as vec4 (must match shader)
     F32 health_perc;        // 4 bytes - health percentage (0.0 - 1.0)
     F32 roundness;          // 4 bytes - corner roundness
     U32 is_multi_select;    // 4 bytes - 0 = single select (complex), 1 = multi select (minimal)
