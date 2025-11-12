@@ -727,13 +727,13 @@ BOOL entity_damage(EID id, S32 damage) {
         entity_destroy(id);
 
         // Big blood explosion on death
-        particles3d_add_blood_death(hit_pos, RED, MAROON, 0.3F, 150);
+        particles3d_queue_blood_death(hit_pos, RED, MAROON, 0.3F, 150);
 
         return true;
     }
 
     // Smaller blood spray on non-lethal hit
-    particles3d_add_blood_hit(hit_pos, RED, PINK, 0.5F, 100);
+    particles3d_queue_blood_hit(hit_pos, RED, PINK, 0.5F, 100);
 
     return false;
 }

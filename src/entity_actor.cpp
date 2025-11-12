@@ -535,7 +535,7 @@ void static inline i_evaluate_behavior_transitions(EID id) {
                 entity_actor_search_and_transition_to_target(id, TS("Harvested tree, wood: %zu/%d", behavior->wood_count, ACTOR_WOOD_COLLECTED_MAX)->c);
 
                 // TODO: Remove this later
-                entity_spawn_random_vegetation_on_terrain(g_world->base_terrain, 1, false);
+                entity_spawn_queue_random_vegetation_on_terrain(g_world->base_terrain, 1, false);
             }
         } break;
 
