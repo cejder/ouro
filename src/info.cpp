@@ -13,10 +13,6 @@
 #include <external/glad.h>
 #include <external/glfw/include/GLFW/glfw3.h>
 
-#ifdef call_once
-#undef call_once
-#endif
-
 void static i_print_ouro(VersionInfo *info) {
     lld("ouro: %s (%s)", info->c, info->build_type);
 }

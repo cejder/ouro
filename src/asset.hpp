@@ -8,10 +8,6 @@
 #include <time.h>
 #include <tinycthread.h>
 
-#ifdef call_once
-#undef call_once
-#endif
-
 fwd_decl_ns(FMOD, Sound);
 
 #define A_PER_TYPE_MAX 512
