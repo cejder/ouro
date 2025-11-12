@@ -8,6 +8,7 @@
 #include "message.hpp"
 #include "render.hpp"
 #include "scene.hpp"
+#include "std.hpp"
 #include "string.hpp"
 #include "word.hpp"
 #include "world.hpp"
