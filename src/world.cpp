@@ -185,9 +185,16 @@ void world_update(F32 dt, F32 dtu) {
     }
 
     // Update all entity animations using job system
-    // TODO: math_compute_entity_bone_matrices() uses non-thread-safe arena allocator and cache
-    // Need to either: 1) Add mutex to cache/allocator, 2) Use lock-free cache, or 3) Pre-allocate bone matrices
     if (g_world->active_entity_count > 0) {
+        // Pre-warm bone matrix cache (single-threaded to avoid allocator race conditions)
+        // After warming, worker threads hit cache instead of allocating (thread-safe)
+        for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
+            EID const id = g_world->active_entities[idx];
+            if (g_world->animation[id].has_animations && g_world->animation[id].anim_playing) {
+                math_compute_entity_bone_matrices(id);
+            }
+        }
+
         U32 const worker_count = job_system_get_worker_count();
         U32 const entities_per_worker = (g_world->active_entity_count + worker_count - 1) / worker_count;
 
