@@ -14,13 +14,13 @@
         type *data;              \
     }
 
-#define ring_init(mtype, ring, initial_capacity)                                                                                                      \
-    do {                                                                                                                                              \
-        (ring)->mem_type = (mtype);                                                                                                                   \
-        (ring)->count = 0;                                                                                                                            \
-        (ring)->capacity = (initial_capacity);                                                                                                        \
-        (ring)->head = 0;                                                                                                                             \
-        (ring)->tail = 0;                                                                                                                             \
+#define ring_init(mtype, ring, max_capacity)                                                                                                        \
+    do {                                                                                                                                            \
+        (ring)->mem_type = (mtype);                                                                                                                 \
+        (ring)->count = 0;                                                                                                                          \
+        (ring)->capacity = (max_capacity);                                                                                                          \
+        (ring)->head = 0;                                                                                                                           \
+        (ring)->tail = 0;                                                                                                                           \
         (ring)->data = (ring)->capacity > 0 ? (__typeof__((ring)->data))memory_malloc((ring)->capacity * sizeof(*(ring)->data), (mtype)) : nullptr; \
     } while (0)
 
@@ -40,7 +40,7 @@
 #define ring_pop(ring)                                                                                                                                     \
     ((ring)->count > 0                                                                                                                                     \
          ? ((ring)->count--, (ring)->head = ((ring)->head + 1) % (ring)->capacity, (ring)->data[((ring)->head - 1 + (ring)->capacity) % (ring)->capacity]) \
-         : (__typeof__(*(ring)->data)){0})
+         : (__typeof__(*(ring)->data)){})
 
 #define ring_peek(ring) ((ring)->count > 0 ? (ring)->data[(ring)->head] : (__typeof__(*(ring)->data)){0})
 

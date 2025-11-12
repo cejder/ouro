@@ -428,8 +428,8 @@ void static i_load_skybox(C8 const *path) {
 
     a->mesh                      = GenMeshCube(1.0F, 1.0F, 1.0F);
     a->model                     = LoadModelFromMesh(a->mesh);
-    a->skybox_shader             = asset_get_shader(A_SKYBOX_SHADER_NAME);
-    a->cubemap_shader            = asset_get_shader(A_CUBEMAP_SHADER_NAME);
+    a->skybox_shader             = asset_get_shader("skybox");
+    a->cubemap_shader            = asset_get_shader("cubemap");
     a->model.materials[0].shader = a->skybox_shader->base;
 
     SetShaderValue(a->model.materials[0].shader, GetShaderLocation(a->model.materials[0].shader, "environmentMap"), (S32[1]){MATERIAL_MAP_CUBEMAP}, SHADER_UNIFORM_INT);

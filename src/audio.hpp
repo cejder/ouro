@@ -1,6 +1,8 @@
 #pragma once
 
 #include "common.hpp"
+#include "memory.hpp"
+#include "ring.hpp"
 
 #include <raylib.h>
 #include <fmod.hpp>
@@ -24,7 +26,7 @@
 #define AUDIO_3D_ROLLOFF_SCALE 1.0f
 #define AUDIO_3D_DOPPLER_SCALE 0.1F
 
-#define AUDIO_COMMAND_QUEUE_MAX 16384
+#define AUDIO_COMMAND_QUEUE_CAPACITY 32768
 
 using AudioHandle = U32;
 
@@ -45,7 +47,6 @@ enum AudioChannelGroup : U8 {
     ACG_COUNT,
 };
 
-// Command queue for thread-safe audio playback
 enum AudioCommandType : U8 {
     AUDIO_CMD_PLAY_3D_AT_POSITION,
     AUDIO_CMD_PLAY_3D_AT_ENTITY,
@@ -56,13 +57,16 @@ struct AudioCommand {
     AudioCommandType type;
     AudioChannelGroup channel_group;
     C8 name[AUDIO_NAME_MAX_LENGTH];
-    Vector3 position;  // Used for PLAY_3D_AT_POSITION
-    EID entity_id;     // Used for PLAY_3D_AT_ENTITY
+    union {
+        Vector3 position;
+        EID entity_id;
+    };
 };
 
+RING_DECLARE(AudioCommandRing, AudioCommand);
+
 struct AudioCommandQueue {
-    AudioCommand commands[AUDIO_COMMAND_QUEUE_MAX];
-    U32 count;
+    AudioCommandRing ring;
     mtx_t mutex;
 };
 
@@ -74,6 +78,14 @@ struct ActiveSound {
     BOOL is_3d;
     BOOL is_looping;
     BOOL in_use;
+};
+
+struct AudioState {
+    F32 last_volume[ACG_COUNT];
+    F32 last_pitch[ACG_COUNT];
+    F32 last_pan[ACG_COUNT];
+    F32 last_dt_mod;
+    BOOL needs_update[ACG_COUNT];
 };
 
 struct Audio {
@@ -94,6 +106,9 @@ struct Audio {
     Audio3DRolloff rolloff_type;
     Vector3 last_listener_position;
     Vector3 listener_velocity;
+
+    AudioState state;
+    AudioCommandQueue command_queue;
 };
 
 Audio extern g_audio;

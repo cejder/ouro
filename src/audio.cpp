@@ -17,34 +17,28 @@
 
 Audio g_audio = {};
 
-C8 static const *i_channel_group_names[ACG_COUNT] = {"Music", "SFX", "Ambience", "Voice"};
-
-// Internal state tracking to avoid redundant FMOD calls
-struct AudioState {
-    F32 last_volume[ACG_COUNT];
-    F32 last_pitch[ACG_COUNT];
-    F32 last_pan[ACG_COUNT];
-    F32 last_dt_mod;
-    BOOL needs_update[ACG_COUNT];
-} static i_state = {};
-
-AudioCommandQueue static g_audio_command_queue = {};
+C8 static const *i_channel_group_names[ACG_COUNT] = {
+    "Music",
+    "SFX",
+    "Ambience",
+    "Voice",
+};
 
 // Helper macros for FMOD error checking
-#define FC(call, msg)                              \
+#define FC(call, msg)                                      \
     do {                                                   \
         FMOD_RESULT const _result = (call);                \
         if (_result != FMOD_OK) {                          \
-            llw("%s: %s", msg, FMOD_ErrorString(_result)); \
+            lld("%s: %s", msg, FMOD_ErrorString(_result)); \
             return;                                        \
         }                                                  \
     } while (0)
 
-#define FCR(call, msg, ret)                  \
+#define FCR(call, msg, ret)                                \
     do {                                                   \
         FMOD_RESULT const _result = (call);                \
         if (_result != FMOD_OK) {                          \
-            llw("%s: %s", msg, FMOD_ErrorString(_result)); \
+            lld("%s: %s", msg, FMOD_ErrorString(_result)); \
             return ret;                                    \
         }                                                  \
     } while (0)
@@ -130,6 +124,7 @@ ActiveSound static *i_find_free_slot() {
     for (auto &active_sound : g_audio.active_sounds) {
         if (!active_sound.in_use) { return &active_sound; }
     }
+
     return nullptr;
 }
 
@@ -139,6 +134,7 @@ ActiveSound static *i_find_sound_by_handle(AudioHandle handle) {
     for (auto &active_sound : g_audio.active_sounds) {
         if (active_sound.in_use && active_sound.handle == handle) { return &active_sound; }
     }
+
     return nullptr;
 }
 
@@ -170,18 +166,18 @@ void static i_cleanup_finished_sounds() {
 }
 
 void static i_mark_group_for_update(AudioChannelGroup channel_group) {
-    i_state.needs_update[channel_group] = true;
+    g_audio.state.needs_update[channel_group] = true;
 }
 
 void static i_update_group_properties(AudioChannelGroup channel_group) {
-    if (!i_state.needs_update[channel_group]) { return; }
+    if (!g_audio.state.needs_update[channel_group]) { return; }
 
     F32 const volume     = *i_acg_volume_ptr[channel_group];
     F32 const base_pitch = *i_acg_pitch_ptr[channel_group];
     F32 const pan        = *i_acg_pan_ptr[channel_group];
 
     // Apply time modification to pitch
-    F32 const final_pitch = base_pitch * math_abs_f32(i_state.last_dt_mod);
+    F32 const final_pitch = base_pitch * math_abs_f32(g_audio.state.last_dt_mod);
 
     FMOD::ChannelGroup *group = g_audio.groups[channel_group];
 
@@ -190,10 +186,10 @@ void static i_update_group_properties(AudioChannelGroup channel_group) {
     FC(group->setPan(pan), "Could not set pan");
 
     // Update cached values
-    i_state.last_volume[channel_group]  = volume;
-    i_state.last_pitch[channel_group]   = base_pitch;
-    i_state.last_pan[channel_group]     = pan;
-    i_state.needs_update[channel_group] = false;
+    g_audio.state.last_volume[channel_group]  = volume;
+    g_audio.state.last_pitch[channel_group]   = base_pitch;
+    g_audio.state.last_pan[channel_group]     = pan;
+    g_audio.state.needs_update[channel_group] = false;
 }
 
 AudioHandle static i_play_sound_internal(AudioChannelGroup channel_group, C8 const *name, BOOL is_3d, BOOL loop, Vector3 position = {0, 0, 0}) {
@@ -283,15 +279,15 @@ void audio_init() {
 
     // Initialize state
     for (S32 i = 0; i < ACG_COUNT; ++i) {
-        i_state.last_volume[i]  = -1.0F;  // Force initial update
-        i_state.last_pitch[i]   = -1.0F;
-        i_state.last_pan[i]     = -999.0F;
-        i_state.needs_update[i] = true;
+        g_audio.state.last_volume[i]  = -1.0F;  // Force initial update
+        g_audio.state.last_pitch[i]   = -1.0F;
+        g_audio.state.last_pan[i]     = -999.0F;
+        g_audio.state.needs_update[i] = true;
 
         // Initialize DSP pointers
         g_audio.dsps[i] = nullptr;
     }
-    i_state.last_dt_mod = 1.0F;
+    g_audio.state.last_dt_mod = 1.0F;
 
     // Set up FMOD debug level
     FMOD_DEBUG_FLAGS fmod_level = FMOD_DEBUG_LEVEL_NONE;
@@ -332,7 +328,14 @@ void audio_init() {
     ou_memset(g_audio.current_music_name, 0, AUDIO_NAME_MAX_LENGTH);
     ou_memset(g_audio.current_ambience_name, 0, AUDIO_NAME_MAX_LENGTH);
 
-    audio_3d_init();
+    // Initialize 3D related stuff
+    g_audio.rolloff_type           = AUDIO_3D_ROLLOFF_INVERSE;
+    g_audio.last_listener_position = {0, 0, 0};
+    g_audio.listener_velocity      = {0, 0, 0};
+    FC(g_audio.fmod_system->set3DSettings(c_audio__doppler_scale, 1.0F, c_audio__rolloff_scale), "Could not set FMOD 3D settings");
+
+    // Initialize command queue
+    ring_init(MEMORY_TYPE_ARENA_PERMANENT, &g_audio.command_queue.ring, AUDIO_COMMAND_QUEUE_CAPACITY);
 
     // Apply initial volume settings immediately to prevent audio on first frame
     for (SZ i = 0; i < ACG_COUNT; ++i) { i_update_group_properties((AudioChannelGroup)i); }
@@ -381,8 +384,8 @@ void audio_update(F32 dt) {
 
     // Check if time scaling changed
     F32 const current_dt_mod = time_get_delta_mod();
-    if (i_state.last_dt_mod != current_dt_mod) {
-        i_state.last_dt_mod = current_dt_mod;
+    if (g_audio.state.last_dt_mod != current_dt_mod) {
+        g_audio.state.last_dt_mod = current_dt_mod;
         // Mark all groups for pitch update
         for (S32 i = 0; i < ACG_COUNT; ++i) { i_mark_group_for_update((AudioChannelGroup)i); }
     }
@@ -395,7 +398,11 @@ void audio_update(F32 dt) {
         F32 const pitch  = *i_acg_pitch_ptr[channel_group];
         F32 const pan    = *i_acg_pan_ptr[channel_group];
 
-        if (volume != i_state.last_volume[i] || pitch != i_state.last_pitch[i] || pan != i_state.last_pan[i]) { i_mark_group_for_update(channel_group); }
+        if (volume != g_audio.state.last_volume[i] ||
+            pitch != g_audio.state.last_pitch[i]   ||
+            pan != g_audio.state.last_pan[i]) {
+            i_mark_group_for_update(channel_group);
+        }
     }
 
     // Apply updates only to groups that need them
@@ -640,13 +647,6 @@ C8 const *audio_channel_group_to_cstr(AudioChannelGroup channel_group) {
     return i_channel_group_names[channel_group];
 }
 
-void audio_3d_init() {
-    g_audio.rolloff_type           = AUDIO_3D_ROLLOFF_INVERSE;
-    g_audio.last_listener_position = {0, 0, 0};
-    g_audio.listener_velocity      = {0, 0, 0};
-    FC(g_audio.fmod_system->set3DSettings(c_audio__doppler_scale, 1.0F, c_audio__rolloff_scale), "Could not set FMOD 3D settings");
-}
-
 void audio_3d_update_listener(F32 dt) {
     Camera3D const camera = c3d_get();
 
@@ -828,37 +828,25 @@ void audio_draw_3d_dbg() {
 
 // Thread-safe audio command queue implementation
 void static i_audio_queue_command(AudioCommandType type, AudioChannelGroup channel_group, C8 const *name, Vector3 position, EID entity_id) {
-    // WARN: Copy name to stack immediately to prevent transient arena corruption from other threads
-    // The 'name' parameter might point to a TS() transient string that can be overwritten by another
-    // worker thread before we lock the mutex and copy it to the command queue
-    C8 name_copy[AUDIO_NAME_MAX_LENGTH];
-    ou_strncpy(name_copy, name, AUDIO_NAME_MAX_LENGTH - 1);
-    name_copy[AUDIO_NAME_MAX_LENGTH - 1] = '\0';
-
     // Lazy mutex initialization
-    static BOOL mutex_initialized = false;
+    BOOL static mutex_initialized = false;
     if (!mutex_initialized) {
-        mtx_init(&g_audio_command_queue.mutex, mtx_plain);
+        mtx_init(&g_audio.command_queue.mutex, mtx_plain);
         mutex_initialized = true;
     }
 
-    mtx_lock(&g_audio_command_queue.mutex);
+    mtx_lock(&g_audio.command_queue.mutex);
     {
-        if (g_audio_command_queue.count < AUDIO_COMMAND_QUEUE_MAX) {
-            AudioCommand *cmd = &g_audio_command_queue.commands[g_audio_command_queue.count++];
-            cmd->type = type;
-            cmd->channel_group = channel_group;
-            cmd->position = position;
-            cmd->entity_id = entity_id;
-
-            // Copy from our stack-protected copy
-            ou_strncpy(cmd->name, name_copy, AUDIO_NAME_MAX_LENGTH - 1);
-            cmd->name[AUDIO_NAME_MAX_LENGTH - 1] = '\0';
-        } else {
-            llt("Audio command queue full, dropping command");
-        }
+        AudioCommand cmd   = {};
+        cmd.type          = type;
+        cmd.channel_group = channel_group;
+        cmd.position      = position;
+        cmd.entity_id     = entity_id;
+        ou_strncpy(cmd.name, name, AUDIO_NAME_MAX_LENGTH - 1);
+        cmd.name[AUDIO_NAME_MAX_LENGTH - 1] = '\0';
+        ring_push(&g_audio.command_queue.ring, cmd);
     }
-    mtx_unlock(&g_audio_command_queue.mutex);
+    mtx_unlock(&g_audio.command_queue.mutex);
 }
 
 void audio_queue_play_3d_at_position(AudioChannelGroup channel_group, C8 const *name, Vector3 position) {
@@ -870,44 +858,27 @@ void audio_queue_play_3d_at_entity(AudioChannelGroup channel_group, C8 const *na
 }
 
 void audio_process_command_queue() {
-    // Get command count and take snapshot
-    mtx_lock(&g_audio_command_queue.mutex);
-    U32 const cmd_count = g_audio_command_queue.count;
-    mtx_unlock(&g_audio_command_queue.mutex);
+    mtx_lock(&g_audio.command_queue.mutex);
+    {
+        ring_each(i, &g_audio.command_queue.ring) {
+            AudioCommand const cmd = ring_get(&g_audio.command_queue.ring, i);
 
-    if (cmd_count == 0) { return; }
-
-    // Process all commands
-    for (U32 i = 0; i < cmd_count; ++i) {
-        AudioCommand const *cmd = &g_audio_command_queue.commands[i];
-
-        switch (cmd->type) {
+            switch (cmd.type) {
             case AUDIO_CMD_PLAY_3D_AT_POSITION: {
-                audio_play_3d_at_position(cmd->channel_group, cmd->name, cmd->position);
+                audio_play_3d_at_position(cmd.channel_group, cmd.name, cmd.position);
             } break;
 
             case AUDIO_CMD_PLAY_3D_AT_ENTITY: {
-                audio_play_3d_at_entity(cmd->channel_group, cmd->name, cmd->entity_id);
+                audio_play_3d_at_entity(cmd.channel_group, cmd.name, cmd.entity_id);
             } break;
 
             default: {
-                llw("Unknown audio command type: %d", cmd->type);
+                llw("Unknown audio command type: %d", cmd.type);
             } break;
+            }
         }
-    }
 
-    // Remove processed commands and shift remaining ones to the front
-    mtx_lock(&g_audio_command_queue.mutex);
-    if (cmd_count < g_audio_command_queue.count) {
-        // New commands were added while we were processing - shift them to the front
-        U32 const remaining = g_audio_command_queue.count - cmd_count;
-        ou_memmove(&g_audio_command_queue.commands[0],
-                   &g_audio_command_queue.commands[cmd_count],
-                   remaining * sizeof(AudioCommand));
-        g_audio_command_queue.count = remaining;
-    } else {
-        // No new commands added, just clear
-        g_audio_command_queue.count = 0;
+        ring_clear(&g_audio.command_queue.ring);
     }
-    mtx_unlock(&g_audio_command_queue.mutex);
+    mtx_unlock(&g_audio.command_queue.mutex);
 }
