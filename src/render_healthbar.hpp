@@ -4,6 +4,8 @@
 
 #include <raylib.h>
 
+fwd_decl(AShader);
+
 #define HEALTHBAR_MAX 1000
 
 // GPU-aligned healthbar instance structure (must match shader)
