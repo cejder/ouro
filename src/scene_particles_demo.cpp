@@ -37,7 +37,7 @@ SCENE_INIT(particles_demo) {
     s.size_multiplier = 2.0F;
     s.state = PLAYBACK_STATE_PAUSED;
     s.timer = 0.0F;
-    // mouse_recorder_init(&s.mrec, "particles_demo");
+    mouse_recorder_init(&s.mrec, "particles_demo");
 }
 
 SCENE_ENTER(particles_demo) {
