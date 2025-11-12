@@ -8,6 +8,7 @@
 #include "particles_2d.hpp"
 #include "particles_3d.hpp"
 #include "profiler.hpp"
+#include "render_healthbar.hpp"
 #include "render_tooltip.hpp"
 #include "scene.hpp"
 #include "string.hpp"
@@ -163,6 +164,7 @@ void render_init() {
 
     particles2d_init();
     particles3d_init();
+    render_healthbar_init();
 
     c3d_reset();
     c2d_reset();

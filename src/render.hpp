@@ -271,6 +271,8 @@ void d2d_whole_screen(ATexture *texture);
 void d2d_gizmo(EID eid);
 void d2d_bone_gizmo(EID eid);
 void d2d_healthbar(EID eid);
+void d2d_healthbar_batched(EID eid);  // Batch-collect healthbar data for GPU rendering
+void d2d_healthbar_draw_batched();    // Draw all collected healthbars in one call
 
 void d3d_cube(Vector3 position, F32 width, F32 height, F32 length, Color color);
 void d3d_cube_v(Vector3 position, Vector3 size, Color color);
