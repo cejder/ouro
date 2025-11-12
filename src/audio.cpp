@@ -828,6 +828,13 @@ void audio_draw_3d_dbg() {
 
 // Thread-safe audio command queue implementation
 void static i_audio_queue_command(AudioCommandType type, AudioChannelGroup channel_group, C8 const *name, Vector3 position, EID entity_id) {
+    // CRITICAL: Copy name to stack immediately to prevent transient arena corruption from other threads
+    // The 'name' parameter might point to a TS() transient string that can be overwritten by another
+    // worker thread before we lock the mutex and copy it to the command queue
+    C8 name_copy[AUDIO_NAME_MAX_LENGTH];
+    ou_strncpy(name_copy, name, AUDIO_NAME_MAX_LENGTH - 1);
+    name_copy[AUDIO_NAME_MAX_LENGTH - 1] = '\0';
+
     // Lazy mutex initialization
     static BOOL mutex_initialized = false;
     if (!mutex_initialized) {
@@ -844,8 +851,8 @@ void static i_audio_queue_command(AudioCommandType type, AudioChannelGroup chann
             cmd->position = position;
             cmd->entity_id = entity_id;
 
-            // Copy name safely
-            ou_strncpy(cmd->name, name, AUDIO_NAME_MAX_LENGTH - 1);
+            // Copy from our stack-protected copy
+            ou_strncpy(cmd->name, name_copy, AUDIO_NAME_MAX_LENGTH - 1);
             cmd->name[AUDIO_NAME_MAX_LENGTH - 1] = '\0';
         } else {
             llw("Audio command queue full, dropping command");
