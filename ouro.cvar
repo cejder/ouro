@@ -53,7 +53,7 @@ texture_widget_dark_bg       : true
 windows_sticky               : false
 
 [profiler]
-flame_graph_enabled          : true
+flame_graph_enabled          : false
 flame_graph_font             : GoMono
 flame_graph_font_size        : 18
 flame_graph_position_y       : 0.28573692
