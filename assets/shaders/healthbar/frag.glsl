@@ -39,27 +39,27 @@ void main() {
     // Smooth anti-aliasing
     float aa_width = 1.0;
 
-    // Layer composition (back to front):
-    vec4 out_color = vec4(0.0);
+    // Calculate alpha masks for each layer
+    float bg_mask = 1.0 - smoothstep(-aa_width, aa_width, bg_dist);
+    float fill_mask = (frag_health_perc > 0.01) ? (1.0 - smoothstep(-aa_width, aa_width, fill_dist)) : 0.0;
+    float border_mask = (1.0 - smoothstep(-aa_width, aa_width, border_dist)) * bg_mask;
 
-    // 1. Background
-    float bg_alpha = 1.0 - smoothstep(-aa_width, aa_width, bg_dist);
-    out_color = mix(out_color, u_bg_color, bg_alpha);
-
-    // 2. Health fill (only where health > 0)
-    if (frag_health_perc > 0.01) {
-        float fill_alpha = 1.0 - smoothstep(-aa_width, aa_width, fill_dist);
-        out_color = mix(out_color, frag_fill_color, fill_alpha);
-    }
-
-    // 3. Border (on top)
-    float border_alpha = (1.0 - smoothstep(-aa_width, aa_width, border_dist)) * (1.0 - smoothstep(-aa_width, aa_width, bg_dist));
-    out_color = mix(out_color, u_border_color, border_alpha);
-
-    // Discard fully transparent pixels
-    if (out_color.a < 0.01) {
+    // Discard if completely outside background shape
+    if (bg_mask < 0.01) {
         discard;
     }
+
+    // Layer composition: background -> fill -> border
+    // Use proper alpha blending so all layers fade together
+    vec4 out_color = u_bg_color * bg_mask;
+
+    // Fill overwrites background where it exists
+    if (frag_health_perc > 0.01) {
+        out_color = mix(out_color, frag_fill_color, fill_mask);
+    }
+
+    // Border is additive on top
+    out_color = mix(out_color, u_border_color, border_mask * u_border_color.a);
 
     color = out_color;
 }

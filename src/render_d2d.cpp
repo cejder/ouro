@@ -672,9 +672,9 @@ void d2d_healthbar_batched(EID id) {
         Vector2 const radius_screen = GetWorldToScreenEx(radius_point, *cam, (S32)render_res.x, (S32)render_res.y);
         F32 const screen_radius = glm::abs(radius_screen.x - center_screen.x);
 
-        // Healthbar is at most as wide as entity, minimum 20 pixels
-        bar_width = glm::clamp(screen_radius * 2.0F * 0.8F, 20.0F, 200.0F);
-        bar_height = ui_scale_y(0.6F) * zoom_scale;  // Very thin bar
+        // Healthbar is at most as wide as entity, minimum 40 pixels for visibility
+        bar_width = glm::clamp(screen_radius * 2.0F * 0.8F, 40.0F, 200.0F);
+        bar_height = ui_scale_y(1.5F) * zoom_scale;  // Thicker for better visibility
     } else {
         bar_width = ui_scale_x(8.0F) * zoom_scale;
         bar_height = ui_scale_y(2.30F) * zoom_scale;
