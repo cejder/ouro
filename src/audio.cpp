@@ -845,7 +845,7 @@ void static i_audio_queue_command(AudioCommandType type, AudioChannelGroup chann
             cmd->entity_id = entity_id;
 
             // Copy name safely
-            strncpy(cmd->name, name, AUDIO_NAME_MAX_LENGTH - 1);
+            ou_strncpy(cmd->name, name, AUDIO_NAME_MAX_LENGTH - 1);
             cmd->name[AUDIO_NAME_MAX_LENGTH - 1] = '\0';
         } else {
             llw("Audio command queue full, dropping command");
