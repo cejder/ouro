@@ -5,6 +5,7 @@
 #include "log.hpp"
 #include "render.hpp"
 #include "std.hpp"
+#include "time.hpp"
 
 #include <external/glad.h>
 #include <glm/gtc/type_ptr.hpp>
@@ -101,7 +102,7 @@ void render_healthbar_draw() {
     SetShaderValueMatrix(shader->shader->base, shader->view_proj_loc, projection);
 
     // Set time for pulsing animation
-    F32 const current_time = (F32)time_get();
+    F32 const current_time = time_get();
     SetShaderValue(shader->shader->base, shader->time_loc, &current_time, SHADER_UNIFORM_FLOAT);
 
     // Set healthbar count

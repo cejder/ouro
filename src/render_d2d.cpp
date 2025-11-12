@@ -644,7 +644,7 @@ void d2d_healthbar_batched(EID id) {
     if (!ENTITY_HAS_FLAG(g_world->flags[id], ENTITY_FLAG_IN_FRUSTUM)) { return; }
     if (!world_is_entity_selected(id))                                { return; }
 
-    Camera3D const *cam = render_get_active_camera();
+    Camera3D const *cam = c3d_get_ptr();
     Vector2 const render_res = render_get_render_resolution();
     Vector3 const position = g_world->position[id];
     OrientedBoundingBox const obb = g_world->obb[id];
