@@ -158,6 +158,8 @@ void render_init() {
     render_sketch_set_minor_color(RENDER_DEFAULT_MINOR_COLOR);
     render_set_accent_color(BLACK);
 
+    // TODO: how do we organize all this shit
+#ifndef __APPLE__
     RenderHealthbarShader *hbs = &g_render.healthbar_shader;
     hbs->shader                = asset_get_shader("healthbar");
     hbs->view_proj_loc         = GetShaderLocation(hbs->shader->base, "u_view_proj");
@@ -168,6 +170,7 @@ void render_init() {
     hbs->bg_color_loc          = GetShaderLocation(hbs->shader->base, "u_bg_color");
     hbs->border_color_loc      = GetShaderLocation(hbs->shader->base, "u_border_color");
     hbs->border_thickness_loc  = GetShaderLocation(hbs->shader->base, "u_border_thickness");
+#endif
 
     lighting_init();
     fog_init();
