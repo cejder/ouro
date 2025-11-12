@@ -120,10 +120,12 @@ void memory_init(MemorySetup setup) {
         return;
     }
 
-    // Initialize transient arena mutex for thread safety
-    if (mtx_init(&i_memory.transient_mutex, mtx_plain) != thrd_success) {
-        lle("Failed to initialize transient arena mutex");
-        return;
+    // Initialize mutex for each arena allocator
+    for (SZ i = 0; i < MEMORY_TYPE_COUNT; ++i) {
+        if (mtx_init(&i_memory.arena_allocators[i].mutex, mtx_plain) != thrd_success) {
+            lle("Failed to initialize mutex for %s", i_type_to_cstr[i]);
+            return;
+        }
     }
 
     for (SZ i = 0; i < MEMORY_TYPE_COUNT; ++i) {
@@ -145,10 +147,10 @@ void memory_init(MemorySetup setup) {
 }
 
 void memory_quit() {
-    for (const auto &arena_allocator : i_memory.arena_allocators) {
+    for (auto &arena_allocator : i_memory.arena_allocators) {
         for (SZ j = 0; j < arena_allocator.arena_count; ++j) { i_arena_destroy(arena_allocator.arenas[j]); }
+        mtx_destroy(&arena_allocator.mutex);
     }
-    mtx_destroy(&i_memory.transient_mutex);
 }
 
 void *memory_malloc_verbose(SZ size, MemoryType type, C8 const *file, S32 line) {
@@ -158,15 +160,12 @@ void *memory_malloc_verbose(SZ size, MemoryType type, C8 const *file, S32 line) 
     return memory_malloc(size, type);
 }
 void *memory_malloc(SZ size, MemoryType type) {
-    // Lock transient arena for thread safety (other arenas are main-thread only)
-    if (type == MEMORY_TYPE_ARENA_TRANSIENT) {
-        mtx_lock(&i_memory.transient_mutex);
-        void *ptr = i_arena_allocator_alloc(&i_memory.arena_allocators[type], size);
-        mtx_unlock(&i_memory.transient_mutex);
-        return ptr;
-    }
-
-    return i_arena_allocator_alloc(&i_memory.arena_allocators[type], size);
+    // Lock allocator for thread safety
+    ArenaAllocator *allocator = &i_memory.arena_allocators[type];
+    mtx_lock(&allocator->mutex);
+    void *ptr = i_arena_allocator_alloc(allocator, size);
+    mtx_unlock(&allocator->mutex);
+    return ptr;
 }
 
 void *memory_calloc_verbose(SZ count, SZ size, MemoryType type, C8 const *file, S32 line) {
