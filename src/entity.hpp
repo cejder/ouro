@@ -73,8 +73,6 @@ struct AnimationBoneData {
     Matrix prev_bone_matrices[ENTITY_MAX_BONES];
 };
 
-AnimationBoneData extern *g_animation_bones;
-
 void entity_init();
 EID entity_create(EntityType type, C8 const *name, Vector3 position, F32 rotation, Vector3 scale, Color tint, C8 const *model_name);
 void entity_destroy(EID id);

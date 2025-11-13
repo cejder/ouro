@@ -820,7 +820,7 @@ void  math_compute_entity_bone_matrices(EID id) {
             Quaternion prev_rot;
             Quaternion new_rot;
 
-            math_matrix_decompose(g_animation_bones[id].prev_bone_matrices[bone_id], &prev_trans, &prev_rot, &prev_scale);
+            math_matrix_decompose(g_world_state.animation_bones[id].prev_bone_matrices[bone_id], &prev_trans, &prev_rot, &prev_scale);
             math_matrix_decompose(source_matrices[bone_id], &new_trans, &new_rot, &new_scale);
 
             // Interpolate components
@@ -829,14 +829,14 @@ void  math_compute_entity_bone_matrices(EID id) {
             Vector3 blended_scale  = Vector3Lerp(prev_scale, new_scale, blend_t);
 
             // Reconstruct blended matrix
-            g_animation_bones[id].bone_matrices[bone_id] = MatrixMultiply(MatrixMultiply(
+            g_world_state.animation_bones[id].bone_matrices[bone_id] = MatrixMultiply(MatrixMultiply(
                 MatrixScale(blended_scale.x, blended_scale.y, blended_scale.z),
                 QuaternionToMatrix(blended_rot)),
                 MatrixTranslate(blended_trans.x, blended_trans.y, blended_trans.z));
         }
     } else {
         // No blending - single copy from cache/computed matrices to entity
-        ou_memcpy(g_animation_bones[id].bone_matrices, source_matrices, sizeof(Matrix) * (SZ)bone_count);
+        ou_memcpy(g_world_state.animation_bones[id].bone_matrices, source_matrices, sizeof(Matrix) * (SZ)bone_count);
     }
 }
 

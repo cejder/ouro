@@ -75,7 +75,7 @@ struct World {
     struct {
         // Deferred entity destruction to avoid race conditions
         EID entities_to_destroy[WORLD_MAX_DEFERRED_DESTRUCTIONS];
-        U32 destruction_count;
+        SZ destruction_count;
         mtx_t destruction_mutex;
 
         // Mutex for building modifications (e.g., lumberyard wood count)
@@ -86,12 +86,31 @@ struct World {
     } mt_sync;
 };
 
+struct EntityUpdateJobData {
+    F32 dt;
+    U32 start_idx;
+    U32 end_idx;
+    U32 entity_type_counts[ENTITY_TYPE_COUNT];  // Per-thread counters
+    U32 visible_vertex_count;                   // Per-thread counter
+};
+
+struct HealthbarCollectionJobData {
+    U32 start_idx;       // Start index in selected entities array
+    U32 end_idx;         // End index in selected entities array
+    EID *selected_eids;  // Pointer to selected entities array
+    F32 bar_height;
+};
+
 struct WorldState {
     BOOL initialized;
     World* current;
 
     World* overworld;
     World* dungeon;
+
+    EntityUpdateJobData *entity_update_job_data;
+    HealthbarCollectionJobData *healthbar_collection_job_data;
+    AnimationBoneData *animation_bones;
 };
 
 WorldState extern g_world_state;

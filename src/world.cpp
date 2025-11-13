@@ -14,6 +14,7 @@
 #include "particles_3d.hpp"
 #include "profiler.hpp"
 #include "render.hpp"
+#include "render_healthbar.hpp"
 #include "std.hpp"
 #include "string.hpp"
 #include "time.hpp"
@@ -23,9 +24,8 @@
 #include <string.h>
 #include <sys/stat.h>
 
+World* g_world           = g_world_state.current;
 WorldState g_world_state = {};
-World* g_world = g_world_state.current;
-AnimationBoneData *g_animation_bones = nullptr;
 
 void world_init() {
     // Allocate both worlds using permanent arena
@@ -33,7 +33,7 @@ void world_init() {
     g_world_state.dungeon = mmpa(World*, sizeof(World));
 
     // Allocate bone matrix buffer (NOT saved by recorder)
-    g_animation_bones = mmpa(AnimationBoneData*, sizeof(AnimationBoneData) * WORLD_MAX_ENTITIES);
+    g_world_state.animation_bones = mmpa(AnimationBoneData*, sizeof(AnimationBoneData) * WORLD_MAX_ENTITIES);
 
     // Reset both worlds and default on start on overworld
     g_world = g_world_state.dungeon;
@@ -50,6 +50,9 @@ void world_init() {
     // Initialize job system for multithreaded work (0 = auto-detect CPU cores)
     job_system_init(0);
 
+    g_world_state.entity_update_job_data        = mmpa(EntityUpdateJobData *, sizeof(EntityUpdateJobData) * g_job_system.workers.count);
+    g_world_state.healthbar_collection_job_data = mmpa(HealthbarCollectionJobData *, sizeof(HealthbarCollectionJobData) * g_job_system.workers.count);
+
     player_init();
 }
 
@@ -57,21 +60,21 @@ void world_init() {
 // and when we set the flag to enable or something we also reset idk.
 void world_reset() {
     for (EID i = 0; i < WORLD_MAX_ENTITIES; ++i) {
-        g_world->flags[i]          = 0;
-        g_world->type[i]           = ENTITY_TYPE_NONE;
-        g_world->lifetime[i]       = 0.0F;
-        g_world->position[i]       = {};
-        g_world->scale[i]          = {};
-        g_world->original_scale[i] = {};
-        g_world->rotation[i]       = {};
-        g_world->obb[i]            = {};
-        g_world->radius[i]         = 0.0F;
+        g_world->flags[i]           = 0;
+        g_world->type[i]            = ENTITY_TYPE_NONE;
+        g_world->lifetime[i]        = 0.0F;
+        g_world->position[i]        = {};
+        g_world->scale[i]           = {};
+        g_world->original_scale[i]  = {};
+        g_world->rotation[i]        = {};
+        g_world->obb[i]             = {};
+        g_world->radius[i]          = 0.0F;
         g_world->model_name_hash[i] = 0;
-        g_world->tint[i]           = {};
-        g_world->generation[i]     = 0;
-        g_world->talker[i]         = {};
-        g_world->building[i]       = {};
-        g_world->name[i][0]        = '\0';
+        g_world->tint[i]            = {};
+        g_world->generation[i]      = 0;
+        g_world->talker[i]          = {};
+        g_world->building[i]        = {};
+        g_world->name[i][0]         = '\0';
     }
 
     g_world->active_ent_count      = 0;
@@ -88,83 +91,29 @@ void world_reset() {
     grid_clear();
 }
 
-// Animation update job data
-// Entity update job data (lifetime, frustum, counting)
-struct EntityUpdateJobData {
-    F32 dt;
-    U32 start_idx;
-    U32 end_idx;
-    U32 entity_type_counts[ENTITY_TYPE_COUNT];  // Per-thread counters
-    U32 visible_vertex_count;                    // Per-thread counter
-};
-
-struct AnimationUpdateJobData {
-    F32 dt;
-    U32 start_idx;
-    U32 end_idx;
-};
-
-// Actor update job data
-struct ActorUpdateJobData {
-    F32 dt;
-    U32 start_idx;
-    U32 end_idx;
-};
-
-// Healthbar collection job data
-struct HealthbarCollectionJobData {
-    U32 start_idx;       // Start index in selected entities array
-    U32 end_idx;         // End index in selected entities array
-    EID *selected_eids;  // Pointer to selected entities array
-};
-
-// Worker function for healthbar collection (executed by job system)
-S32 static i_healthbar_collection_worker(void *arg) {
-    auto *data = (HealthbarCollectionJobData *)arg;
-
-    // Process each selected entity in this worker's range
-    for (U32 idx = data->start_idx; idx < data->end_idx; ++idx) {
-        EID const id = data->selected_eids[idx];
-
-        // Only process NPC entities
-        if (g_world->type[id] != ENTITY_TYPE_NPC) { continue; }
-
-        // d2d_healthbar_batched() will do all validation and add to buffer
-        // (thread-safe via mutex in render_healthbar_add)
-        d2d_healthbar_batched(id);
-    }
-
-    return 0;
-}
-
 // Worker function for entity updates (executed by job system)
 S32 static i_entity_update_worker(void *arg) {
     auto *data = (EntityUpdateJobData *)arg;
     F32 const dt = data->dt;
 
     // Initialize per-thread counters to zero
-    for (U32 i = 0; i < ENTITY_TYPE_COUNT; ++i) {
-        data->entity_type_counts[i] = 0;
-    }
+    for (U32 &entity_type_count : data->entity_type_counts) { entity_type_count = 0; }
     data->visible_vertex_count = 0;
 
     for (U32 idx = data->start_idx; idx < data->end_idx; ++idx) {
-        EID const i = g_world->active_entities[idx];
-        if (!ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_USE)) { continue; }
+        EID const eid = g_world->active_entities[idx];
+        if (!ENTITY_HAS_FLAG(g_world->flags[eid], ENTITY_FLAG_IN_USE)) { continue; }
 
-        g_world->lifetime[i] += dt;
-        data->entity_type_counts[g_world->type[i]]++;
+        g_world->lifetime[eid] += dt;
+        data->entity_type_counts[g_world->type[eid]]++;
 
-        c3d_is_obb_in_frustum(g_world->obb[i]) ? ENTITY_SET_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM)
-                                              : ENTITY_CLEAR_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM);
+        // Frustum independent updates
 
-        if (ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM)) {
-            data->visible_vertex_count += asset_get_model_by_hash(g_world->model_name_hash[i])->vertex_count;
-        }
+        // Building update
+        if (g_world->type[eid] == ENTITY_TYPE_BUILDING_LUMBERYARD) { entity_building_update(eid, dt); }
 
-        if (g_world->type[i] == ENTITY_TYPE_BUILDING_LUMBERYARD) {
-            entity_building_update(i, dt);
-        }
+        // Actor update
+        if (ENTITY_HAS_FLAG(g_world->flags[eid], ENTITY_FLAG_ACTOR)) { entity_actor_update(eid, dt); }
 
 #if OURO_TALK
         if (g_world->type[i] == ENTITY_TYPE_NPC) {
@@ -172,84 +121,59 @@ S32 static i_entity_update_worker(void *arg) {
             talker_update(&g_world->talker[i], dt, g_world->position[i], width);
         }
 #endif
-    }
 
-    return 0;
-}
-
-// Worker function for animation updates (executed by job system)
-S32 static i_animation_update_worker(void *arg) {
-    auto *data = (AnimationUpdateJobData *)arg;
-    F32 const dt = data->dt;
-
-    for (U32 idx = data->start_idx; idx < data->end_idx; ++idx) {
-        EID const id = g_world->active_entities[idx];
-
-        if (!g_world->animation[id].has_animations) { continue; }
-        if (!g_world->animation[id].anim_playing)   { continue; }
-
-        // Frustum culling: Skip off-screen entities
-        if (!ENTITY_HAS_FLAG(g_world->flags[id], ENTITY_FLAG_IN_FRUSTUM)) {
+        if (c3d_is_obb_in_frustum(g_world->obb[eid])) {
+            ENTITY_SET_FLAG(g_world->flags[eid], ENTITY_FLAG_IN_FRUSTUM);
+        } else {
+            ENTITY_CLEAR_FLAG(g_world->flags[eid], ENTITY_FLAG_IN_FRUSTUM);
             continue;
         }
 
-        AModel *model      = asset_get_model_by_hash(g_world->model_name_hash[id]);
-        U32 const anim_idx = g_world->animation[id].anim_index;
+        // Frustum dependent updates
 
-        if (anim_idx >= (U32)model->animation_count) { continue; }
+        AModel *model = asset_get_model_by_hash(g_world->model_name_hash[eid]);
+        data->visible_vertex_count += model->vertex_count;
 
-        ModelAnimation const& anim = model->animations[anim_idx];
+        // Animation updates
+        if (g_world->animation[eid].has_animations && g_world->animation[eid].anim_playing) {
+            U32 const anim_idx = g_world->animation[eid].anim_index;
 
-        // Update animation time (frame-time independent)
-        g_world->animation[id].anim_time += dt * g_world->animation[id].anim_speed;
+            if (anim_idx >= (U32)model->animation_count) { continue; }
 
-        // Calculate frame from time using entity's animation FPS
-        F32 const fps            = g_world->animation[id].anim_fps;
-        F32 const frame_duration = 1.0F / fps;
-        F32 const total_duration = (F32)anim.frameCount * frame_duration;
+            ModelAnimation const *anim = &model->animations[anim_idx];
 
-        // Handle looping
-        if (g_world->animation[id].anim_time >= total_duration) {
-            if (g_world->animation[id].anim_loop) {
-                // Preserve overflow time for smooth looping
-                g_world->animation[id].anim_time = math_mod_f32(g_world->animation[id].anim_time, total_duration);
-            } else {
-                g_world->animation[id].anim_time = total_duration - frame_duration;
-                g_world->animation[id].anim_playing = false;
+            // Update animation time (frame-time independent)
+            g_world->animation[eid].anim_time += dt * g_world->animation[eid].anim_speed;
+
+            // Calculate frame from time using entity's animation FPS
+            F32 const fps            = g_world->animation[eid].anim_fps;
+            F32 const frame_duration = 1.0F / fps;
+            F32 const total_duration = (F32)anim->frameCount * frame_duration;
+
+            // Handle looping
+            if (g_world->animation[eid].anim_time >= total_duration) {
+                if (g_world->animation[eid].anim_loop) {
+                    // Preserve overflow time for smooth looping
+                    g_world->animation[eid].anim_time = math_mod_f32(g_world->animation[eid].anim_time, total_duration);
+                } else {
+                    g_world->animation[eid].anim_time = total_duration - frame_duration;
+                    g_world->animation[eid].anim_playing = false;
+                }
             }
-        }
 
-        // Convert time to frame (always valid due to loop handling above)
-        U32 new_frame                     = (U32)(g_world->animation[id].anim_time * fps);
-        new_frame                         = glm::min(new_frame, (U32)anim.frameCount - 1);
-        g_world->animation[id].anim_frame = new_frame;
+            // Convert time to frame (always valid due to loop handling above)
+            U32 new_frame                      = (U32)(g_world->animation[eid].anim_time * fps);
+            new_frame                          = glm::min(new_frame, (U32)anim->frameCount - 1);
+            g_world->animation[eid].anim_frame = new_frame;
 
-        // Update blend timer if blending
-        if (g_world->animation[id].is_blending) {
-            g_world->animation[id].blend_time += dt;
-            if (g_world->animation[id].blend_time >= g_world->animation[id].blend_duration) {
-                g_world->animation[id].is_blending = false;  // Blending complete
+            if (g_world->animation[eid].is_blending) {
+                g_world->animation[eid].blend_time += dt;
+                if (g_world->animation[eid].blend_time >= g_world->animation[eid].blend_duration) {
+                    g_world->animation[eid].is_blending = false;  // Blending complete
+                }
             }
+            math_compute_entity_bone_matrices(eid);
         }
-
-        // Compute bone matrices for this entity
-        math_compute_entity_bone_matrices(id);
-    }
-
-    return 0;
-}
-
-// Worker function for actor updates (executed by job system)
-S32 static i_actor_update_worker(void *arg) {
-    auto *data = (ActorUpdateJobData *)arg;
-    F32 const dt = data->dt;
-
-    for (U32 idx = data->start_idx; idx < data->end_idx; ++idx) {
-        EID const id = g_world->active_entities[idx];
-
-        if (!ENTITY_HAS_FLAG(g_world->flags[id], ENTITY_FLAG_ACTOR)) { continue; }
-
-        entity_actor_update(id, dt);
     }
 
     return 0;
@@ -277,90 +201,43 @@ void world_update(F32 dt, F32 dtu) {
     if (g_world->active_entity_count > 0) {
         PBEGIN("entity_update_MT");
 
-        auto *job_data = mmta(EntityUpdateJobData *, sizeof(EntityUpdateJobData) * worker_count);
-
         for (U32 i = 0; i < worker_count; ++i) {
             SZ const start_idx = i * entities_per_worker;
-            SZ const end_idx = glm::min(start_idx + entities_per_worker, g_world->active_entity_count);
+            SZ const end_idx   = glm::min(start_idx + entities_per_worker, g_world->active_entity_count);
 
             if (start_idx >= g_world->active_entity_count) { break; }
 
-            job_data[i].dt = dt;
-            job_data[i].start_idx = (U32)start_idx;
-            job_data[i].end_idx = (U32)end_idx;
+            g_world_state.entity_update_job_data[i].dt        = dt;
+            g_world_state.entity_update_job_data[i].start_idx = (U32)start_idx;
+            g_world_state.entity_update_job_data[i].end_idx   = (U32)end_idx;
 
-            job_system_submit(i_entity_update_worker, &job_data[i]);
+            job_system_submit(i_entity_update_worker, &g_world_state.entity_update_job_data[i]);
         }
-
         job_system_wait();
 
         // Merge per-thread counters
         for (U32 i = 0; i < worker_count; ++i) {
-            if (job_data[i].start_idx >= g_world->active_entity_count) { break; }
+            if (g_world_state.entity_update_job_data[i].start_idx >= g_world->active_entity_count) { break; }
 
             for (U32 type_idx = 0; type_idx < ENTITY_TYPE_COUNT; ++type_idx) {
-                g_world->entity_type_counts[type_idx] += job_data[i].entity_type_counts[type_idx];
+                g_world->entity_type_counts[type_idx] += g_world_state.entity_update_job_data[i].entity_type_counts[type_idx];
             }
-            g_render.visible_vertex_count += job_data[i].visible_vertex_count;
+            g_render.visible_vertex_count += g_world_state.entity_update_job_data[i].visible_vertex_count;
         }
-
-        PEND("entity_update_MT");
-    }
-
-    // Update all entity animations (multithreaded)
-    if (g_world->active_entity_count > 0) {
-        PBEGIN("anim_update_MT");
-
-        auto *job_data = mmta(AnimationUpdateJobData *, sizeof(AnimationUpdateJobData) * worker_count);
-
-        for (U32 i = 0; i < worker_count; ++i) {
-            SZ const start_idx = i * entities_per_worker;
-            SZ const end_idx = glm::min(start_idx + entities_per_worker, g_world->active_entity_count);
-
-            if (start_idx >= g_world->active_entity_count) { break; }
-
-            job_data[i].dt = dt;
-            job_data[i].start_idx = (U32)start_idx;
-            job_data[i].end_idx = (U32)end_idx;
-
-            job_system_submit(i_animation_update_worker, &job_data[i]);
-        }
-
-        job_system_wait();
-        PEND("anim_update_MT");
-    }
-
-    // Update all entity actors (multithreaded)
-    if (g_world->active_entity_count > 0) {
-        PBEGIN("actor_update_MT");
-
-        auto *job_data = mmta(ActorUpdateJobData *, sizeof(ActorUpdateJobData) * worker_count);
-
-        for (U32 i = 0; i < worker_count; ++i) {
-            SZ const start_idx = i * entities_per_worker;
-            SZ const end_idx = glm::min(start_idx + entities_per_worker, g_world->active_entity_count);
-
-            if (start_idx >= g_world->active_entity_count) { break; }
-
-            job_data[i].dt = dt;
-            job_data[i].start_idx = (U32)start_idx;
-            job_data[i].end_idx = (U32)end_idx;
-
-            job_system_submit(i_actor_update_worker, &job_data[i]);
-        }
-
-        job_system_wait();
-        PEND("actor_update_MT");
 
         // Process deferred entity destructions (must happen after all actor jobs complete)
         mtx_lock(&g_world->mt_sync.destruction_mutex);
-        U32 const destruction_count = g_world->mt_sync.destruction_count;
-        for (U32 i = 0; i < destruction_count; ++i) {
-            EID const id = g_world->mt_sync.entities_to_destroy[i];
-            entity_destroy(id);
+        {
+            SZ const destruction_count = g_world->mt_sync.destruction_count;
+            for (SZ i = 0; i < destruction_count; ++i) {
+                EID const id = g_world->mt_sync.entities_to_destroy[i];
+                entity_destroy(id);
+            }
+            g_world->mt_sync.destruction_count = 0;
         }
-        g_world->mt_sync.destruction_count = 0;
         mtx_unlock(&g_world->mt_sync.destruction_mutex);
+
+        PEND("entity_update_MT");
     }
 }
 
@@ -371,59 +248,97 @@ void world_draw_2d() {
     // }
 }
 
-void world_draw_2d_hud() {
-    SZ const worker_count        = g_job_system.workers.count;
-    SZ const entities_per_worker = (g_world->active_entity_count + worker_count - 1) / worker_count;
+S32 static i_healthbar_collection_job_worker(void *arg) {
+    auto *data = (HealthbarCollectionJobData *)arg;
 
+    Camera3D const *cam = g_render.cameras.c3d.active_cam;
+    F32 const res_x     = (F32)c_video__render_resolution_width;
+    F32 const res_y     = (F32)c_video__render_resolution_height;
+
+    for (U32 idx = data->start_idx; idx < data->end_idx; ++idx) {
+        EID const eid = data->selected_eids[idx];
+
+        // Project healthbar position (above entity)
+        Vector3 const position   = g_world->position[eid];
+        Vector3 const world_pos  = {position.x, position.y + (g_world->obb[eid].extents.y * 3.5F), position.z};
+        Vector2 const screen_pos = GetWorldToScreenEx(world_pos, *cam, (S32)res_x, (S32)res_y);
+
+        // Early exit if offscreen
+        if (screen_pos.x < -150 || screen_pos.x > res_x + 150 || screen_pos.y < -150 || screen_pos.y > res_y + 150) { continue; }
+
+        // Calculate bar size
+        F32 const entity_radius = g_world->radius[eid];
+
+        // Project entity radius to screen space
+        Vector3 const radius_point  = Vector3Add(position, {entity_radius, 0.0F, 0.0F});
+        Vector2 const center_screen = GetWorldToScreenEx(position, *cam, (S32)res_x, (S32)res_y);
+        Vector2 const radius_screen = GetWorldToScreenEx(radius_point, *cam, (S32)res_x, (S32)res_y);
+        F32 const screen_radius     = glm::abs(radius_screen.x - center_screen.x);
+
+        // Bar dimensions
+        F32 const bar_width = glm::clamp(screen_radius * 2.0F * 0.8F, 40.0F, 200.0F);
+
+        // Health percentage for shader coloring
+        F32 const health_perc = glm::clamp((F32)g_world->health[eid].current / (F32)g_world->health[eid].max, 0.0F, 1.0F);
+
+        // Add to batch render - shader will handle coloring
+        render_healthbar_add(screen_pos, {bar_width, data->bar_height}, health_perc);
+    }
+    return 0;
+}
+
+void world_draw_2d_hud() {
     world_recorder_draw_2d_hud();
 
+    SZ const worker_count        = g_job_system.workers.count;
+    SZ const entities_per_worker = (g_world->selected_entity_count + worker_count - 1) / worker_count;
+
+    F32 const zoom_scale = CAMERA3D_DEFAULT_FOV / c3d_get_fov();
+    F32 const bar_height = ui_scale_y(0.5F);
+
     for (SZ idx = 0; idx < g_world->active_entity_count; ++idx) {
-        EID const i = g_world->active_entities[idx];
+        EID const eid = g_world->active_entities[idx];
 
         // NOTE: Talker stuff is independent of frustum culling.
-        talker_draw(&g_world->talker[i], g_world->name[i]);
+        talker_draw(&g_world->talker[eid], g_world->name[eid]);
 
-        if (!ENTITY_HAS_FLAG(g_world->flags[i], ENTITY_FLAG_IN_FRUSTUM)) { continue; }
+        if (!ENTITY_HAS_FLAG(g_world->flags[eid], ENTITY_FLAG_IN_FRUSTUM)) { continue; }
 
         // Check occlusion by dungeon walls (only in dungeon scene)
-        if (g_scenes.current_scene_type == SCENE_DUNGEON) {
-            if (dungeon_is_entity_occluded(i)) { continue; }
-        }
+        if (g_scenes.current_scene_type == SCENE_DUNGEON && dungeon_is_entity_occluded(eid)) { continue; }
 
-        if (g_world->type[i] == ENTITY_TYPE_NPC) {
-            entity_actor_draw_2d_hud(i);
+        if (g_world->type[eid] == ENTITY_TYPE_NPC) {
+            entity_actor_draw_2d_hud(eid);
 
             // For single selection: use original complex healthbar (doesn't matter for perf)
-            if (g_world->selected_entity_count == 1 && world_is_entity_selected(i)) {
-                d2d_healthbar(i);  // Original with text, icons, etc.
+            if (g_world->selected_entity_count == 1 && world_is_entity_selected(eid)) {
+                d2d_healthbar(eid);  // Original with text, icons, etc.
             }
         }
     }
 
-    // For multi-selection: collect healthbars in parallel, then draw
     if (g_world->selected_entity_count > 1) {
-        PBEGIN("healthbar_collection_MT");
-
-        auto *job_data = mmta(HealthbarCollectionJobData *, sizeof(HealthbarCollectionJobData) * worker_count);
+        PBEGIN("healthbar_batch_MT")  ;
 
         for (U32 i = 0; i < worker_count; ++i) {
             SZ const start_idx = i * entities_per_worker;
-            SZ const end_idx = glm::min(start_idx + entities_per_worker, g_world->selected_entity_count);
+            SZ const end_idx   = glm::min(start_idx + entities_per_worker, g_world->selected_entity_count);
 
             if (start_idx >= g_world->selected_entity_count) { break; }
 
-            job_data[i].start_idx = (U32)start_idx;
-            job_data[i].end_idx = (U32)end_idx;
-            job_data[i].selected_eids = g_world->selected_entities;
+            g_world_state.healthbar_collection_job_data[i].start_idx     = (U32)start_idx;
+            g_world_state.healthbar_collection_job_data[i].end_idx       = (U32)end_idx;
+            g_world_state.healthbar_collection_job_data[i].selected_eids = g_world->selected_entities;
+            g_world_state.healthbar_collection_job_data[i].bar_height    = bar_height;
 
-            job_system_submit(i_healthbar_collection_worker, &job_data[i]);
+            job_system_submit(i_healthbar_collection_job_worker, &g_world_state.healthbar_collection_job_data[i]);
         }
-
         job_system_wait();
-        PEND("healthbar_collection_MT");
 
         // Draw all collected healthbars in one instanced draw call
         d2d_healthbar_draw_batched();
+
+        PEND("healthbar_batch_MT");
     }
 
     edit_draw_2d_hud();
@@ -489,25 +404,25 @@ struct AnimationStateKey {
 };
 
 static inline U32 animation_state_key_hash(AnimationStateKey key) {
-    U32 hash = 2166136261u;
+    U32 hash = 2166136261U;
     hash ^= key.model_hash;
-    hash *= 16777619u;
+    hash *= 16777619U;
     hash ^= key.anim_index;
-    hash *= 16777619u;
+    hash *= 16777619U;
     hash ^= (U32)key.bone_count;
-    hash *= 16777619u;
+    hash *= 16777619U;
     hash ^= (U32)key.is_blending;
-    hash *= 16777619u;
+    hash *= 16777619U;
     hash ^= key.prev_anim_index;
-    hash *= 16777619u;
+    hash *= 16777619U;
     return hash;
 }
 
 static inline BOOL animation_state_key_equal(AnimationStateKey a, AnimationStateKey b) {
-    return a.model_hash == b.model_hash &&
-           a.anim_index == b.anim_index &&
-           a.bone_count == b.bone_count &&
-           a.is_blending == b.is_blending &&
+    return a.model_hash      == b.model_hash       &&
+           a.anim_index      == b.anim_index       &&
+           a.bone_count      == b.bone_count       &&
+           a.is_blending     == b.is_blending      &&
            a.prev_anim_index == b.prev_anim_index;
 }
 
@@ -656,7 +571,7 @@ void world_draw_3d_sketch() {
                     g_world->rotation[i],
                     g_world->scale[i],
                     g_world->tint[i],
-                    g_animation_bones[i].bone_matrices,
+                    g_world_state.animation_bones[i].bone_matrices,
                     g_world->animation[i].bone_count
                 );
             }
@@ -673,13 +588,13 @@ void world_draw_3d_sketch() {
 
             // Get bone matrices from first entity in group (they all share the same animation state)
             EID const first_entity = anim_group.data[0];
-            Matrix *bone_matrices = g_animation_bones[first_entity].bone_matrices;
-            S32 bone_count = g_world->animation[first_entity].bone_count;
+            Matrix *bone_matrices  = g_world_state.animation_bones[first_entity].bone_matrices;
+            S32 bone_count         = g_world->animation[first_entity].bone_count;
 
             for (SZ j = 0; j < anim_group.count; ++j) {
-                EID const i = anim_group.data[j];
+                EID const i      = anim_group.data[j];
                 Matrix mat_scale = MatrixScale(g_world->scale[i].x, g_world->scale[i].y, g_world->scale[i].z);
-                Matrix mat_rot = MatrixRotate((Vector3){0, 1, 0}, g_world->rotation[i] * DEG2RAD);
+                Matrix mat_rot   = MatrixRotate((Vector3){0, 1, 0}, g_world->rotation[i] * DEG2RAD);
                 Matrix mat_trans = MatrixTranslate(g_world->position[i].x, g_world->position[i].y, g_world->position[i].z);
                 Matrix transform = MatrixMultiply(MatrixMultiply(mat_scale, mat_rot), mat_trans);
 
@@ -742,9 +657,9 @@ void world_draw_3d_sketch() {
             array_init(MEMORY_TYPE_ARENA_TRANSIENT, &tints_unselected, group.count);
 
             for (SZ j = 0; j < group.count; ++j) {
-                EID const i = group.data[j];
+                EID const i      = group.data[j];
                 Matrix mat_scale = MatrixScale(g_world->scale[i].x, g_world->scale[i].y, g_world->scale[i].z);
-                Matrix mat_rot = MatrixRotate((Vector3){0, 1, 0}, g_world->rotation[i] * DEG2RAD);
+                Matrix mat_rot   = MatrixRotate((Vector3){0, 1, 0}, g_world->rotation[i] * DEG2RAD);
                 Matrix mat_trans = MatrixTranslate(g_world->position[i].x, g_world->position[i].y, g_world->position[i].z);
                 Matrix transform = MatrixMultiply(MatrixMultiply(mat_scale, mat_rot), mat_trans);
 

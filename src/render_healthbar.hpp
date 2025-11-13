@@ -25,21 +25,16 @@ struct HealthbarInstance {
 };
 
 struct RenderHealthbar {
-    BOOL initialized;
-
-    // Rendering
     U32 vao;
 
-    // GPU data
     U32 ssbo;
     HealthbarInstance *mapped_data;
 
-    // State
-    SZ count;  // Current number of healthbars to draw this frame
+    SZ count;           // Current number of healthbars to draw this frame
     mtx_t count_mutex;  // Protects count for multithreaded adds
 };
 
-extern RenderHealthbar g_render_healthbar;
+RenderHealthbar extern g_render_healthbar;
 
 void render_healthbar_init();
 void render_healthbar_clear();
