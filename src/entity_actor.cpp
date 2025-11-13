@@ -249,6 +249,8 @@ Vector3 static inline i_calculate_separation_force(EID id) {
         ENTITY_TYPE_VEGETATION,
     };
 
+    BOOL player_separation_triggered = false;
+
     // Process 3x3 neighborhood
     for (S32 cell_y = min_y; cell_y <= max_y; ++cell_y) {
         for (S32 cell_x = min_x; cell_x <= max_x; ++cell_x) {
@@ -265,13 +267,22 @@ Vector3 static inline i_calculate_separation_force(EID id) {
                     EID const other_id = cell->entities_by_type[other_type][i];
                     if (other_id == id) { continue; }
 
+                    // Cache other entity's position and radius - single memory access
+                    Vector3 const other_pos = g_world->position[other_id];
+                    F32 const other_radius  = g_world->radius[other_id];
+
                     // Calculate separation distance based on both entities' actual sizes
-                    F32 const separation_distance   = current_radius + g_world->radius[other_id];
+                    F32 const separation_distance   = current_radius + other_radius;
                     F32 const separation_radius_sqr = separation_distance * separation_distance;
 
-                    // Calculate full 3D difference
-                    F32 const diff_x = current_x - g_world->position[other_id].x;
-                    F32 const diff_z = current_z - g_world->position[other_id].z;
+                    // Calculate full 2D difference
+                    F32 const diff_x = current_x - other_pos.x;
+                    F32 const diff_z = current_z - other_pos.z;
+
+                    // Early out: Manhattan distance culling (cheaper than squared distance)
+                    F32 const abs_diff_x = math_abs_f32(diff_x);
+                    F32 const abs_diff_z = math_abs_f32(diff_z);
+                    if (abs_diff_x + abs_diff_z > separation_distance) { continue; }
 
                     // Calculate squared length of modified vector
                     F32 const distance_sqr = (diff_x * diff_x) + (diff_z * diff_z);
@@ -290,10 +301,8 @@ Vector3 static inline i_calculate_separation_force(EID id) {
         }
     }
 
-    // Once done, one more time with the player:
-
     // Separation from player
-    // NOTE: We want a more pronounced reaction here, people don't stop right before you hitting you.
+    // NOTE: We want a more pronounced reaction here, people don't stop right before hitting you
     Vector3 const player_position = g_player.cameras[g_scenes.current_scene_type].position;
     F32 const player_radius       = PLAYER_RADIUS * 2.0F;
 
@@ -301,41 +310,45 @@ Vector3 static inline i_calculate_separation_force(EID id) {
     F32 const player_separation_distance   = current_radius + player_radius;
     F32 const player_separation_radius_sqr = player_separation_distance * player_separation_distance;
 
-    // Calculate full 3D difference with player
+    // Calculate full 2D difference with player
     F32 const player_diff_x = current_x - player_position.x;
     F32 const player_diff_z = current_z - player_position.z;
 
-    // Calculate squared length of vector to player
-    F32 const player_distance_sqr = (player_diff_x * player_diff_x) + (player_diff_z * player_diff_z);
+    // Early out: Manhattan distance culling for player
+    F32 const player_abs_diff_x = math_abs_f32(player_diff_x);
+    F32 const player_abs_diff_z = math_abs_f32(player_diff_z);
 
-    if (player_distance_sqr > min_sqr && player_distance_sqr < player_separation_radius_sqr) {
-        F32 const inv_player_separation_radius_sqr = 1.0F / player_separation_radius_sqr;
-        F32 const player_strength_sqr = (player_separation_radius_sqr - player_distance_sqr) * inv_player_separation_radius_sqr;
+    if (player_abs_diff_x + player_abs_diff_z <= player_separation_distance) {
+        // Calculate squared length of vector to player
+        F32 const player_distance_sqr = (player_diff_x * player_diff_x) + (player_diff_z * player_diff_z);
 
-        // Square root for normalization
-        F32 const inv_player_distance = glm::inversesqrt(player_distance_sqr);
-        separation.x += player_diff_x * inv_player_distance * player_strength_sqr;
-        separation.z += player_diff_z * inv_player_distance * player_strength_sqr;
+        if (player_distance_sqr > min_sqr && player_distance_sqr < player_separation_radius_sqr) {
+            F32 const inv_player_separation_radius_sqr = 1.0F / player_separation_radius_sqr;
+            F32 const player_strength_sqr = (player_separation_radius_sqr - player_distance_sqr) * inv_player_separation_radius_sqr;
 
-        // Occasional audio feedback - check time only once per second at most
+            // Square root for normalization
+            F32 const inv_player_distance = glm::inversesqrt(player_distance_sqr);
+            separation.x += player_diff_x * inv_player_distance * player_strength_sqr;
+            separation.z += player_diff_z * inv_player_distance * player_strength_sqr;
+
+            player_separation_triggered = true;
+        }
+    }
+
+    // Audio feedback for player separation - only trigger once when entity separates from player
+    if (player_separation_triggered) {
         static F32 last_time = 0.0F;
-        static U32 frame_counter = 0;
+        F32 const this_time = time_get();
 
-        // Only check time every 60 frames (~1 second at 60fps) to avoid expensive time_get() calls
-        if (++frame_counter >= 60) {
-            frame_counter = 0;
-            F32 const this_time = time_get();
-
-            if (this_time - last_time >= 5.0F) {
-                if (random_s32(0, 1)) {
-                    audio_set_pitch(ACG_SFX, random_f32(1.5F, 2.0F));
-                    audio_queue_play_3d_at_position(ACG_SFX, TS("agree_%d.ogg", random_s32(0, 7))->c, current_pos);
-                } else {
-                    audio_queue_play_3d_at_position(ACG_SFX, TS("cute_%d.ogg", random_s32(0, 6))->c, current_pos);
-                }
-
-                last_time = this_time;
+        if (this_time - last_time >= 5.0F) {
+            if (random_s32(0, 1)) {
+                audio_set_pitch(ACG_SFX, random_f32(1.5F, 2.0F));
+                audio_queue_play_3d_at_position(ACG_SFX, TS("agree_%d.ogg", random_s32(0, 7))->c, current_pos);
+            } else {
+                audio_queue_play_3d_at_position(ACG_SFX, TS("cute_%d.ogg", random_s32(0, 6))->c, current_pos);
             }
+
+            last_time = this_time;
         }
     }
 
