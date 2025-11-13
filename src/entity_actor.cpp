@@ -68,11 +68,9 @@ void static inline i_play_agree(EID id) {
     audio_queue_play_3d_at_entity(ACG_VOICE, TS("agree_%d.ogg", rand_index)->c, id);
 }
 
+
 EID static inline i_find_target(EID searcher_id, EntityType target_type) {
     Vector3 const searcher_pos = g_world->position[searcher_id];
-    F32 search_radius          = 250.0F;
-    S32 attempts               = 0;
-    S32 const max_attempts     = 4;
 
     if (target_type == ENTITY_TYPE_VEGETATION) { world_update_follower_cache(); }
 
@@ -82,58 +80,120 @@ EID static inline i_find_target(EID searcher_id, EntityType target_type) {
     S32 const searcher_x          = (S32)searcher_coords.x;
     S32 const searcher_y          = (S32)searcher_coords.y;
 
-    while (attempts < max_attempts && search_radius <= 500 * 2.0F) {
-        S32 const cell_radius      = (S32)(search_radius * g_grid.inv_cell_size) + 1;
-        S32 const cell_radius_sq   = cell_radius * cell_radius;
-        F32 const search_radius_sq = search_radius * search_radius;
+    // Ring-based search: check cells in expanding onion layers by Chebyshev distance
+    // Ring 0 = our cell, Ring 1 = immediate neighbors, Ring 2 = next layer, etc.
+    S32 const max_ring = GRID_CELLS_PER_ROW;
 
-        // Clamp dy range to valid grid bounds
-        S32 const dy_min = glm::max(-cell_radius, -searcher_y);
-        S32 const dy_max = glm::min(cell_radius, GRID_CELLS_PER_ROW - 1 - searcher_y);
+    for (S32 ring = 0; ring < max_ring; ++ring) {
+        BOOL found_in_ring = false;
 
-        for (S32 dy = dy_min; dy <= dy_max; ++dy) {
-            S32 const cell_y = searcher_y + dy;
-            S32 const dy_sq = dy * dy;
+        if (ring == 0) {
+            // Ring 0: only check our own cell
+            if (searcher_x < 0 || searcher_x >= GRID_CELLS_PER_ROW || searcher_y < 0 || searcher_y >= GRID_CELLS_PER_ROW) { continue; }
 
-            // Clamp dx range to valid grid bounds
-            S32 const dx_min = glm::max(-cell_radius, -searcher_x);
-            S32 const dx_max = glm::min(cell_radius, GRID_CELLS_PER_ROW - 1 - searcher_x);
+            SZ const cell_index = grid_get_cell_index_xy(searcher_x, searcher_y);
+            GridCell *cell      = &g_grid.cells[cell_index];
+            SZ const count      = cell->count_per_type[target_type];
 
-            for (S32 dx = dx_min; dx <= dx_max; ++dx) {
-                if ((dx * dx) + dy_sq > cell_radius_sq) { continue; }
+            for (SZ i = 0; i < count; ++i) {
+                EID const entity_id = cell->entities_by_type[target_type][i];
+                if (entity_id == searcher_id) { continue; }
 
-                S32 const cell_x = searcher_x + dx;
+                if (!entity_is_valid(entity_id)) { continue; }
+                if (g_world->type[entity_id] != target_type) { continue; }
 
-                SZ const cell_index = grid_get_cell_index_xy(cell_x, cell_y);
-                GridCell *cell      = &g_grid.cells[cell_index];
+                if (target_type == ENTITY_TYPE_VEGETATION) {
+                    S32 const followers = (S32)g_world->follower_cache.follower_counts[entity_id];
+                    if (followers >= HARVEST_TARGET_MAX_FOLLOWERS) { continue; }
+                }
 
-                SZ const count = cell->count_per_type[target_type];
-                if (count == 0) { continue; }
-
-                for (SZ i = 0; i < count; ++i) {
-                    EID const entity_id = cell->entities_by_type[target_type][i];
-                    if (entity_id == searcher_id) { continue; }
-
-                    // Validate entity is still valid and has correct type (grid may have stale entries)
-                    if (!entity_is_valid(entity_id)) { continue; }
-                    if (g_world->type[entity_id] != target_type) { continue; }
-
-                    if (target_type == ENTITY_TYPE_VEGETATION) {
-                        S32 const followers = (S32)g_world->follower_cache.follower_counts[entity_id];
-                        if (followers >= HARVEST_TARGET_MAX_FOLLOWERS) { continue; }
-                    }
-
-                    F32 const distance_sqr = Vector3DistanceSqr(searcher_pos, g_world->position[entity_id]);
-                    if (distance_sqr > search_radius_sq || distance_sqr >= best_distance_sq) { continue; }
-
+                F32 const distance_sqr = Vector3DistanceSqr(searcher_pos, g_world->position[entity_id]);
+                if (distance_sqr < best_distance_sq) {
                     best_candidate   = entity_id;
                     best_distance_sq = distance_sqr;
+                    found_in_ring    = true;
+                }
+            }
+        } else {
+            // Ring N: check the perimeter of the ring (Chebyshev distance = ring)
+            // This forms a square ring: top, bottom, left, right edges
+
+            // Top and bottom horizontal edges (full width)
+            for (S32 dx = -ring; dx <= ring; ++dx) {
+                S32 edges[2] = {searcher_y - ring, searcher_y + ring};  // top, bottom
+
+                for (S32 edge_idx = 0; edge_idx < 2; ++edge_idx) {
+                    S32 const cell_x = searcher_x + dx;
+                    S32 const cell_y = edges[edge_idx];
+
+                    if (cell_x < 0 || cell_x >= GRID_CELLS_PER_ROW || cell_y < 0 || cell_y >= GRID_CELLS_PER_ROW) { continue; }
+
+                    SZ const cell_index = grid_get_cell_index_xy(cell_x, cell_y);
+                    GridCell *cell      = &g_grid.cells[cell_index];
+                    SZ const count      = cell->count_per_type[target_type];
+
+                    for (SZ i = 0; i < count; ++i) {
+                        EID const entity_id = cell->entities_by_type[target_type][i];
+                        if (entity_id == searcher_id) { continue; }
+
+                        if (!entity_is_valid(entity_id)) { continue; }
+                        if (g_world->type[entity_id] != target_type) { continue; }
+
+                        if (target_type == ENTITY_TYPE_VEGETATION) {
+                            S32 const followers = (S32)g_world->follower_cache.follower_counts[entity_id];
+                            if (followers >= HARVEST_TARGET_MAX_FOLLOWERS) { continue; }
+                        }
+
+                        F32 const distance_sqr = Vector3DistanceSqr(searcher_pos, g_world->position[entity_id]);
+                        if (distance_sqr < best_distance_sq) {
+                            best_candidate   = entity_id;
+                            best_distance_sq = distance_sqr;
+                            found_in_ring    = true;
+                        }
+                    }
+                }
+            }
+
+            // Left and right vertical edges (excluding corners already covered)
+            for (S32 dy = -ring + 1; dy < ring; ++dy) {
+                S32 edges[2] = {searcher_x - ring, searcher_x + ring};  // left, right
+
+                for (S32 edge_idx = 0; edge_idx < 2; ++edge_idx) {
+                    S32 const cell_x = edges[edge_idx];
+                    S32 const cell_y = searcher_y + dy;
+
+                    if (cell_x < 0 || cell_x >= GRID_CELLS_PER_ROW || cell_y < 0 || cell_y >= GRID_CELLS_PER_ROW) { continue; }
+
+                    SZ const cell_index = grid_get_cell_index_xy(cell_x, cell_y);
+                    GridCell *cell      = &g_grid.cells[cell_index];
+                    SZ const count      = cell->count_per_type[target_type];
+
+                    for (SZ i = 0; i < count; ++i) {
+                        EID const entity_id = cell->entities_by_type[target_type][i];
+                        if (entity_id == searcher_id) { continue; }
+
+                        if (!entity_is_valid(entity_id)) { continue; }
+                        if (g_world->type[entity_id] != target_type) { continue; }
+
+                        if (target_type == ENTITY_TYPE_VEGETATION) {
+                            S32 const followers = (S32)g_world->follower_cache.follower_counts[entity_id];
+                            if (followers >= HARVEST_TARGET_MAX_FOLLOWERS) { continue; }
+                        }
+
+                        F32 const distance_sqr = Vector3DistanceSqr(searcher_pos, g_world->position[entity_id]);
+                        if (distance_sqr < best_distance_sq) {
+                            best_candidate   = entity_id;
+                            best_distance_sq = distance_sqr;
+                            found_in_ring    = true;
+                        }
+                    }
                 }
             }
         }
 
-        search_radius *= 2.0F;
-        attempts++;
+        // Early exit: if we found any valid candidate in this ring, return it
+        // Entities in subsequent rings will be at least as far (grid-wise), likely farther (world-wise)
+        if (found_in_ring) { break; }
     }
 
     return best_candidate;
@@ -190,12 +250,14 @@ Vector3 static inline i_calculate_separation_force(EID id) {
         ENTITY_TYPE_VEGETATION,
     };
 
+    BOOL player_separation_triggered = false;
+
     // Process 3x3 neighborhood
     for (S32 cell_y = min_y; cell_y <= max_y; ++cell_y) {
         for (S32 cell_x = min_x; cell_x <= max_x; ++cell_x) {
 
             SZ const cell_index = grid_get_cell_index_xy(cell_x, cell_y);
-            GridCell *cell = &g_grid.cells[cell_index];
+            GridCell *cell      = &g_grid.cells[cell_index];
 
             // Process relevant entity types directly
             for (EntityType other_type : relevant_types) {
@@ -206,13 +268,22 @@ Vector3 static inline i_calculate_separation_force(EID id) {
                     EID const other_id = cell->entities_by_type[other_type][i];
                     if (other_id == id) { continue; }
 
+                    // Cache other entity's position and radius - single memory access
+                    Vector3 const other_pos = g_world->position[other_id];
+                    F32 const other_radius  = g_world->radius[other_id];
+
                     // Calculate separation distance based on both entities' actual sizes
-                    F32 const separation_distance   = current_radius + g_world->radius[other_id];
+                    F32 const separation_distance   = current_radius + other_radius;
                     F32 const separation_radius_sqr = separation_distance * separation_distance;
 
-                    // Calculate full 3D difference
-                    F32 const diff_x = current_x - g_world->position[other_id].x;
-                    F32 const diff_z = current_z - g_world->position[other_id].z;
+                    // Calculate full 2D difference
+                    F32 const diff_x = current_x - other_pos.x;
+                    F32 const diff_z = current_z - other_pos.z;
+
+                    // Early out: Manhattan distance culling (cheaper than squared distance)
+                    F32 const abs_diff_x = math_abs_f32(diff_x);
+                    F32 const abs_diff_z = math_abs_f32(diff_z);
+                    if (abs_diff_x + abs_diff_z > separation_distance) { continue; }
 
                     // Calculate squared length of modified vector
                     F32 const distance_sqr = (diff_x * diff_x) + (diff_z * diff_z);
@@ -231,10 +302,8 @@ Vector3 static inline i_calculate_separation_force(EID id) {
         }
     }
 
-    // Once done, one more time with the player:
-
     // Separation from player
-    // NOTE: We want a more pronounced reaction here, people don't stop right before you hitting you.
+    // NOTE: We want a more pronounced reaction here, people don't stop right before hitting you
     Vector3 const player_position = g_player.cameras[g_scenes.current_scene_type].position;
     F32 const player_radius       = PLAYER_RADIUS * 2.0F;
 
@@ -242,41 +311,45 @@ Vector3 static inline i_calculate_separation_force(EID id) {
     F32 const player_separation_distance   = current_radius + player_radius;
     F32 const player_separation_radius_sqr = player_separation_distance * player_separation_distance;
 
-    // Calculate full 3D difference with player
+    // Calculate full 2D difference with player
     F32 const player_diff_x = current_x - player_position.x;
     F32 const player_diff_z = current_z - player_position.z;
 
-    // Calculate squared length of vector to player
-    F32 const player_distance_sqr = (player_diff_x * player_diff_x) + (player_diff_z * player_diff_z);
+    // Early out: Manhattan distance culling for player
+    F32 const player_abs_diff_x = math_abs_f32(player_diff_x);
+    F32 const player_abs_diff_z = math_abs_f32(player_diff_z);
 
-    if (player_distance_sqr > min_sqr && player_distance_sqr < player_separation_radius_sqr) {
-        F32 const inv_player_separation_radius_sqr = 1.0F / player_separation_radius_sqr;
-        F32 const player_strength_sqr = (player_separation_radius_sqr - player_distance_sqr) * inv_player_separation_radius_sqr;
+    if (player_abs_diff_x + player_abs_diff_z <= player_separation_distance) {
+        // Calculate squared length of vector to player
+        F32 const player_distance_sqr = (player_diff_x * player_diff_x) + (player_diff_z * player_diff_z);
 
-        // Square root for normalization
-        F32 const inv_player_distance = glm::inversesqrt(player_distance_sqr);
-        separation.x += player_diff_x * inv_player_distance * player_strength_sqr;
-        separation.z += player_diff_z * inv_player_distance * player_strength_sqr;
+        if (player_distance_sqr > min_sqr && player_distance_sqr < player_separation_radius_sqr) {
+            F32 const inv_player_separation_radius_sqr = 1.0F / player_separation_radius_sqr;
+            F32 const player_strength_sqr = (player_separation_radius_sqr - player_distance_sqr) * inv_player_separation_radius_sqr;
 
-        // Occasional audio feedback - check time only once per second at most
-        static F32 last_time = 0.0F;
-        static U32 frame_counter = 0;
+            // Square root for normalization
+            F32 const inv_player_distance = glm::inversesqrt(player_distance_sqr);
+            separation.x += player_diff_x * inv_player_distance * player_strength_sqr;
+            separation.z += player_diff_z * inv_player_distance * player_strength_sqr;
 
-        // Only check time every 60 frames (~1 second at 60fps) to avoid expensive time_get() calls
-        if (++frame_counter >= 60) {
-            frame_counter = 0;
-            F32 const this_time = time_get();
+            player_separation_triggered = true;
+        }
+    }
 
-            if (this_time - last_time >= 5.0F) {
-                if (random_s32(0, 1)) {
-                    audio_set_pitch(ACG_SFX, random_f32(1.5F, 2.0F));
-                    audio_queue_play_3d_at_position(ACG_SFX, TS("agree_%d.ogg", random_s32(0, 7))->c, current_pos);
-                } else {
-                    audio_queue_play_3d_at_position(ACG_SFX, TS("cute_%d.ogg", random_s32(0, 6))->c, current_pos);
-                }
+    // Audio feedback for player separation - only trigger once when entity separates from player
+    if (player_separation_triggered) {
+        F32 static last_time = 0.0F;
+        F32 const this_time  = time_get();
 
-                last_time = this_time;
+        if (this_time - last_time >= 5.0F) {
+            if (random_s32(0, 1)) {
+                audio_set_pitch(ACG_SFX, random_f32(1.5F, 2.0F));
+                audio_queue_play_3d_at_position(ACG_SFX, TS("agree_%d.ogg", random_s32(0, 7))->c, current_pos);
+            } else {
+                audio_queue_play_3d_at_position(ACG_SFX, TS("cute_%d.ogg", random_s32(0, 6))->c, current_pos);
             }
+
+            last_time = this_time;
         }
     }
 
@@ -541,9 +614,6 @@ void static inline i_evaluate_behavior_transitions(EID id) {
                 world_notify_actors_target_destroyed(behavior->target_id);
 
                 entity_actor_search_and_transition_to_target(id, TS("Harvested tree, wood: %zu/%d", behavior->wood_count, ACTOR_WOOD_COLLECTED_MAX)->c);
-
-                // TODO: Remove this later
-                entity_spawn_queue_random_vegetation_on_terrain(g_world->base_terrain, 1, false);
             }
         } break;
 

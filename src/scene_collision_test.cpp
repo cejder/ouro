@@ -410,7 +410,7 @@ SCENE_ENTER(collision_test) {
     world_reset();
     world_set_overworld(asset_get_terrain("basic", {(F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE}));
     entity_spawn_test_overworld_set(&s.entities);
-    entity_spawn_random_vegetation_on_terrain(g_world->base_terrain, (SZ)TREE_COUNT * 2, false);
+    entity_spawn_random_vegetation_on_terrain((SZ)TREE_COUNT * 2, false);
     entity_init_test_overworld_set_talkers(&s.entities, cb_trigger_gong, cb_trigger_end);
     i_harvest_trees(nullptr);
 

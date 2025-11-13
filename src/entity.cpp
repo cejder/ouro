@@ -129,7 +129,6 @@ EID entity_create(EntityType type, C8 const *name, Vector3 position, F32 rotatio
 
     ENTITY_SET_FLAG(g_world->flags[id], ENTITY_FLAG_IN_USE);
     g_world->generation[id]++;
-    g_world->active_ent_count++;
 
     g_world->type[id]           = type;
     g_world->lifetime[id]       = 0.0F;
@@ -208,8 +207,6 @@ void entity_destroy(EID id) {
 
     // Clear any target tracking for this entity
     entity_actor_clear_target_tracker(id);
-
-    g_world->active_ent_count--;
 }
 
 C8 const *entity_type_to_cstr(EntityType type) {

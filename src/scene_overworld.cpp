@@ -388,7 +388,7 @@ SCENE_INIT(overworld) {
     world_set_overworld(asset_get_terrain("basic", {(F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE, (F32)A_TERRAIN_DEFAULT_SIZE}));
 
     entity_spawn_test_overworld_set(&s.entities);
-    entity_spawn_random_vegetation_on_terrain(g_world->base_terrain, TREE_COUNT, false);
+    entity_spawn_random_vegetation_on_terrain(TREE_COUNT, false);
     entity_init_test_overworld_set_talkers(&s.entities, cb_trigger_gong, cb_trigger_end);
 
     // // Create sponza entity with triangle collision
@@ -522,63 +522,6 @@ SKIP_OTHER_INPUT:
                                             s.ambient_particles_scale,
                                             1);
     }
-
-    // F32 static time = 0.0F;
-    // F32 const max_time = 15.0F;
-    // SZ static frames = 0;
-    // SZ const current_gen = g_profiler.current_generation;
-    // frames++;
-    // time += dt;
-
-    // if (current_gen > 60 && time >= max_time) {
-    //     lle("%zu frames with %d cells per row", frames, GRID_CELLS_PER_ROW);
-    //     exit(EXIT_SUCCESS);
-    // }
-
-    // Vector2 const mouse_pos = input_get_mouse_position();
-
-    // if (is_mouse_down(I_MOUSE_LEFT) && !dbg_is_mouse_over_or_dragged()) {
-    //     Camera3D *camera                     = c3d_get_ptr();
-    //     Ray const ray                        = GetScreenToWorldRay(mouse_pos, *camera);
-    //     RayCollision const terrain_collision = math_ray_collision_to_terrain(g_world->base_terrain, ray.position, ray.direction);
-
-    //     if (terrain_collision.hit) {
-    //         F32 const particles_per_second = 1000.0F;
-    //         SZ const count                 = (SZ)glm::round(particles_per_second * dt);
-    //         F32 const scale                = 1.0F;
-    //         F32 const vert_offset          = 2.5F;
-    //         Vector3 const spawn_pos        = {terrain_collision.point.x, terrain_collision.point.y + vert_offset, terrain_collision.point.z};
-
-    //         if (count > 0) {
-    //             particles3d_add_effect_explosion        (spawn_pos, 2.0F, PURPLE, RED, scale, count);
-    //             particles3d_add_effect_smoke            (spawn_pos, 1.5F, LIME, WHITE, scale, count);
-    //             particles3d_add_effect_sparkle          (spawn_pos, 2.5F, GOLD, GREEN, scale, count);
-    //             particles3d_add_effect_fire             (spawn_pos, 1.0F, GOLD, RED, scale, count);
-    //             particles3d_add_effect_spiral           (spawn_pos, 2.0F, 5.0F, DARKBLUE, CYAN, scale, count);
-    //             particles3d_add_effect_fountain         (spawn_pos, 0.5F, 15.0F, SKYBLUE, BLUE, scale, count);
-    //             particles3d_add_effect_trail            (spawn_pos, {0.0F, 5.0F, 0.0F}, ORANGE, YELLOW, scale, count);
-    //             particles3d_add_effect_dust_cloud       (spawn_pos, 2.0F, BROWN, BEIGE, scale, count);
-    //             particles3d_add_effect_magic_burst      (spawn_pos, VIOLET, PINK, scale, count);
-    //             particles3d_add_effect_debris           (spawn_pos, {0.0F, 10.0F, 0.0F}, GRAY, DARKGRAY, scale, count);
-    //             particles3d_add_effect_chaos_stress_test(spawn_pos, 5.0F, count);
-    //         }
-    //     }
-    // }
-
-    // if (is_mouse_down(I_MOUSE_RIGHT) && !dbg_is_mouse_over_or_dragged()) {
-    //     Rectangle const spawn_rect     = {mouse_pos.x - 20.0F, mouse_pos.y - 10.0F, 40.0F, 20.0F};
-    //     F32 const particles_per_second = 15000.0F;
-    //     SZ const count                 = (SZ)glm::round(particles_per_second * dt);
-    //     F32 const scale                = 3.0F;
-
-    //     if (count > 0) {
-    //         particles2d_add_effect_explosion(spawn_rect, PURPLE, RED, scale, count);
-    //         particles2d_add_effect_smoke    (spawn_rect, LIME, WHITE, scale, count);
-    //         particles2d_add_effect_sparkle  (spawn_rect, GOLD, GREEN, scale, count);
-    //         particles2d_add_effect_fire     (spawn_rect, GOLD, RED, scale, count);
-    //         particles2d_add_effect_spiral   (spawn_rect, DARKBLUE, CYAN, scale, count);
-    //     }
-    // }
 
     // HACK:
     if (input_is_action_pressed(IA_YES)) {

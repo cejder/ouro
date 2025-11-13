@@ -142,7 +142,7 @@ void menu_extra_overworld_func_yes(void *_cb_data) {
             entity_spawn_npc(count, false);
         } break;
         case MENU_CHOICE_ADD_REMOVE_VEGETATION: {
-            entity_spawn_random_vegetation_on_terrain(g_world->base_terrain, count, false);
+            entity_spawn_random_vegetation_on_terrain(count, false);
         } break;
         case MENU_CHOICE_RANDOMLY_ROTATE_ENTITIES: {
             world_randomly_rotate_entities();
@@ -182,7 +182,7 @@ void menu_extra_overworld_func_change(void *_cb_data, BOOL increase) {
         } break;
         case MENU_CHOICE_ADD_REMOVE_VEGETATION: {
             if (increase) {
-                entity_spawn_random_vegetation_on_terrain(g_world->base_terrain, count, report);
+                entity_spawn_random_vegetation_on_terrain(count, report);
             } else {
                 entity_despawn_random_vegetation(count, report);
             }

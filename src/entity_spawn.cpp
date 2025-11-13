@@ -18,9 +18,9 @@
 
 EntitySpawnCommandQueue static g_entity_spawn_command_queue = {};
 
-void static i_entity_spawn_queue_command(EntitySpawnCommandType type, ATerrain *terrain, SZ count, BOOL notify) {
+void static i_entity_spawn_queue_command(EntitySpawnCommandType type, SZ count, BOOL notify) {
     // Lazy mutex initialization
-    static BOOL mutex_initialized = false;
+    BOOL static mutex_initialized = false;
     if (!mutex_initialized) {
         mtx_init(&g_entity_spawn_command_queue.mutex, mtx_plain);
         mutex_initialized = true;
@@ -31,7 +31,6 @@ void static i_entity_spawn_queue_command(EntitySpawnCommandType type, ATerrain *
         if (g_entity_spawn_command_queue.count < ENTITY_SPAWN_COMMAND_QUEUE_MAX) {
             EntitySpawnCommand *cmd = &g_entity_spawn_command_queue.commands[g_entity_spawn_command_queue.count++];
             cmd->type = type;
-            cmd->vegetation.terrain = terrain;
             cmd->vegetation.count = count;
             cmd->vegetation.notify = notify;
         } else {
@@ -41,13 +40,13 @@ void static i_entity_spawn_queue_command(EntitySpawnCommandType type, ATerrain *
     mtx_unlock(&g_entity_spawn_command_queue.mutex);
 }
 
-void entity_spawn_queue_random_vegetation_on_terrain(ATerrain *terrain, SZ count, BOOL notify) {
-    i_entity_spawn_queue_command(ENTITY_SPAWN_CMD_RANDOM_VEGETATION, terrain, count, notify);
+void entity_spawn_queue_random_vegetation_on_terrain(SZ count, BOOL notify) {
+    i_entity_spawn_queue_command(ENTITY_SPAWN_CMD_RANDOM_VEGETATION,count, notify);
 }
 
 void entity_spawn_queue_arbitrary_entity(EntityType type, C8 const *name, Vector3 position, F32 rotation, Vector3 scale, Color tint, C8 const *model_name) {
     // Lazy mutex initialization
-    static BOOL mutex_initialized = false;
+    BOOL static mutex_initialized = false;
     if (!mutex_initialized) {
         mtx_init(&g_entity_spawn_command_queue.mutex, mtx_plain);
         mutex_initialized = true;
@@ -91,7 +90,7 @@ void entity_spawn_process_command_queue() {
 
         switch (cmd->type) {
             case ENTITY_SPAWN_CMD_RANDOM_VEGETATION: {
-                entity_spawn_random_vegetation_on_terrain(cmd->vegetation.terrain, cmd->vegetation.count, cmd->vegetation.notify);
+                entity_spawn_random_vegetation_on_terrain(cmd->vegetation.count, cmd->vegetation.notify);
             } break;
 
             case ENTITY_SPAWN_CMD_ARBITRARY_ENTITY: {
@@ -126,8 +125,8 @@ void entity_spawn_process_command_queue() {
     mtx_unlock(&g_entity_spawn_command_queue.mutex);
 }
 
-void entity_spawn_random_vegetation_on_terrain(ATerrain *terrain, SZ count, BOOL notify) {
-    if (g_world->active_ent_count >= WORLD_MAX_ENTITIES) {
+void entity_spawn_random_vegetation_on_terrain(SZ count, BOOL notify) {
+    if (g_world->active_entity_count >= WORLD_MAX_ENTITIES) {
         mwod("Could not spawn entity, world is full.", ORANGE, 5.0F);
         return;
     }
@@ -179,9 +178,9 @@ void entity_spawn_random_vegetation_on_terrain(ATerrain *terrain, SZ count, BOOL
         }
 
         // Check terrain slope at this position
-        F32 const center_height  = math_get_terrain_height(terrain, spawn_point.x, spawn_point.z);
-        F32 const right_height   = math_get_terrain_height(terrain, spawn_point.x + 1.0F, spawn_point.z);
-        F32 const forward_height = math_get_terrain_height(terrain, spawn_point.x, spawn_point.z + 1.0F);
+        F32 const center_height  = math_get_terrain_height(g_world->base_terrain, spawn_point.x, spawn_point.z);
+        F32 const right_height   = math_get_terrain_height(g_world->base_terrain, spawn_point.x + 1.0F, spawn_point.z);
+        F32 const forward_height = math_get_terrain_height(g_world->base_terrain, spawn_point.x, spawn_point.z + 1.0F);
 
         // Calculate slope
         F32 const dx    = right_height - center_height;
@@ -284,17 +283,6 @@ void entity_despawn_random_vegetation(SZ count, BOOL notify) {
     }
 }
 
-void entity_cb_spawn_random_vegetation_on_terrain(void *data) {
-    auto *terrain = (ATerrain *)data;
-    entity_spawn_random_vegetation_on_terrain(terrain, 1, false);
-}
-
-void entity_cb_despawn_random_vegetation(void *data) {
-    unused(data);
-
-    entity_despawn_random_vegetation(1, false);
-}
-
 void entity_spawn_npc(SZ count, BOOL notify) {
     Vector2 const mouse_pos = input_get_mouse_position_screen();
     Ray const ray           = GetScreenToWorldRay(mouse_pos, g_player.cameras[g_scenes.current_scene_type]);
@@ -307,7 +295,7 @@ void entity_spawn_npc(SZ count, BOOL notify) {
     F32 const spawn_radius = base_radius + (math_sqrt_f32((F32)count) * 0.8F);
 
     for (SZ i = 0; i < count; ++i) {
-        if (g_world->active_ent_count >= WORLD_MAX_ENTITIES) {
+        if (g_world->active_entity_count >= WORLD_MAX_ENTITIES) {
             mwod("Could not spawn entity, world is full.", ORANGE, 5.0F);
             return;
         }
@@ -334,27 +322,27 @@ void entity_spawn_npc(SZ count, BOOL notify) {
                 scale                = {rand_scale, rand_scale, rand_scale};
             } break;
             case 1: {
-                name       = TS("Seagull %u", g_world->active_ent_count);
+                name       = TS("Seagull %u", g_world->active_entity_count);
                 model_name = "seagull.m3d";
                 scale      = {0.05F, 0.05F, 0.05F};
             } break;
             case 2: {
-                name       = TS("Female Survivor %u", g_world->active_ent_count);
+                name       = TS("Female Survivor %u", g_world->active_entity_count);
                 model_name = "female_survivor_0.glb";
                 scale      = {0.25F, 0.25F, 0.25F};
             } break;
             case 3: {
-                name       = TS("Female Survivor %u", g_world->active_ent_count);
+                name       = TS("Female Survivor %u", g_world->active_entity_count);
                 model_name = "female_survivor_1.glb";
                 scale      = {0.25F, 0.25F, 0.25F};
             } break;
             case 4: {
-                name       = TS("Male Survivor %u", g_world->active_ent_count);
+                name       = TS("Male Survivor %u", g_world->active_entity_count);
                 model_name = "male_survivor_0.glb";
                 scale      = {0.25F, 0.25F, 0.25F};
             } break;
             case 5: {
-                name       = TS("Male Survivor %u", g_world->active_ent_count);
+                name       = TS("Male Survivor %u", g_world->active_entity_count);
                 model_name = "male_survivor_1.glb";
                 scale      = {0.25F, 0.25F, 0.25F};
             } break;
@@ -388,18 +376,6 @@ void entity_despawn_npc(SZ count, BOOL notify) {
         count--;
         if (count == 0) { break; }
     }
-}
-
-void entity_cb_spawn_npc(void *data) {
-    unused(data);
-
-    entity_spawn_npc(1, true);
-}
-
-void entity_cb_despawn_npc(void *data) {
-    unused(data);
-
-    entity_despawn_npc(1, true);
 }
 
 void entity_spawn_test_overworld_set(EntityTestOverworldSet *set) {

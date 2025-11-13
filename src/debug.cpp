@@ -455,7 +455,7 @@ void static i_setup_dbg_gui() {
         dwil("World", large_font, contrast_color);
         qil("Visible Vertices", TS("%s", pretty_buffer_1)->c);
         qil("Max Generation", TS("%u", g_world->max_gen)->c);
-        qil("Entities", TS("%u", g_world->active_ent_count)->c);
+        qil("Entities", TS("%u", g_world->active_entity_count)->c);
         if (g_world->selected_entity_count > 0) {
             qil("Selected Entities", TS("%zu selected", g_world->selected_entity_count)->c);
             if (g_world->selected_entity_count == 1) {
@@ -1062,7 +1062,7 @@ String static *i_get_window_extra_title_info(SZ wid) {
             // Return the current recording state.
             BOOL const is_recording = world_recorder_is_recording_state();
             BOOL const is_looping   = world_recorder_is_looping_state();
-            return TS("%s (%s) (%u)", i_dbg_window_name_strings[wid], is_recording ? "WREC" : (is_looping ? "PLAY" : "STOP"), g_world->active_ent_count);
+            return TS("%s (%s) (%u)", i_dbg_window_name_strings[wid], is_recording ? "WREC" : (is_looping ? "PLAY" : "STOP"), g_world->active_entity_count);
         }
 
         case DBG_WID_ASSET: {

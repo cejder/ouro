@@ -74,7 +74,6 @@ void world_reset() {
         g_world->name[i][0]        = '\0';
     }
 
-    g_world->active_ent_count      = 0;
     g_world->active_entity_count   = 0;
     g_world->max_gen               = 0;
     g_world->selected_entity_count = 0;
@@ -269,13 +268,13 @@ void world_update(F32 dt, F32 dtu) {
     if (g_world->active_entity_count > 0) {
         PBEGIN("entity_update_MT");
         U32 const worker_count = job_system_get_worker_count();
-        SZ const entities_per_worker = (g_world->active_entity_count + worker_count - 1) / worker_count;
+        U32 const entities_per_worker = (g_world->active_entity_count + worker_count - 1) / worker_count;
 
         auto *job_data = mmta(EntityUpdateJobData *, sizeof(EntityUpdateJobData) * worker_count);
 
         for (U32 i = 0; i < worker_count; ++i) {
-            SZ const start_idx = i * entities_per_worker;
-            SZ const end_idx = glm::min(start_idx + entities_per_worker, g_world->active_entity_count);
+            U32 const start_idx = i * entities_per_worker;
+            U32 const end_idx = glm::min(start_idx + entities_per_worker, g_world->active_entity_count);
 
             if (start_idx >= g_world->active_entity_count) { break; }
 
@@ -311,13 +310,13 @@ void world_update(F32 dt, F32 dtu) {
     if (g_world->active_entity_count > 0) {
         PBEGIN("anim_update_MT");
         U32 const worker_count = job_system_get_worker_count();
-        SZ const entities_per_worker = (g_world->active_entity_count + worker_count - 1) / worker_count;
+        U32 const entities_per_worker = (g_world->active_entity_count + worker_count - 1) / worker_count;
 
         auto *job_data = mmta(AnimationUpdateJobData *, sizeof(AnimationUpdateJobData) * worker_count);
 
         for (U32 i = 0; i < worker_count; ++i) {
-            SZ const start_idx = i * entities_per_worker;
-            SZ const end_idx = glm::min(start_idx + entities_per_worker, g_world->active_entity_count);
+            U32 const start_idx = i * entities_per_worker;
+            U32 const end_idx = glm::min(start_idx + entities_per_worker, g_world->active_entity_count);
 
             if (start_idx >= g_world->active_entity_count) { break; }
 
@@ -336,13 +335,13 @@ void world_update(F32 dt, F32 dtu) {
     if (g_world->active_entity_count > 0) {
         PBEGIN("actor_update_MT");
         U32 const worker_count = job_system_get_worker_count();
-        SZ const entities_per_worker = (g_world->active_entity_count + worker_count - 1) / worker_count;
+        U32 const entities_per_worker = (g_world->active_entity_count + worker_count - 1) / worker_count;
 
         auto *job_data = mmta(ActorUpdateJobData *, sizeof(ActorUpdateJobData) * worker_count);
 
         for (U32 i = 0; i < worker_count; ++i) {
-            SZ const start_idx = i * entities_per_worker;
-            SZ const end_idx = glm::min(start_idx + entities_per_worker, g_world->active_entity_count);
+            U32 const start_idx = i * entities_per_worker;
+            U32 const end_idx = glm::min(start_idx + entities_per_worker, g_world->active_entity_count);
 
             if (start_idx >= g_world->active_entity_count) { break; }
 
@@ -938,7 +937,7 @@ void world_dump_all_entities() {
             i, g_world->name[i], type, position.x, position.y, position.z, scale.x, scale.y, scale.z, rotation);
     }
 
-    lln("active_entities: %u", g_world->active_ent_count);
+    lln("active_entities: %u", g_world->active_entity_count);
     lln("max_generation:  %u", g_world->max_gen);
 }
 

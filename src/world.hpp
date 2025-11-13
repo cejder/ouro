@@ -18,7 +18,7 @@
 #undef call_once
 #endif
 
-#define WORLD_MAX_ENTITIES 50000
+#define WORLD_MAX_ENTITIES 25000
 #define WORLD_MAX_DEFERRED_DESTRUCTIONS 1024
 
 fwd_decl(ATerrain);
@@ -27,7 +27,6 @@ fwd_decl(AModel);
 
 struct World {
     ATerrain *base_terrain;
-    U32 active_ent_count;
     U32 entity_type_counts[ENTITY_TYPE_COUNT];
     U32 max_gen;
 
@@ -37,7 +36,7 @@ struct World {
 
     // Active entity optimization: array of active entity IDs for fast iteration
     EID active_entities[WORLD_MAX_ENTITIES];
-    SZ active_entity_count;
+    U32 active_entity_count;
 
     alignas(32) U32 flags[WORLD_MAX_ENTITIES];
     alignas(32) U32 generation[WORLD_MAX_ENTITIES];
