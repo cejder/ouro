@@ -70,9 +70,6 @@ void static inline i_play_agree(EID id) {
 
 EID static inline i_find_target(EID searcher_id, EntityType target_type) {
     Vector3 const searcher_pos = g_world->position[searcher_id];
-    F32 search_radius          = 250.0F;
-    S32 attempts               = 0;
-    S32 const max_attempts     = 4;
 
     if (target_type == ENTITY_TYPE_VEGETATION) { world_update_follower_cache(); }
 
@@ -82,58 +79,120 @@ EID static inline i_find_target(EID searcher_id, EntityType target_type) {
     S32 const searcher_x          = (S32)searcher_coords.x;
     S32 const searcher_y          = (S32)searcher_coords.y;
 
-    while (attempts < max_attempts && search_radius <= 500 * 2.0F) {
-        S32 const cell_radius      = (S32)(search_radius * g_grid.inv_cell_size) + 1;
-        S32 const cell_radius_sq   = cell_radius * cell_radius;
-        F32 const search_radius_sq = search_radius * search_radius;
+    // Ring-based search: check cells in expanding onion layers by Chebyshev distance
+    // Ring 0 = our cell, Ring 1 = immediate neighbors, Ring 2 = next layer, etc.
+    S32 const max_ring = GRID_CELLS_PER_ROW;
 
-        // Clamp dy range to valid grid bounds
-        S32 const dy_min = glm::max(-cell_radius, -searcher_y);
-        S32 const dy_max = glm::min(cell_radius, GRID_CELLS_PER_ROW - 1 - searcher_y);
+    for (S32 ring = 0; ring < max_ring; ++ring) {
+        BOOL found_in_ring = false;
 
-        for (S32 dy = dy_min; dy <= dy_max; ++dy) {
-            S32 const cell_y = searcher_y + dy;
-            S32 const dy_sq = dy * dy;
+        if (ring == 0) {
+            // Ring 0: only check our own cell
+            if (searcher_x < 0 || searcher_x >= GRID_CELLS_PER_ROW || searcher_y < 0 || searcher_y >= GRID_CELLS_PER_ROW) { continue; }
 
-            // Clamp dx range to valid grid bounds
-            S32 const dx_min = glm::max(-cell_radius, -searcher_x);
-            S32 const dx_max = glm::min(cell_radius, GRID_CELLS_PER_ROW - 1 - searcher_x);
+            SZ const cell_index = grid_get_cell_index_xy(searcher_x, searcher_y);
+            GridCell *cell      = &g_grid.cells[cell_index];
+            SZ const count      = cell->count_per_type[target_type];
 
-            for (S32 dx = dx_min; dx <= dx_max; ++dx) {
-                if ((dx * dx) + dy_sq > cell_radius_sq) { continue; }
+            for (SZ i = 0; i < count; ++i) {
+                EID const entity_id = cell->entities_by_type[target_type][i];
+                if (entity_id == searcher_id) { continue; }
 
-                S32 const cell_x = searcher_x + dx;
+                if (!entity_is_valid(entity_id)) { continue; }
+                if (g_world->type[entity_id] != target_type) { continue; }
 
-                SZ const cell_index = grid_get_cell_index_xy(cell_x, cell_y);
-                GridCell *cell      = &g_grid.cells[cell_index];
+                if (target_type == ENTITY_TYPE_VEGETATION) {
+                    S32 const followers = (S32)g_world->follower_cache.follower_counts[entity_id];
+                    if (followers >= HARVEST_TARGET_MAX_FOLLOWERS) { continue; }
+                }
 
-                SZ const count = cell->count_per_type[target_type];
-                if (count == 0) { continue; }
-
-                for (SZ i = 0; i < count; ++i) {
-                    EID const entity_id = cell->entities_by_type[target_type][i];
-                    if (entity_id == searcher_id) { continue; }
-
-                    // Validate entity is still valid and has correct type (grid may have stale entries)
-                    if (!entity_is_valid(entity_id)) { continue; }
-                    if (g_world->type[entity_id] != target_type) { continue; }
-
-                    if (target_type == ENTITY_TYPE_VEGETATION) {
-                        S32 const followers = (S32)g_world->follower_cache.follower_counts[entity_id];
-                        if (followers >= HARVEST_TARGET_MAX_FOLLOWERS) { continue; }
-                    }
-
-                    F32 const distance_sqr = Vector3DistanceSqr(searcher_pos, g_world->position[entity_id]);
-                    if (distance_sqr > search_radius_sq || distance_sqr >= best_distance_sq) { continue; }
-
+                F32 const distance_sqr = Vector3DistanceSqr(searcher_pos, g_world->position[entity_id]);
+                if (distance_sqr < best_distance_sq) {
                     best_candidate   = entity_id;
                     best_distance_sq = distance_sqr;
+                    found_in_ring    = true;
+                }
+            }
+        } else {
+            // Ring N: check the perimeter of the ring (Chebyshev distance = ring)
+            // This forms a square ring: top, bottom, left, right edges
+
+            // Top and bottom horizontal edges (full width)
+            for (S32 dx = -ring; dx <= ring; ++dx) {
+                S32 edges[2] = {searcher_y - ring, searcher_y + ring};  // top, bottom
+
+                for (S32 edge_idx = 0; edge_idx < 2; ++edge_idx) {
+                    S32 const cell_x = searcher_x + dx;
+                    S32 const cell_y = edges[edge_idx];
+
+                    if (cell_x < 0 || cell_x >= GRID_CELLS_PER_ROW || cell_y < 0 || cell_y >= GRID_CELLS_PER_ROW) { continue; }
+
+                    SZ const cell_index = grid_get_cell_index_xy(cell_x, cell_y);
+                    GridCell *cell      = &g_grid.cells[cell_index];
+                    SZ const count      = cell->count_per_type[target_type];
+
+                    for (SZ i = 0; i < count; ++i) {
+                        EID const entity_id = cell->entities_by_type[target_type][i];
+                        if (entity_id == searcher_id) { continue; }
+
+                        if (!entity_is_valid(entity_id)) { continue; }
+                        if (g_world->type[entity_id] != target_type) { continue; }
+
+                        if (target_type == ENTITY_TYPE_VEGETATION) {
+                            S32 const followers = (S32)g_world->follower_cache.follower_counts[entity_id];
+                            if (followers >= HARVEST_TARGET_MAX_FOLLOWERS) { continue; }
+                        }
+
+                        F32 const distance_sqr = Vector3DistanceSqr(searcher_pos, g_world->position[entity_id]);
+                        if (distance_sqr < best_distance_sq) {
+                            best_candidate   = entity_id;
+                            best_distance_sq = distance_sqr;
+                            found_in_ring    = true;
+                        }
+                    }
+                }
+            }
+
+            // Left and right vertical edges (excluding corners already covered)
+            for (S32 dy = -ring + 1; dy < ring; ++dy) {
+                S32 edges[2] = {searcher_x - ring, searcher_x + ring};  // left, right
+
+                for (S32 edge_idx = 0; edge_idx < 2; ++edge_idx) {
+                    S32 const cell_x = edges[edge_idx];
+                    S32 const cell_y = searcher_y + dy;
+
+                    if (cell_x < 0 || cell_x >= GRID_CELLS_PER_ROW || cell_y < 0 || cell_y >= GRID_CELLS_PER_ROW) { continue; }
+
+                    SZ const cell_index = grid_get_cell_index_xy(cell_x, cell_y);
+                    GridCell *cell      = &g_grid.cells[cell_index];
+                    SZ const count      = cell->count_per_type[target_type];
+
+                    for (SZ i = 0; i < count; ++i) {
+                        EID const entity_id = cell->entities_by_type[target_type][i];
+                        if (entity_id == searcher_id) { continue; }
+
+                        if (!entity_is_valid(entity_id)) { continue; }
+                        if (g_world->type[entity_id] != target_type) { continue; }
+
+                        if (target_type == ENTITY_TYPE_VEGETATION) {
+                            S32 const followers = (S32)g_world->follower_cache.follower_counts[entity_id];
+                            if (followers >= HARVEST_TARGET_MAX_FOLLOWERS) { continue; }
+                        }
+
+                        F32 const distance_sqr = Vector3DistanceSqr(searcher_pos, g_world->position[entity_id]);
+                        if (distance_sqr < best_distance_sq) {
+                            best_candidate   = entity_id;
+                            best_distance_sq = distance_sqr;
+                            found_in_ring    = true;
+                        }
+                    }
                 }
             }
         }
 
-        search_radius *= 2.0F;
-        attempts++;
+        // Early exit: if we found any valid candidate in this ring, return it
+        // Entities in subsequent rings will be at least as far (grid-wise), likely farther (world-wise)
+        if (found_in_ring) { break; }
     }
 
     return best_candidate;
