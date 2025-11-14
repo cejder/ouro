@@ -45,7 +45,6 @@ void llog_format(LLogLevel level, C8 const *file, C8 const *func, U32 line, C8 c
 
 // Third-party library callbacks
 void llog_raylib_cb(S32 log_level, C8 const *text, va_list args) __attribute__((format(printf, 2, 0)));
-void llog_mimalloc_cb(C8 const *message, void *arg);
 FMOD_RESULT F_CALL llog_fmod_cb(FMOD_DEBUG_FLAGS flags, C8 const *file, S32 line, C8 const *func, C8 const *message);
 
 #define lll(level, ...) llog_format (level,            __FILE__, __func__, __LINE__, __VA_ARGS__)

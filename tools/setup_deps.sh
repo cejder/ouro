@@ -65,7 +65,6 @@ declare -a libs=(
     "Unity|https://github.com/ThrowTheSwitch/Unity|true|"
     "tinycthread|https://github.com/tinycthread/tinycthread|true|if [[ \$OSTYPE == darwin* ]]; then sed -i '' \"s/cmake_minimum_required(VERSION [0-9.]*)/cmake_minimum_required(VERSION 3.10)/\" \${THIRD_PARTY_FOLDER}/tinycthread/CMakeLists.txt; else sed -i \"s/cmake_minimum_required(VERSION [0-9.]*)/cmake_minimum_required(VERSION 3.10)/\" \${THIRD_PARTY_FOLDER}/tinycthread/CMakeLists.txt; fi"
     "glm|https://github.com/g-truc/glm|true|"
-    "mimalloc|https://github.com/microsoft/mimalloc|true|"
 )
 
 if [ ${#libs[@]} -eq 0 ]; then

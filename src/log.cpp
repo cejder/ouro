@@ -5,8 +5,6 @@
 #include "core.hpp"
 #include "std.hpp"
 
-#include <mimalloc.h>
-
 LLogger static i_logger = {};
 
 C8 static const *i_level_str[LLOG_LEVEL_COUNT] = {
@@ -30,7 +28,6 @@ C8 static const *i_get_short_file_name(C8 const *filepath) {
 void llog_init() {
     llog_enable_flag(LLOG_FLAG_EXIT_ON_ERROR);
     llog_enable_flag(LLOG_FLAG_QUIET_THIRD_PARTY);
-    mi_register_output(llog_mimalloc_cb, nullptr);
 }
 
 void llog_set_level(LLogLevel level) {
@@ -139,17 +136,6 @@ void llog_raylib_cb(S32 log_level, C8 const *text, va_list args) {
     C8 formatted_msg[1024];
     ou_vsnprintf(formatted_msg, sizeof(formatted_msg), text, args);
     llog_format(llog_level, "raylib", "callback", 1, "%s", formatted_msg);
-}
-
-void llog_mimalloc_cb(C8 const *message, void *arg) {
-    unused(arg);
-    SZ const len = ou_strlen_no_whitespace(message);
-    if (len == 0) { return; }
-
-    LLogLevel llog_level = LLOG_LEVEL_WARN;
-    if (FLAG_HAS(i_logger.flags, LLOG_FLAG_QUIET_THIRD_PARTY)) { llog_level = LLOG_LEVEL_TRACE; }
-
-    llog_format(llog_level, "mimalloc", "callback", 1, "%s", message);
 }
 
 FMOD_RESULT F_CALL llog_fmod_cb(FMOD_DEBUG_FLAGS flags, C8 const *file, S32 line, C8 const *func, C8 const *message) {

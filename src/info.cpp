@@ -5,7 +5,6 @@
 #include "std.hpp"
 #include "string.hpp"
 
-#include <mimalloc.h>
 #include <unity.h>
 #include <glm/detail/setup.hpp>
 #include <tinycthread.h>
@@ -118,13 +117,6 @@ void static i_print_unity() {
 
 void static i_print_glm() {
     lld("GLM: %d.%d.%d", GLM_VERSION_MAJOR, GLM_VERSION_MINOR, GLM_VERSION_PATCH);
-}
-
-void static i_print_mimalloc() {
-    S32 const version = mi_version();
-    S32 const major   = version / 100;
-    S32 const minor   = (version % 100) / 10;
-    lld("mimalloc: %d.%d", major, minor);
 }
 
 void static i_print_simd() {
@@ -275,6 +267,5 @@ void info_print_system(VersionInfo *info) {
     i_print_tinycthread();
     i_print_unity();
     i_print_glm();
-    i_print_mimalloc();
     i_print_simd();
 }

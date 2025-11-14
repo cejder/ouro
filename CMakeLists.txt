@@ -66,8 +66,6 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/third_party/Unity")
 
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/third_party/tinycthread")
 
-add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/third_party/mimalloc")
-
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_LIST_DIR}/src" "${CMAKE_CURRENT_LIST_DIR}/third_party/fmod/api/core/inc")
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE "${CMAKE_CURRENT_LIST_DIR}/third_party/raylib/src")
 if(APPLE)
@@ -90,7 +88,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
   glm
   unity
   tinycthread
-  mimalloc
   ${FMOD_CORE_LIBRARY})
 
 # Common compiler options
