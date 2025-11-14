@@ -15,9 +15,3 @@ CMakeLists.txt.user
 src/dialogues/
 .DS_Store
 ouro.cvar
-
-# Valgrind output files
-cachegrind.out.*
-callgrind.out.*
-massif.out.*
-dhat.out.*

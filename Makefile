@@ -167,21 +167,21 @@ valgrind-leaks: build ## detect memory leaks
 .PHONY: valgrind-cache
 valgrind-cache: build ## analyze CPU cache performance
 	@echo -e "${COLORED}# Running Valgrind Cachegrind (cache profiling)${NC}"
-	valgrind --tool=cachegrind ${CMAKE_BUILD_FOLDER}/${EXECUTABLE_NAME}
-	@echo -e "${COLORED}# View results with: cg_annotate cachegrind.out.<pid>${NC}"
+	valgrind --tool=cachegrind --cachegrind-out-file=${CMAKE_BUILD_FOLDER}/cachegrind.out.%p ${CMAKE_BUILD_FOLDER}/${EXECUTABLE_NAME}
+	@echo -e "${COLORED}# View results with: cg_annotate ${CMAKE_BUILD_FOLDER}/cachegrind.out.<pid>${NC}"
 
 .PHONY: valgrind-callgraph
 valgrind-callgraph: build ## profile with call graphs
 	@echo -e "${COLORED}# Running Valgrind Callgrind (call-graph profiling)${NC}"
-	valgrind --tool=callgrind ${CMAKE_BUILD_FOLDER}/${EXECUTABLE_NAME}
-	@echo -e "${COLORED}# View results with: callgrind_annotate callgrind.out.<pid>${NC}"
-	@echo -e "${COLORED}# Or use GUI with: kcachegrind callgrind.out.<pid>${NC}"
+	valgrind --tool=callgrind --callgrind-out-file=${CMAKE_BUILD_FOLDER}/callgrind.out.%p ${CMAKE_BUILD_FOLDER}/${EXECUTABLE_NAME}
+	@echo -e "${COLORED}# View results with: callgrind_annotate ${CMAKE_BUILD_FOLDER}/callgrind.out.<pid>${NC}"
+	@echo -e "${COLORED}# Or use GUI with: kcachegrind ${CMAKE_BUILD_FOLDER}/callgrind.out.<pid>${NC}"
 
 .PHONY: valgrind-heap
 valgrind-heap: build ## track heap memory usage over time
 	@echo -e "${COLORED}# Running Valgrind Massif (heap profiling)${NC}"
-	valgrind --tool=massif ${CMAKE_BUILD_FOLDER}/${EXECUTABLE_NAME}
-	@echo -e "${COLORED}# View results with: ms_print massif.out.<pid>${NC}"
+	valgrind --tool=massif --massif-out-file=${CMAKE_BUILD_FOLDER}/massif.out.%p ${CMAKE_BUILD_FOLDER}/${EXECUTABLE_NAME}
+	@echo -e "${COLORED}# View results with: ms_print ${CMAKE_BUILD_FOLDER}/massif.out.<pid>${NC}"
 
 .PHONY: valgrind-races
 valgrind-races: build ## detect thread race conditions
@@ -196,8 +196,8 @@ valgrind-races-fast: build ## detect thread races (faster)
 .PHONY: valgrind-heap-analysis
 valgrind-heap-analysis: build ## analyze heap allocation patterns
 	@echo -e "${COLORED}# Running Valgrind DHAT (heap analysis)${NC}"
-	valgrind --tool=dhat ${CMAKE_BUILD_FOLDER}/${EXECUTABLE_NAME}
-	@echo -e "${COLORED}# View results by opening dhat.out.<pid> in a web browser${NC}"
+	valgrind --tool=dhat --dhat-out-file=${CMAKE_BUILD_FOLDER}/dhat.out.%p ${CMAKE_BUILD_FOLDER}/${EXECUTABLE_NAME}
+	@echo -e "${COLORED}# View results by opening ${CMAKE_BUILD_FOLDER}/dhat.out.<pid> in a web browser${NC}"
 
 .PHONY: profile
 profile: build ## record performance with perf and open the report automatically
