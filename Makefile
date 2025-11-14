@@ -159,6 +159,36 @@ check: build ## check the project via static linters and tools
 	cppcheck --std=c++20 --enable=warning --suppress=internalAstError --suppress=variableScope --suppress=passedByValue --suppress=useStlAlgorithm --suppress=deallocret --suppress=cstyleCast --suppress=unreadVariable --suppress=unknownEvaluationOrder --suppress=constParameterPointer --suppress=constParameterCallback --suppress=unusedPrivateFunction --suppress=unknownMacro --suppress=unusedStructMember --suppress=constVariablePointer --suppress=dangerousTypeCast --enable=performance,portability,style ${ALL_PROJECT_FILES} --quiet -j ${NUM_CORES} --check-level=exhaustive
 	run-clang-tidy -p $(CMAKE_BUILD_FOLDER) -header-filter='^src/' $(ALL_PROJECT_FILES) -quiet -use-color
 
+.PHONY: check-tsan
+check-tsan: build-dialogues build-cvars ## check for race conditions with ThreadSanitizer
+	@echo -e "${COLORED}# Building with ThreadSanitizer${NC}"
+	rm -rf ${CMAKE_BUILD_FOLDER}/CMakeCache.txt
+	CC=${CC} CXX=${CXX} cmake -S . -B ${CMAKE_BUILD_FOLDER} -G "${CMAKE_GENERATOR}" -DCMAKE_BUILD_TYPE=Debug -DSANITIZER=thread ${CMAKE_FLAGS} ${BUILD_FLAGS} ${CCACHE_FLAGS}
+	cmake --build ${CMAKE_BUILD_FOLDER} --parallel ${NUM_CORES}
+	@echo -e "${COLORED}# Running with ThreadSanitizer${NC}"
+	@PLATFORM=$$(${TOOLS_FOLDER}/detect_platform.sh); \
+	${EXECUTABLE_PATH} --platform $$PLATFORM
+
+.PHONY: check-asan
+check-asan: build-dialogues build-cvars ## check for memory errors with AddressSanitizer
+	@echo -e "${COLORED}# Building with AddressSanitizer${NC}"
+	rm -rf ${CMAKE_BUILD_FOLDER}/CMakeCache.txt
+	CC=${CC} CXX=${CXX} cmake -S . -B ${CMAKE_BUILD_FOLDER} -G "${CMAKE_GENERATOR}" -DCMAKE_BUILD_TYPE=Debug -DSANITIZER=address ${CMAKE_FLAGS} ${BUILD_FLAGS} ${CCACHE_FLAGS}
+	cmake --build ${CMAKE_BUILD_FOLDER} --parallel ${NUM_CORES}
+	@echo -e "${COLORED}# Running with AddressSanitizer${NC}"
+	@PLATFORM=$$(${TOOLS_FOLDER}/detect_platform.sh); \
+	${EXECUTABLE_PATH} --platform $$PLATFORM
+
+.PHONY: check-ubsan
+check-ubsan: build-dialogues build-cvars ## check for undefined behavior with UBSanitizer
+	@echo -e "${COLORED}# Building with UndefinedBehaviorSanitizer${NC}"
+	rm -rf ${CMAKE_BUILD_FOLDER}/CMakeCache.txt
+	CC=${CC} CXX=${CXX} cmake -S . -B ${CMAKE_BUILD_FOLDER} -G "${CMAKE_GENERATOR}" -DCMAKE_BUILD_TYPE=Debug -DSANITIZER=undefined ${CMAKE_FLAGS} ${BUILD_FLAGS} ${CCACHE_FLAGS}
+	cmake --build ${CMAKE_BUILD_FOLDER} --parallel ${NUM_CORES}
+	@echo -e "${COLORED}# Running with UndefinedBehaviorSanitizer${NC}"
+	@PLATFORM=$$(${TOOLS_FOLDER}/detect_platform.sh); \
+	${EXECUTABLE_PATH} --platform $$PLATFORM
+
 .PHONY: valgrind-leaks
 valgrind-leaks: build ## detect memory leaks
 	@echo -e "${COLORED}# Running Valgrind Memcheck (memory leaks)${NC}"
@@ -198,6 +228,28 @@ valgrind-heap-analysis: build ## analyze heap allocation patterns
 	@echo -e "${COLORED}# Running Valgrind DHAT (heap analysis)${NC}"
 	valgrind --tool=dhat --dhat-out-file=${CMAKE_BUILD_FOLDER}/dhat.out.%p ${CMAKE_BUILD_FOLDER}/${EXECUTABLE_NAME}
 	@echo -e "${COLORED}# View results by opening ${CMAKE_BUILD_FOLDER}/dhat.out.<pid> in a web browser${NC}"
+
+.PHONY: profile-build
+profile-build: build-dialogues build-cvars ## profile build times with clang time-trace
+	@echo -e "${COLORED}# Building with time-trace${NC}"
+	rm -rf ${CMAKE_BUILD_FOLDER}/CMakeCache.txt ${CMAKE_BUILD_FOLDER}/time-trace.json
+	CC=${CC} CXX=${CXX} cmake -S . -B ${CMAKE_BUILD_FOLDER} -G "${CMAKE_GENERATOR}" -DCMAKE_BUILD_TYPE=Debug -DTIME_TRACE=ON ${CMAKE_FLAGS} ${BUILD_FLAGS} ${CCACHE_FLAGS}
+	cmake --build ${CMAKE_BUILD_FOLDER} --parallel ${NUM_CORES}
+	@echo -e "${COLORED}# Merging time-trace files${NC}"
+	@python3 -c "import json, glob; files = glob.glob('${CMAKE_BUILD_FOLDER}/CMakeFiles/ouro.dir/src/*.json'); events = []; [events.extend(json.load(open(f)).get('traceEvents', [])) for f in files]; json.dump({'traceEvents': events}, open('${CMAKE_BUILD_FOLDER}/time-trace.json', 'w'))"
+	@echo -e "${COLORED}# Time trace complete!${NC}"
+	@echo -e "${COLORED}# Opening Perfetto UI${NC}"
+	@if command -v google-chrome-unstable >/dev/null 2>&1; then \
+		google-chrome-unstable https://ui.perfetto.dev/ & \
+	elif command -v google-chrome-stable >/dev/null 2>&1; then \
+		google-chrome-stable https://ui.perfetto.dev/ & \
+	else \
+		echo "Chrome not found. Open https://ui.perfetto.dev/ manually"; \
+	fi
+	@if command -v thunar >/dev/null 2>&1; then \
+		thunar ${CMAKE_BUILD_FOLDER} & \
+	fi
+	@echo -e "${COLORED}# Drag ${CMAKE_BUILD_FOLDER}/time-trace.json into the window${NC}"
 
 .PHONY: profile
 profile: build ## record performance with perf and open the report automatically

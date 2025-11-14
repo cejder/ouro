@@ -32,6 +32,19 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_DISABLE_PRECOMPILE_HEADERS ON)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
 
+# Sanitizer options
+set(SANITIZER "none" CACHE STRING "Sanitizer to use (none, address, thread, undefined, memory)")
+set_property(CACHE SANITIZER PROPERTY STRINGS none address thread undefined memory)
+
+# Time trace option
+option(TIME_TRACE "Enable Clang time trace for build profiling" OFF)
+
+# Build feature flags
+option(OURO_TRACE "Enable trace logging" OFF)
+option(OURO_DEBUG "Enable debug mode" OFF)
+option(OURO_PROFILE "Enable profiling" ON)
+option(OURO_DEVEL "Enable development mode" ON)
+
 file(GLOB_RECURSE PROJECT_SRC CONFIGURE_DEPENDS "${CMAKE_CURRENT_LIST_DIR}/src/*.cpp")
 file(GLOB_RECURSE PROJECT_HDR CONFIGURE_DEPENDS "${CMAKE_CURRENT_LIST_DIR}/src/*.hpp")
 add_executable(${PROJECT_NAME} ${PROJECT_SRC} ${PROJECT_HDR})
@@ -130,22 +143,35 @@ set(SIMD_FLAGS
 )
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  # target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=address,undefined,leak,pointer-compare,pointer-subtract,pointer-overflow)
-  # target_compile_definitions(${PROJECT_NAME} PRIVATE OURO_TRACE)
-  # target_compile_definitions(${PROJECT_NAME} PRIVATE OURO_DEBUG)
-  target_compile_definitions(${PROJECT_NAME} PRIVATE OURO_PROFILE OURO_DEVEL)
-  target_compile_options(${PROJECT_NAME} PRIVATE
+  if(OURO_TRACE)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE OURO_TRACE)
+  endif()
+  if(OURO_DEBUG)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE OURO_DEBUG)
+  endif()
+  if(OURO_PROFILE)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE OURO_PROFILE)
+  endif()
+  if(OURO_DEVEL)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE OURO_DEVEL)
+  endif()
+  set(DEBUG_OPTIONS
     ${COMMON_COMPILE_OPTIONS} ${SIMD_FLAGS}
     -ggdb
     -O0
     -fno-omit-frame-pointer
     -fstack-protector-strong
-    # -ftime-trace -c
-    # -fsanitize=address,undefined,leak,pointer-compare,pointer-subtract,pointer-overflow
   )
+  if(TIME_TRACE)
+    list(APPEND DEBUG_OPTIONS -ftime-trace)
+  endif()
+  target_compile_options(${PROJECT_NAME} PRIVATE ${DEBUG_OPTIONS})
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
   target_link_options(${PROJECT_NAME} PRIVATE -s)
-  target_compile_definitions(${PROJECT_NAME} PRIVATE OURO_PROFILE OURO_RELEASE)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE OURO_RELEASE)
+  if(OURO_PROFILE)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE OURO_PROFILE)
+  endif()
   target_compile_options(${PROJECT_NAME} PRIVATE
     ${COMMON_COMPILE_OPTIONS} ${SIMD_FLAGS}
     -O3
@@ -153,4 +179,24 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
     -ftree-vectorize
     -fomit-frame-pointer
   )
+endif()
+
+# Apply sanitizers
+if(NOT SANITIZER STREQUAL "none")
+  set(SANITIZER_FLAGS "")
+  if(SANITIZER STREQUAL "address")
+    set(SANITIZER_FLAGS "-fsanitize=address,undefined,leak,pointer-compare,pointer-subtract")
+  elseif(SANITIZER STREQUAL "thread")
+    set(SANITIZER_FLAGS "-fsanitize=thread")
+  elseif(SANITIZER STREQUAL "undefined")
+    set(SANITIZER_FLAGS "-fsanitize=undefined")
+  elseif(SANITIZER STREQUAL "memory")
+    set(SANITIZER_FLAGS "-fsanitize=memory")
+  endif()
+
+  if(SANITIZER_FLAGS)
+    target_compile_options(${PROJECT_NAME} PRIVATE ${SANITIZER_FLAGS})
+    target_link_options(${PROJECT_NAME} PRIVATE ${SANITIZER_FLAGS})
+    message(STATUS "Building with ${SANITIZER} sanitizer")
+  endif()
 endif()
